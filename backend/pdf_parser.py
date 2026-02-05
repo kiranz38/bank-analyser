@@ -14,8 +14,8 @@ DATE_PATTERNS = [
     r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:,?\s+\d{2,4})?',  # Jul 01, 2025
 ]
 
-# Currency symbols
-CURRENCY_SYMBOLS = r'[\$£€]'
+# Currency symbols (Western + Indian Rupee)
+CURRENCY_SYMBOLS = r'[\$£€₹]'
 
 # Keywords indicating debits
 DEBIT_KEYWORDS = ['debit', 'withdrawal', 'payment', 'purchase', 'dr', 'out']
@@ -30,19 +30,29 @@ EXCLUDE_KEYWORDS = [
     'brought forward', 'carried forward', 'summary', 'previous',
     'available', 'pending', 'credit limit', 'minimum payment',
     'interest rate', 'apr', 'customer service', 'thank you',
-    'routing number', 'swift'
+    'routing number', 'swift',
+    # Indian bank specific
+    'ifsc', 'micr', 'cif no', 'customer id', 'nomination', 'branch code',
+    'pan no', 'aadhaar', 'mobile no', 'email', 'address'
 ]
 
-# Header keywords for column detection
+# Header keywords for column detection (Western + Indian banks)
 HEADER_KEYWORDS = {
-    'date': ['date', 'trans date', 'transaction date', 'posting date', 'value date'],
+    'date': ['date', 'trans date', 'transaction date', 'posting date', 'value date',
+             'txn date', 'txn. date', 'val date', 'val. date'],
     'description': ['description', 'transaction', 'details', 'particulars',
-                   'narration', 'memo', 'payee', 'merchant'],
-    'debit': ['debit', 'withdrawal', 'withdrawals', 'out', 'dr', 'money out', 'paid out'],
-    'credit': ['credit', 'deposit', 'deposits', 'in', 'cr', 'money in', 'paid in'],
-    'amount': ['amount', 'value', 'sum'],
-    'balance': ['balance', 'running balance', 'available']
+                   'narration', 'memo', 'payee', 'merchant', 'remarks',
+                   'transaction details', 'transaction particulars'],
+    'debit': ['debit', 'withdrawal', 'withdrawals', 'out', 'dr', 'money out', 'paid out',
+              'debit amount', 'dr.', 'debit(dr)', 'withdrawal amt'],
+    'credit': ['credit', 'deposit', 'deposits', 'in', 'cr', 'money in', 'paid in',
+               'credit amount', 'cr.', 'credit(cr)', 'deposit amt'],
+    'amount': ['amount', 'value', 'sum', 'txn amount', 'transaction amount'],
+    'balance': ['balance', 'running balance', 'available', 'closing balance', 'bal']
 }
+
+# Additional columns to skip (not needed for analysis)
+SKIP_COLUMNS = ['chq no', 'cheque no', 'ref no', 'reference', 'branch', 'chq.no', 'ref.no']
 
 
 def pdf_to_csv(pdf_bytes: bytes) -> str:
@@ -287,12 +297,12 @@ def _extract_western_format(pdf) -> str:
             amount = _parse_amount(match.group(1))
             desc = line[:match.start()].strip()
 
-        # Pattern 2: Negative amount -$123.45 or -123.45
+        # Pattern 2: Negative amount -$123.45, -₹1,234.56, or -123.45
         if amount == 0:
-            match = re.search(r'-\s*' + CURRENCY_SYMBOLS + r'?\s*([\d,]+\.\d{2})', line)
+            match = re.search(r'-\s*' + CURRENCY_SYMBOLS + r'?\s*([\d,]+\.?\d*)', line)
             if match:
                 amount = _parse_amount(match.group(1))
-                desc = re.sub(r'-\s*' + CURRENCY_SYMBOLS + r'?\s*[\d,]+\.\d{2}', '', line).strip()
+                desc = re.sub(r'-\s*' + CURRENCY_SYMBOLS + r'?\s*[\d,]+\.?\d*', '', line).strip()
 
         # Pattern 3: Amount with DR marker (UK style)
         if amount == 0:
@@ -413,22 +423,34 @@ def _looks_like_date(text: str) -> bool:
 
 
 def _parse_amount(value) -> float:
-    """Parse amount string to float."""
+    """Parse amount string to float.
+
+    Handles various formats:
+    - Western: $1,234.56 or 1,234.56
+    - Indian: ₹1,23,456.78 or 1,23,456.78 (lakhs/crores format)
+    - UK: £1,234.56
+    - Negative: -$50.00 or (50.00)
+    """
     if not value:
         return 0
 
     value = str(value).strip()
 
-    # Remove currency symbols, parentheses, spaces, letters
-    cleaned = re.sub(r'[£$€(),\s]', '', value)
+    # Remove currency symbols, parentheses, spaces, letters (but keep digits, commas, dots, minus)
+    cleaned = re.sub(r'[£$€₹(),\s]', '', value)
     cleaned = re.sub(r'[a-zA-Z]', '', cleaned)
 
-    # Extract number
+    # Handle negative indicator
+    is_negative = '-' in value or ('(' in value and ')' in value)
+
+    # Extract number - handles both Western (1,234.56) and Indian (1,23,456.78) formats
+    # Indian format: digits with commas every 2 digits after first 3 from right
     match = re.search(r'[\d,]+\.?\d*', cleaned)
     if match:
-        num_str = match.group(0).replace(',', '')
+        num_str = match.group(0).replace(',', '')  # Remove all commas
         try:
-            return abs(float(num_str))
+            amount = abs(float(num_str))
+            return -amount if is_negative else amount
         except ValueError:
             return 0
     return 0

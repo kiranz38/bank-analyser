@@ -6,12 +6,14 @@ from typing import Optional
 import pandas as pd
 
 
-# Column name patterns for heuristic detection
-DATE_PATTERNS = ["date", "posted", "transaction date", "trans date", "posting date"]
-DESCRIPTION_PATTERNS = ["description", "merchant", "payee", "memo", "narrative", "details", "particulars"]
-AMOUNT_PATTERNS = ["amount", "value", "sum", "total"]
-DEBIT_PATTERNS = ["debit", "withdrawal", "out", "dr"]
-CREDIT_PATTERNS = ["credit", "deposit", "in", "cr"]
+# Column name patterns for heuristic detection (Western + Indian banks)
+DATE_PATTERNS = ["date", "posted", "transaction date", "trans date", "posting date",
+                 "txn date", "txn. date", "value date", "val date"]
+DESCRIPTION_PATTERNS = ["description", "merchant", "payee", "memo", "narrative", "details",
+                        "particulars", "narration", "remarks", "transaction particulars"]
+AMOUNT_PATTERNS = ["amount", "value", "sum", "total", "txn amount"]
+DEBIT_PATTERNS = ["debit", "withdrawal", "out", "dr", "dr.", "debit amount", "withdrawal amt"]
+CREDIT_PATTERNS = ["credit", "deposit", "in", "cr", "cr.", "credit amount", "deposit amt"]
 
 
 def find_column(columns: list[str], patterns: list[str]) -> Optional[str]:
@@ -39,13 +41,20 @@ def normalize_merchant(merchant: str) -> str:
 
 
 def parse_amount(value: str) -> Optional[float]:
-    """Parse amount string to float, handling various formats."""
+    """Parse amount string to float, handling various formats.
+
+    Supports:
+    - Western: $1,234.56 or 1,234.56
+    - Indian: ₹1,23,456.78 or 1,23,456.78 (lakhs format)
+    - UK: £1,234.56
+    - Negative: -$50.00 or (50.00)
+    """
     if pd.isna(value) or value == '':
         return None
     if isinstance(value, (int, float)):
         return float(value)
-    # Remove currency symbols and whitespace
-    cleaned = re.sub(r'[£$€,\s]', '', str(value))
+    # Remove currency symbols (including Indian Rupee) and whitespace
+    cleaned = re.sub(r'[£$€₹,\s]', '', str(value))
     # Handle parentheses for negative numbers
     if cleaned.startswith('(') and cleaned.endswith(')'):
         cleaned = '-' + cleaned[1:-1]
