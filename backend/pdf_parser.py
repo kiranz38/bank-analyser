@@ -44,7 +44,8 @@ def _has_valid_data(csv_content: str) -> bool:
 def _extract_from_tables(pdf) -> str:
     """Extract transactions from PDF tables."""
     all_rows = []
-    header_found = False
+    header_row = None
+    header_indices = {}  # Track column positions
 
     for page in pdf.pages:
         tables = page.extract_tables()
@@ -65,39 +66,62 @@ def _extract_from_tables(pdf) -> str:
                     continue
 
                 # Try to detect header row
-                if not header_found:
-                    row_lower = ' '.join(cleaned_row).lower()
+                if header_row is None:
+                    row_lower = [c.lower() for c in cleaned_row]
+                    row_text = ' '.join(row_lower)
+
+                    # Check if this is a header row
                     header_keywords = ['date', 'description', 'amount', 'debit', 'credit',
                                       'transaction', 'details', 'particulars', 'narration',
                                       'withdrawal', 'deposit', 'balance']
-                    if sum(1 for kw in header_keywords if kw in row_lower) >= 2:
-                        header_found = True
-                        all_rows.append(cleaned_row)
+                    if sum(1 for kw in header_keywords if kw in row_text) >= 2:
+                        header_row = cleaned_row
+
+                        # Identify column indices
+                        for i, col in enumerate(row_lower):
+                            if 'date' in col:
+                                header_indices['date'] = i
+                            elif any(x in col for x in ['description', 'transaction', 'details', 'particulars', 'narration']):
+                                header_indices['description'] = i
+                            elif 'debit' in col or 'withdrawal' in col:
+                                header_indices['debit'] = i
+                            elif 'credit' in col or 'deposit' in col:
+                                header_indices['credit'] = i
+                            elif 'amount' in col:
+                                header_indices['amount'] = i
+                            elif 'balance' in col:
+                                header_indices['balance'] = i
+
                         continue
 
-                # Check if this looks like a transaction row
-                row_text = ' '.join(cleaned_row)
-                if _looks_like_transaction(row_text):
+                # This is a data row - check if it has valid data
+                has_amount = any(re.search(r'\d+\.?\d*', cell) for cell in cleaned_row if cell)
+                if has_amount:
                     all_rows.append(cleaned_row)
 
     if not all_rows:
         return ''
 
-    # If no header found, create a generic one
-    if not header_found and all_rows:
+    # Process rows based on detected column structure
+    if header_indices:
+        return _process_structured_table(all_rows, header_indices)
+
+    # Fallback: create generic CSV
+    if header_row:
+        all_rows.insert(0, header_row)
+    else:
         num_cols = len(all_rows[0])
         if num_cols >= 3:
-            header_row = ['Date', 'Description', 'Amount'] + [f'Col{i}' for i in range(3, num_cols)]
+            header = ['Date', 'Description', 'Amount'] + [f'Col{i}' for i in range(3, num_cols)]
         elif num_cols == 2:
-            header_row = ['Description', 'Amount']
+            header = ['Description', 'Amount']
         else:
-            header_row = ['Data']
-        all_rows.insert(0, header_row)
+            header = ['Data']
+        all_rows.insert(0, header)
 
     # Convert to CSV
     csv_lines = []
     for row in all_rows:
-        # Escape commas and quotes in fields
         escaped = []
         for cell in row:
             if ',' in cell or '"' in cell or '\n' in cell:
@@ -106,6 +130,77 @@ def _extract_from_tables(pdf) -> str:
         csv_lines.append(','.join(escaped))
 
     return '\n'.join(csv_lines)
+
+
+def _process_structured_table(rows: list, indices: dict) -> str:
+    """Process table with known column structure (Date, Transaction, Debit, Credit, Balance)."""
+    csv_lines = ['Date,Description,Amount']
+
+    date_idx = indices.get('date', 0)
+    desc_idx = indices.get('description', 1)
+    debit_idx = indices.get('debit')
+    credit_idx = indices.get('credit')
+    amount_idx = indices.get('amount')
+    balance_idx = indices.get('balance')
+
+    for row in rows:
+        try:
+            # Get date
+            date = row[date_idx] if date_idx < len(row) else ''
+
+            # Get description
+            desc = row[desc_idx] if desc_idx < len(row) else ''
+            if not desc or desc.lower() in ['', 'nan', 'none']:
+                continue
+
+            # Get amount - prefer debit column, then amount column
+            amount = None
+
+            # Check debit column first (this is what we want for spending)
+            if debit_idx is not None and debit_idx < len(row):
+                debit_val = row[debit_idx]
+                if debit_val and debit_val.strip():
+                    amount = _parse_amount_str(debit_val)
+
+            # If no debit, check if there's a general amount column
+            if amount is None and amount_idx is not None and amount_idx < len(row):
+                amt_val = row[amount_idx]
+                if amt_val and amt_val.strip():
+                    amount = _parse_amount_str(amt_val)
+
+            # Skip if no debit amount (this might be a credit/deposit)
+            if amount is None or amount == 0:
+                continue
+
+            # Skip balance-like large amounts
+            if amount > 10000:
+                continue
+
+            # Escape description
+            if ',' in desc:
+                desc = f'"{desc}"'
+
+            csv_lines.append(f"{date},{desc},{amount}")
+
+        except (IndexError, ValueError):
+            continue
+
+    return '\n'.join(csv_lines)
+
+
+def _parse_amount_str(value: str) -> float:
+    """Parse amount string to float."""
+    if not value:
+        return 0
+    # Remove currency symbols, commas, spaces
+    cleaned = re.sub(r'[£$€,\s]', '', str(value))
+    # Handle parentheses as negative
+    if cleaned.startswith('(') and cleaned.endswith(')'):
+        cleaned = cleaned[1:-1]
+    try:
+        return abs(float(cleaned))
+    except ValueError:
+        return 0
 
 
 def _extract_from_text(pdf) -> str:

@@ -43,10 +43,6 @@ def _filter_transactions(transactions: list[dict]) -> list[dict]:
         amount = t.get("amount", 0)
         merchant = t.get("merchant", "").upper()
 
-        # Skip very large amounts (likely balances, not transactions)
-        if amount > 5000:
-            continue
-
         # Skip zero or negative amounts
         if amount <= 0:
             continue
