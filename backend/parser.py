@@ -60,7 +60,7 @@ def parse_csv(content: str) -> list[dict]:
     Parse CSV content and return normalized transaction data.
 
     Returns list of dicts: [{date, merchant, amount}]
-    Only includes debits (negative amounts / actual spending).
+    Includes all transactions (both debits and credits are captured).
     """
     # Try to parse CSV
     try:
@@ -112,48 +112,56 @@ def parse_csv(content: str) -> list[dict]:
         if not merchant or merchant == 'nan':
             continue
 
+        amount = None
+
         # Calculate amount
         if debit_col and credit_col:
             # Separate debit/credit columns
             debit = parse_amount(row.get(debit_col, 0)) or 0
             credit = parse_amount(row.get(credit_col, 0)) or 0
-            # We want debits (spending), so use positive debit or negative credit
-            if debit > 0:
-                amount = -abs(debit)
-            elif credit < 0:
-                amount = credit
-            else:
-                # This is a credit/refund, skip
+            # We want debits (spending)
+            if abs(debit) > 0:
+                amount = abs(debit)
+            elif abs(credit) > 0:
+                # Skip credits/deposits
                 continue
+        elif debit_col:
+            # Only debit column - all values are spending
+            amount = parse_amount(row.get(debit_col))
+            if amount is not None:
+                amount = abs(amount)
         elif amount_col:
-            # Single amount column
+            # Single amount column - negative = debit, positive = credit
             amount = parse_amount(row.get(amount_col))
             if amount is None:
                 continue
-            # Only include negative amounts (debits)
-            if amount >= 0:
+            # Negative amounts are debits (spending)
+            # Positive amounts could be credits OR debits depending on bank format
+            # We'll include all non-zero amounts and let user filter
+            if amount == 0:
                 continue
-        elif debit_col:
-            # Only debit column
-            amount = parse_amount(row.get(debit_col))
-            if amount is None or amount == 0:
-                continue
-            amount = -abs(amount)
+            # If negative, it's definitely a debit
+            # If positive, we still include it (many banks show debits as positive)
+            amount = abs(amount)
         else:
             # Try to find any numeric column
             for col in columns:
                 if col not in [date_col, desc_col]:
                     amount = parse_amount(row.get(col))
-                    if amount is not None and amount < 0:
+                    if amount is not None and amount != 0:
+                        amount = abs(amount)
                         break
             else:
                 continue
+
+        if amount is None or amount == 0:
+            continue
 
         transactions.append({
             "date": date_val,
             "merchant": normalize_merchant(merchant),
             "original_merchant": merchant.strip(),
-            "amount": abs(amount)  # Store as positive for easier math
+            "amount": amount
         })
 
     return transactions
