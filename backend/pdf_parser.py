@@ -62,6 +62,7 @@ def pdf_to_csv(pdf_bytes: bytes) -> str:
             # Try multiple extraction strategies
             strategies = [
                 _extract_from_tables,
+                _extract_westpac_multiline,
                 _extract_western_format,
                 _extract_from_text,
             ]
@@ -247,6 +248,154 @@ def _process_table_rows_fallback(rows: List[List[str]]) -> str:
             desc = f'"{desc}"'
 
         csv_lines.append(f"{date},{desc},{amount}")
+
+    return '\n'.join(csv_lines)
+
+
+def _extract_westpac_multiline(pdf) -> str:
+    """Extract transactions from Westpac-style PDFs with multi-line transactions.
+
+    Westpac format has:
+    - Date + description start on one line
+    - Description continuation + amounts on next line(s)
+    - Columns: DATE, DESCRIPTION, DEBIT, CREDIT, BALANCE
+    """
+    all_text = []
+    for page in pdf.pages:
+        text = page.extract_text()
+        if text:
+            all_text.append(text)
+
+    if not all_text:
+        return ''
+
+    full_text = '\n'.join(all_text)
+    csv_lines = ['Date,Description,Amount']
+
+    lines = full_text.split('\n')
+    date_pattern = r'^(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+'
+
+    # Build transaction blocks: date line + continuation lines
+    tx_blocks = []
+    current_block = None
+
+    for line in lines:
+        line_stripped = line.strip()
+        if not line_stripped:
+            continue
+
+        # Skip header lines
+        line_lower = line_stripped.lower()
+        if 'transaction description' in line_lower or 'effective date' in line_lower:
+            continue
+        if line_lower.startswith('date ') and 'debit' in line_lower:
+            continue
+
+        date_match = re.match(date_pattern, line_stripped)
+
+        if date_match:
+            # Save previous block
+            if current_block:
+                tx_blocks.append(current_block)
+            # Start new block
+            current_block = {
+                'date': date_match.group(1),
+                'lines': [line_stripped[date_match.end():].strip()]
+            }
+        elif current_block:
+            # Continuation line - add to current block
+            current_block['lines'].append(line_stripped)
+
+    # Don't forget last block
+    if current_block:
+        tx_blocks.append(current_block)
+
+    # Process each transaction block
+    for block in tx_blocks:
+        full_text = ' '.join(block['lines'])
+        full_text_upper = full_text.upper()
+
+        # Skip non-transaction lines
+        skip_keywords = ['OPENING BALANCE', 'CLOSING BALANCE', 'STATEMENT PERIOD',
+                        'CUSTOMER ID', 'BSB', 'ACCOUNT NAME', 'PLEASE CHECK']
+        if any(skip in full_text_upper for skip in skip_keywords):
+            continue
+
+        # Skip credits/deposits
+        credit_keywords = ['DEPOSIT', 'OSKO PAYMENT', 'DIRECT CREDIT', 'TRANSFER IN',
+                          'PAYMENT RECEIVED', 'REFUND', 'CREDIT']
+        # But NOT "Debit Card" which contains "CREDIT" substring check carefully
+        is_credit = any(kw in full_text_upper for kw in credit_keywords)
+        is_debit_card = 'DEBIT CARD' in full_text_upper
+        if is_credit and not is_debit_card:
+            continue
+
+        # Parse amounts from the combined text
+        # Look for sequences of numbers that could be amounts
+        amounts_found = []
+        description_parts = []
+
+        # Process all lines to separate description from amounts
+        for line in block['lines']:
+            parts = line.split()
+            line_amounts = []
+            line_desc = []
+
+            # Scan from right - amounts are typically at the end
+            found_non_numeric = False
+            for part in reversed(parts):
+                cleaned = part.replace(',', '').replace('$', '')
+                try:
+                    val = float(cleaned)
+                    # Only consider amounts >= 0.01 as valid amounts
+                    if not found_non_numeric and val >= 0.01:
+                        line_amounts.insert(0, val)
+                    else:
+                        found_non_numeric = True
+                        line_desc.insert(0, part)
+                except ValueError:
+                    found_non_numeric = True
+                    line_desc.insert(0, part)
+
+            # Use amounts from the line that has them (usually the last line)
+            if line_amounts and not amounts_found:
+                amounts_found = line_amounts
+                if line_desc:
+                    description_parts = line_desc + description_parts
+            else:
+                description_parts = parts + description_parts
+
+        if not amounts_found:
+            continue
+
+        description = ' '.join(description_parts).strip()
+        if not description or len(description) < 3:
+            continue
+
+        # For Westpac: amounts are [DEBIT, CREDIT, BALANCE] or [DEBIT, BALANCE] or [CREDIT, BALANCE]
+        # We want DEBIT (spending), which is the first non-balance amount
+        amount = None
+        if len(amounts_found) >= 2:
+            # First amount is likely DEBIT (if present), last is BALANCE
+            # Take the first amount that's not the balance (last one)
+            for amt in amounts_found[:-1]:
+                if amt > 0:
+                    amount = amt
+                    break
+        elif len(amounts_found) == 1:
+            # Only one amount - could be the transaction amount
+            amount = amounts_found[0]
+
+        if not amount or amount <= 0:
+            continue
+
+        # Clean description
+        description = re.sub(r'\s+', ' ', description).strip()
+        description = description.replace('"', "'")
+        if ',' in description:
+            description = f'"{description}"'
+
+        csv_lines.append(f"{block['date']},{description},{amount}")
 
     return '\n'.join(csv_lines)
 
