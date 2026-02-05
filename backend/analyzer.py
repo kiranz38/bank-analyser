@@ -25,7 +25,11 @@ SUBSCRIPTION_KEYWORDS = [
     "APPLE MUSIC", "YOUTUBE", "PARAMOUNT", "PEACOCK", "AUDIBLE",
     "ADOBE", "MICROSOFT 365", "GOOGLE ONE", "DROPBOX", "ICLOUD",
     "PLANET FITNESS", "LA FITNESS", "ANYTIME FITNESS", "EQUINOX",
-    "CROSSFIT", "PELOTON", "BEACHBODY", "GYM"
+    "CROSSFIT", "PELOTON", "BEACHBODY", "GYM",
+    # Adult/Entertainment subscriptions
+    "ONLYFANS", "PATREON", "TWITCH",
+    # Buy now pay later (recurring payments)
+    "AFTERPAY", "KLARNA", "ZIP PAY", "AFFIRM", "SEZZLE"
 ]
 
 # Keywords that indicate non-transaction entries
@@ -191,19 +195,28 @@ def _detect_subscriptions(merchant_data: dict) -> list[dict]:
 
     for merchant, data in merchant_data.items():
         txns = data["transactions"]
+        amounts = [t["amount"] for t in txns]
+        avg_amount = sum(amounts) / len(amounts) if amounts else 0
 
         # Check for known subscription services
         is_known_sub = any(kw in merchant for kw in SUBSCRIPTION_KEYWORDS)
 
+        # Flag known subscription services even with 1 occurrence
+        if is_known_sub:
+            monthly_cost = avg_amount
+            subscriptions.append({
+                "category": "Subscription",
+                "merchant": merchant,
+                "monthly_cost": round(monthly_cost, 2),
+                "yearly_cost": round(monthly_cost * 12, 2),
+                "explanation": f"Known subscription service: {len(txns)} payment(s) of ${avg_amount:.2f}"
+            })
         # Check for recurring pattern (2+ transactions with similar amounts)
-        if len(txns) >= 2:
-            amounts = [t["amount"] for t in txns]
-            avg_amount = sum(amounts) / len(amounts)
-
+        elif len(txns) >= 2:
             # Check if amounts are consistent (within 10%)
             consistent = all(abs(a - avg_amount) / avg_amount < 0.1 for a in amounts if avg_amount > 0)
 
-            if is_known_sub or (consistent and len(txns) >= 2):
+            if consistent:
                 monthly_cost = avg_amount
                 subscriptions.append({
                     "category": "Subscription",

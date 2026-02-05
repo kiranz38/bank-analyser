@@ -64,6 +64,92 @@ def parse_amount(value: str) -> Optional[float]:
         return None
 
 
+def parse_space_separated(content: str) -> list[dict]:
+    """
+    Parse space-separated bank statement text (like Westpac format).
+
+    Format: DATE DESCRIPTION DEBIT CREDIT BALANCE
+    Example: 04/06/25 Debit Card Purchase Store Name            12.00            199.63
+    """
+    transactions = []
+    # Date patterns: DD/MM/YY, DD/MM/YYYY, MM/DD/YY, etc.
+    date_pattern = r'^(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+'
+    # Amount pattern: numbers with optional decimal
+    amount_pattern = r'(\d+\.?\d*)'
+
+    lines = content.strip().split('\n')
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        # Check if line starts with a date
+        date_match = re.match(date_pattern, line)
+        if not date_match:
+            continue
+
+        date_str = date_match.group(1)
+        rest = line[date_match.end():].strip()
+
+        # Skip header lines, balance lines, deposits
+        rest_upper = rest.upper()
+        if any(skip in rest_upper for skip in ['OPENING BALANCE', 'CLOSING BALANCE', 'STATEMENT',
+                                                'DEPOSIT', 'CREDIT', 'TRANSFER IN', 'PAYMENT RECEIVED']):
+            continue
+
+        # Find all amounts at the end of the line
+        # Amounts are typically right-aligned with spaces between them
+        amounts = re.findall(r'(\d{1,3}(?:,\d{3})*\.?\d*)\s*$|(\d{1,3}(?:,\d{3})*\.?\d*)\s+(?=\d)', rest)
+
+        # Better approach: split from the right, find numeric values
+        parts = rest.split()
+        amounts_found = []
+        description_parts = []
+
+        # Scan from right to find amounts
+        for i, part in enumerate(reversed(parts)):
+            cleaned = part.replace(',', '').replace('$', '')
+            try:
+                val = float(cleaned)
+                amounts_found.insert(0, val)
+            except ValueError:
+                # Once we hit non-numeric, rest is description
+                description_parts = parts[:len(parts) - i]
+                break
+
+        if not amounts_found or not description_parts:
+            continue
+
+        description = ' '.join(description_parts)
+
+        # For Westpac format with DEBIT CREDIT BALANCE columns:
+        # - If 3 amounts: DEBIT, CREDIT, BALANCE (use DEBIT if non-zero)
+        # - If 2 amounts: could be DEBIT+BALANCE or CREDIT+BALANCE
+        # - If 1 amount: single amount column
+
+        amount = None
+        if len(amounts_found) >= 2:
+            # First non-zero amount is likely the transaction amount
+            # Last amount is usually balance
+            for amt in amounts_found[:-1]:  # Exclude balance (last)
+                if amt > 0:
+                    amount = amt
+                    break
+        elif len(amounts_found) == 1:
+            amount = amounts_found[0]
+
+        if amount and amount > 0:
+            transactions.append({
+                "date": date_str,
+                "merchant": normalize_merchant(description),
+                "original_merchant": description.strip(),
+                "amount": amount
+            })
+
+    return transactions
+
+
 def parse_csv(content: str) -> list[dict]:
     """
     Parse CSV content and return normalized transaction data.
@@ -71,6 +157,11 @@ def parse_csv(content: str) -> list[dict]:
     Returns list of dicts: [{date, merchant, amount}]
     Includes all transactions (both debits and credits are captured).
     """
+    # First try space-separated format (Westpac style)
+    space_result = parse_space_separated(content)
+    if space_result:
+        return space_result
+
     # Try to parse CSV
     try:
         df = pd.read_csv(io.StringIO(content))
