@@ -68,71 +68,98 @@ def parse_space_separated(content: str) -> list[dict]:
     """
     Parse space-separated bank statement text (like Westpac format).
 
+    Handles multi-line descriptions where amounts appear on continuation lines.
     Format: DATE DESCRIPTION DEBIT CREDIT BALANCE
-    Example: 04/06/25 Debit Card Purchase Store Name            12.00            199.63
     """
     transactions = []
-    # Date patterns: DD/MM/YY, DD/MM/YYYY, MM/DD/YY, etc.
     date_pattern = r'^(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+'
-    # Amount pattern: numbers with optional decimal
-    amount_pattern = r'(\d+\.?\d*)'
 
     lines = content.strip().split('\n')
 
+    # First pass: identify transaction blocks (date line + continuation lines)
+    tx_blocks = []
+    current_block = None
+
     for line in lines:
-        line = line.strip()
-        if not line:
+        line_stripped = line.strip()
+        if not line_stripped:
             continue
 
-        # Check if line starts with a date
-        date_match = re.match(date_pattern, line)
-        if not date_match:
+        date_match = re.match(date_pattern, line_stripped)
+
+        if date_match:
+            # Save previous block
+            if current_block:
+                tx_blocks.append(current_block)
+            # Start new block
+            current_block = {
+                'date': date_match.group(1),
+                'lines': [line_stripped[date_match.end():].strip()]
+            }
+        elif current_block:
+            # Continuation line
+            current_block['lines'].append(line_stripped)
+
+    # Don't forget the last block
+    if current_block:
+        tx_blocks.append(current_block)
+
+    # Second pass: parse each block
+    for block in tx_blocks:
+        full_text = ' '.join(block['lines'])
+        full_text_upper = full_text.upper()
+
+        # Skip header/balance/deposit lines
+        if any(skip in full_text_upper for skip in ['OPENING BALANCE', 'CLOSING BALANCE', 'STATEMENT',
+                                                     'DEPOSIT', 'TRANSFER IN', 'PAYMENT RECEIVED',
+                                                     'OSKO PAYMENT', 'DIRECT CREDIT']):
             continue
 
-        date_str = date_match.group(1)
-        rest = line[date_match.end():].strip()
-
-        # Skip header lines, balance lines, deposits
-        rest_upper = rest.upper()
-        if any(skip in rest_upper for skip in ['OPENING BALANCE', 'CLOSING BALANCE', 'STATEMENT',
-                                                'DEPOSIT', 'CREDIT', 'TRANSFER IN', 'PAYMENT RECEIVED']):
-            continue
-
-        # Find all amounts at the end of the line
-        # Amounts are typically right-aligned with spaces between them
-        amounts = re.findall(r'(\d{1,3}(?:,\d{3})*\.?\d*)\s*$|(\d{1,3}(?:,\d{3})*\.?\d*)\s+(?=\d)', rest)
-
-        # Better approach: split from the right, find numeric values
-        parts = rest.split()
+        # Find amounts - look for rightmost numbers on the last line with amounts
         amounts_found = []
         description_parts = []
 
-        # Scan from right to find amounts
-        for i, part in enumerate(reversed(parts)):
-            cleaned = part.replace(',', '').replace('$', '')
-            try:
-                val = float(cleaned)
-                amounts_found.insert(0, val)
-            except ValueError:
-                # Once we hit non-numeric, rest is description
-                description_parts = parts[:len(parts) - i]
-                break
+        # Check all lines for amounts (right to left, last line first)
+        for line in reversed(block['lines']):
+            parts = line.split()
+            line_amounts = []
+            line_desc = []
 
-        if not amounts_found or not description_parts:
+            # Scan from right - only count significant amounts (>= 1.00) as column amounts
+            found_non_numeric = False
+            for part in reversed(parts):
+                cleaned = part.replace(',', '').replace('$', '')
+                try:
+                    val = float(cleaned)
+                    # Only consider amounts >= 1.00 as column amounts (debit/credit/balance)
+                    # Smaller amounts like $0.50 fee are part of description
+                    if not found_non_numeric and val >= 1.0:
+                        line_amounts.insert(0, val)
+                    else:
+                        found_non_numeric = True
+                        line_desc.insert(0, part)
+                except ValueError:
+                    found_non_numeric = True
+                    line_desc.insert(0, part)
+
+            if line_amounts and not amounts_found:
+                amounts_found = line_amounts
+                if line_desc:
+                    description_parts = line_desc + description_parts
+            else:
+                description_parts = parts + description_parts
+
+        if not amounts_found:
             continue
 
-        description = ' '.join(description_parts)
+        description = ' '.join(description_parts).strip()
+        if not description:
+            continue
 
-        # For Westpac format with DEBIT CREDIT BALANCE columns:
-        # - If 3 amounts: DEBIT, CREDIT, BALANCE (use DEBIT if non-zero)
-        # - If 2 amounts: could be DEBIT+BALANCE or CREDIT+BALANCE
-        # - If 1 amount: single amount column
-
+        # Extract transaction amount (exclude balance which is usually last)
         amount = None
         if len(amounts_found) >= 2:
-            # First non-zero amount is likely the transaction amount
-            # Last amount is usually balance
-            for amt in amounts_found[:-1]:  # Exclude balance (last)
+            for amt in amounts_found[:-1]:
                 if amt > 0:
                     amount = amt
                     break
@@ -141,9 +168,9 @@ def parse_space_separated(content: str) -> list[dict]:
 
         if amount and amount > 0:
             transactions.append({
-                "date": date_str,
+                "date": block['date'],
                 "merchant": normalize_merchant(description),
-                "original_merchant": description.strip(),
+                "original_merchant": description,
                 "amount": amount
             })
 
