@@ -6,6 +6,12 @@ interface Leak {
   explanation: string
 }
 
+interface TopSpending {
+  date: string
+  merchant: string
+  amount: number
+}
+
 interface EasyWin {
   title: string
   estimated_yearly_savings: number
@@ -17,6 +23,7 @@ interface ResultCardsProps {
     monthly_leak: number
     annual_savings: number
     top_leaks: Leak[]
+    top_spending: TopSpending[]
     easy_wins: EasyWin[]
     recovery_plan: string[]
   }
@@ -69,6 +76,38 @@ export default function ResultCards({ results }: ResultCardsProps) {
         </div>
       </div>
 
+      {/* Top 5 Biggest Transactions */}
+      {results.top_spending && results.top_spending.length > 0 && (
+        <div className="card">
+          <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+              <path d="M12 20V10" />
+              <path d="M18 20V4" />
+              <path d="M6 20v-4" />
+            </svg>
+            Top 5 Biggest Transactions
+          </h2>
+          <ul className="leak-list">
+            {results.top_spending.map((item, index) => (
+              <li key={index} className="leak-item">
+                <div className="leak-info">
+                  <span className="leak-category" style={{ background: 'var(--warning-light)', color: 'var(--warning)' }}>
+                    #{index + 1}
+                  </span>
+                  <div className="leak-merchant">{item.merchant}</div>
+                  {item.date && <div className="leak-explanation">{item.date}</div>}
+                </div>
+                <div className="leak-amount">
+                  <div className="leak-monthly" style={{ color: 'var(--foreground)' }}>
+                    {formatCurrencyPrecise(item.amount)}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Top Leaks */}
       {results.top_leaks.length > 0 && (
         <div className="card">
@@ -78,7 +117,7 @@ export default function ResultCards({ results }: ResultCardsProps) {
               <line x1="12" y1="9" x2="12" y2="13" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
-            Top Spending Leaks
+            Recurring Spending Leaks
           </h2>
           <ul className="leak-list">
             {results.top_leaks.map((leak, index) => (

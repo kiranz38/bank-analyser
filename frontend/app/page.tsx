@@ -15,6 +15,11 @@ interface AnalysisResult {
     yearly_cost: number
     explanation: string
   }>
+  top_spending: Array<{
+    date: string
+    merchant: string
+    amount: number
+  }>
   easy_wins: Array<{
     title: string
     estimated_yearly_savings: number

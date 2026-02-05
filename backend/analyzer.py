@@ -35,6 +35,22 @@ EXCLUDE_KEYWORDS = [
 ]
 
 
+def _get_top_spending(transactions: list[dict], limit: int = 5) -> list[dict]:
+    """Get the top N biggest individual transactions."""
+    # Sort by amount descending
+    sorted_txns = sorted(transactions, key=lambda x: x.get("amount", 0), reverse=True)
+
+    top_spending = []
+    for t in sorted_txns[:limit]:
+        top_spending.append({
+            "date": t.get("date", ""),
+            "merchant": t.get("original_merchant", t.get("merchant", "Unknown")),
+            "amount": round(t.get("amount", 0), 2)
+        })
+
+    return top_spending
+
+
 def _filter_transactions(transactions: list[dict]) -> list[dict]:
     """Filter out invalid or unrealistic transactions."""
     filtered = []
@@ -98,6 +114,7 @@ def _empty_result() -> dict:
         "monthly_leak": 0,
         "annual_savings": 0,
         "top_leaks": [],
+        "top_spending": [],
         "easy_wins": [],
         "recovery_plan": [
             "Upload your bank statement to get started",
@@ -148,6 +165,9 @@ def _heuristic_analysis(transactions: list[dict]) -> dict:
     # Sort by monthly cost
     top_leaks.sort(key=lambda x: x["monthly_cost"], reverse=True)
 
+    # Get top 5 biggest individual transactions
+    top_spending = _get_top_spending(transactions)
+
     # Generate easy wins
     easy_wins = _generate_easy_wins(top_leaks, merchant_data)
 
@@ -158,6 +178,7 @@ def _heuristic_analysis(transactions: list[dict]) -> dict:
         "monthly_leak": round(total_leak, 2),
         "annual_savings": round(total_leak * 12, 2),
         "top_leaks": top_leaks[:10],  # Top 10 leaks
+        "top_spending": top_spending,  # Top 5 biggest transactions
         "easy_wins": easy_wins[:5],    # Top 5 easy wins
         "recovery_plan": recovery_plan,
         "disclaimer": "This analysis is for informational purposes only. Not financial advice."

@@ -45,6 +45,7 @@ class AnalysisResponse(BaseModel):
     monthly_leak: float
     annual_savings: float
     top_leaks: list[dict]
+    top_spending: list[dict]
     easy_wins: list[dict]
     recovery_plan: list[str]
     disclaimer: str
