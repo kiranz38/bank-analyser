@@ -28,6 +28,41 @@ SUBSCRIPTION_KEYWORDS = [
     "CROSSFIT", "PELOTON", "BEACHBODY", "GYM"
 ]
 
+# Keywords that indicate non-transaction entries
+EXCLUDE_KEYWORDS = [
+    "BALANCE", "TOTAL", "OPENING", "CLOSING", "BROUGHT FORWARD",
+    "CARRIED FORWARD", "AVAILABLE", "PENDING", "CREDIT LIMIT"
+]
+
+
+def _filter_transactions(transactions: list[dict]) -> list[dict]:
+    """Filter out invalid or unrealistic transactions."""
+    filtered = []
+
+    for t in transactions:
+        amount = t.get("amount", 0)
+        merchant = t.get("merchant", "").upper()
+
+        # Skip very large amounts (likely balances, not transactions)
+        if amount > 5000:
+            continue
+
+        # Skip zero or negative amounts
+        if amount <= 0:
+            continue
+
+        # Skip entries that look like balance/summary lines
+        if any(kw in merchant for kw in EXCLUDE_KEYWORDS):
+            continue
+
+        # Skip if merchant name is too short or just numbers
+        if len(merchant) < 2 or merchant.replace(" ", "").isdigit():
+            continue
+
+        filtered.append(t)
+
+    return filtered
+
 
 def analyze_transactions(transactions: list[dict], use_claude: bool = True) -> dict:
     """
@@ -40,6 +75,12 @@ def analyze_transactions(transactions: list[dict], use_claude: bool = True) -> d
     Returns:
         Analysis results dict
     """
+    if not transactions:
+        return _empty_result()
+
+    # Filter out unrealistic transactions
+    transactions = _filter_transactions(transactions)
+
     if not transactions:
         return _empty_result()
 

@@ -161,27 +161,59 @@ def _extract_raw_transactions(pdf) -> str:
 
     full_text = '\n'.join(all_text)
 
-    # Find all amounts in the text
-    amount_pattern = r'[\$£€]?\s*-?\d{1,3}(?:,\d{3})*(?:\.\d{2})?'
+    # Exclude keywords for balance/summary lines
+    exclude_keywords = [
+        'balance', 'total', 'opening', 'closing', 'statement',
+        'brought forward', 'carried forward', 'summary', 'available'
+    ]
 
-    # Find lines containing amounts
-    lines_with_amounts = []
+    # Find lines containing amounts AND dates (more strict)
+    lines_with_transactions = []
     for line in full_text.split('\n'):
         line = line.strip()
-        if re.search(amount_pattern, line) and len(line) > 10:
-            lines_with_amounts.append(line)
+        line_lower = line.lower()
 
-    if not lines_with_amounts:
+        # Skip if contains exclude keywords
+        if any(kw in line_lower for kw in exclude_keywords):
+            continue
+
+        # Must have a date pattern
+        has_date = re.search(r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}', line)
+        if not has_date:
+            continue
+
+        # Must have an amount
+        has_amount = re.search(r'\d+\.\d{2}', line)
+        if not has_amount:
+            continue
+
+        if len(line) > 10:
+            lines_with_transactions.append(line)
+
+    if not lines_with_transactions:
         return ''
 
     # Create a simple CSV
     csv_lines = ['Date,Description,Amount']
-    for line in lines_with_amounts:
-        # Try to extract amount
-        amounts = re.findall(r'-?[\$£€]?\s*\d{1,3}(?:,\d{3})*(?:\.\d{2})', line)
+    for line in lines_with_transactions:
+        # Try to extract amount (take the first reasonable one, not balance)
+        amounts = re.findall(r'-?[\$£€]?\s*\d{1,3}(?:,\d{3})*\.\d{2}', line)
         if amounts:
-            amount = amounts[-1].replace('$', '').replace('£', '').replace('€', '').replace(',', '').strip()
-            # Remove the amount from the line to get description
+            # Filter out very large amounts (likely balances)
+            valid_amounts = []
+            for a in amounts:
+                clean_amt = float(a.replace('$', '').replace('£', '').replace('€', '').replace(',', '').replace(' ', ''))
+                # Skip amounts over $10,000 (likely balance, not transaction)
+                if abs(clean_amt) < 10000:
+                    valid_amounts.append(a)
+
+            if not valid_amounts:
+                continue
+
+            # Use the first valid amount (usually the transaction amount)
+            amount = valid_amounts[0].replace('$', '').replace('£', '').replace('€', '').replace(',', '').strip()
+
+            # Remove all amounts from the line to get description
             desc = line
             for a in amounts:
                 desc = desc.replace(a, '')
@@ -191,7 +223,7 @@ def _extract_raw_transactions(pdf) -> str:
             date_match = re.search(r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}', line)
             date = date_match.group(0) if date_match else ''
 
-            if desc:
+            if desc and len(desc) > 2:
                 if ',' in desc:
                     desc = f'"{desc}"'
                 csv_lines.append(f"{date},{desc},{amount}")
@@ -202,6 +234,20 @@ def _extract_raw_transactions(pdf) -> str:
 def _looks_like_transaction(text: str) -> bool:
     """Check if text looks like a transaction row."""
     if len(text) < 5:
+        return False
+
+    text_lower = text.lower()
+
+    # Exclude summary/header/footer lines
+    exclude_keywords = [
+        'balance', 'total', 'opening', 'closing', 'statement', 'page',
+        'account number', 'account no', 'sort code', 'iban', 'bic',
+        'brought forward', 'carried forward', 'summary', 'previous',
+        'ending balance', 'beginning balance', 'available', 'pending',
+        'credit limit', 'minimum payment', 'payment due', 'annual fee',
+        'interest rate', 'apr', 'customer service', 'thank you'
+    ]
+    if any(kw in text_lower for kw in exclude_keywords):
         return False
 
     # Common date patterns
@@ -222,8 +268,8 @@ def _looks_like_transaction(text: str) -> bool:
     ]
     has_amount = any(re.search(pattern, text) for pattern in amount_patterns)
 
-    # Must have at least an amount (dates are optional for some formats)
-    return has_amount
+    # Must have BOTH a date and an amount for better accuracy
+    return has_date and has_amount
 
 
 def _parse_transaction_line(line: str) -> Optional[dict]:
