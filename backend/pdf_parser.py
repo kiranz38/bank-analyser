@@ -19,12 +19,17 @@ def pdf_to_csv(pdf_bytes: bytes) -> str:
             if csv_content and _has_valid_data(csv_content):
                 return csv_content
 
-            # Second try: Extract from text
+            # Second try: CommBank-style extraction (debit amounts like "550.00 $")
+            csv_content = _extract_commbank_style(pdf)
+            if csv_content and _has_valid_data(csv_content):
+                return csv_content
+
+            # Third try: Extract from text
             csv_content = _extract_from_text(pdf)
             if csv_content and _has_valid_data(csv_content):
                 return csv_content
 
-            # Third try: Raw text dump with smart parsing
+            # Fourth try: Raw text dump with smart parsing
             csv_content = _extract_raw_transactions(pdf)
             if csv_content and _has_valid_data(csv_content):
                 return csv_content
@@ -39,6 +44,85 @@ def _has_valid_data(csv_content: str) -> bool:
     """Check if CSV content has actual data rows beyond header."""
     lines = [l.strip() for l in csv_content.strip().split('\n') if l.strip()]
     return len(lines) > 1  # More than just header
+
+
+def _extract_commbank_style(pdf) -> str:
+    """Extract transactions from CommBank-style PDFs.
+
+    CommBank format:
+    - Date: "01 Jul 2025" or "03 Jul"
+    - Debit amounts: "550.00 $" or "6,000.00 (" (number followed by $ or parenthesis)
+    - Credit amounts: "$500.00" ($ before number)
+    - Multi-line descriptions
+    """
+    all_text = []
+    for page in pdf.pages:
+        text = page.extract_text()
+        if text:
+            all_text.append(text)
+
+    if not all_text:
+        return ''
+
+    full_text = '\n'.join(all_text)
+
+    # Pattern for CommBank debit: number followed by space and $ or (
+    # This distinguishes debits from credits (which have $ before the number)
+    debit_pattern = r'([\d,]+\.\d{2})\s*[\$\(]'
+
+    # Date pattern for "01 Jul" or "01 Jul 2025"
+    date_pattern = r'(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(?:\s+\d{4})?)'
+
+    csv_lines = ['Date,Description,Amount']
+    lines = full_text.split('\n')
+
+    current_date = ''
+    current_desc_parts = []
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        # Check for date at start of line
+        date_match = re.match(date_pattern, line, re.IGNORECASE)
+        if date_match:
+            current_date = date_match.group(1)
+            line = line[date_match.end():].strip()
+
+        # Check for debit amount (number followed by $ or ()
+        debit_match = re.search(debit_pattern, line)
+        if debit_match:
+            amount = debit_match.group(1).replace(',', '')
+
+            # Get description (text before the amount)
+            desc = line[:debit_match.start()].strip()
+
+            # Combine with any accumulated description parts
+            if current_desc_parts:
+                desc = ' '.join(current_desc_parts) + ' ' + desc
+                current_desc_parts = []
+
+            # Clean up description
+            desc = re.sub(r'\s+', ' ', desc).strip()
+
+            # Skip opening balance and similar
+            if 'opening balance' in desc.lower():
+                continue
+
+            if desc and current_date:
+                desc = desc.replace('"', "'")
+                if ',' in desc:
+                    desc = f'"{desc}"'
+                csv_lines.append(f"{current_date},{desc},{amount}")
+        else:
+            # This might be a continuation of a description
+            # Skip lines that look like credit amounts or balance
+            if not re.search(r'\$[\d,]+\.\d{2}', line) and not 'CR' in line:
+                if line and len(line) > 2:
+                    current_desc_parts.append(line)
+
+    return '\n'.join(csv_lines)
 
 
 def _extract_from_tables(pdf) -> str:
@@ -141,7 +225,6 @@ def _process_structured_table(rows: list, indices: dict) -> str:
     debit_idx = indices.get('debit')
     credit_idx = indices.get('credit')
     amount_idx = indices.get('amount')
-    balance_idx = indices.get('balance')
 
     for row in rows:
         try:
@@ -150,39 +233,40 @@ def _process_structured_table(rows: list, indices: dict) -> str:
 
             # Get description
             desc = row[desc_idx] if desc_idx < len(row) else ''
-            if not desc or desc.lower() in ['', 'nan', 'none']:
+
+            # Clean up description - remove newlines, extra spaces
+            desc = re.sub(r'\s+', ' ', desc).strip()
+
+            if not desc or desc.lower() in ['', 'nan', 'none', 'opening balance']:
                 continue
 
             # Get amount - prefer debit column, then amount column
-            amount = None
+            amount = 0
 
             # Check debit column first (this is what we want for spending)
             if debit_idx is not None and debit_idx < len(row):
                 debit_val = row[debit_idx]
-                if debit_val and debit_val.strip():
+                if debit_val and str(debit_val).strip():
                     amount = _parse_amount_str(debit_val)
 
             # If no debit, check if there's a general amount column
-            if amount is None and amount_idx is not None and amount_idx < len(row):
+            if amount == 0 and amount_idx is not None and amount_idx < len(row):
                 amt_val = row[amount_idx]
-                if amt_val and amt_val.strip():
+                if amt_val and str(amt_val).strip():
                     amount = _parse_amount_str(amt_val)
 
             # Skip if no debit amount (this might be a credit/deposit)
-            if amount is None or amount == 0:
-                continue
-
-            # Skip balance-like large amounts
-            if amount > 10000:
+            if amount == 0:
                 continue
 
             # Escape description
+            desc = desc.replace('"', "'")
             if ',' in desc:
                 desc = f'"{desc}"'
 
             csv_lines.append(f"{date},{desc},{amount}")
 
-        except (IndexError, ValueError):
+        except (IndexError, ValueError) as e:
             continue
 
     return '\n'.join(csv_lines)
@@ -192,15 +276,24 @@ def _parse_amount_str(value: str) -> float:
     """Parse amount string to float."""
     if not value:
         return 0
-    # Remove currency symbols, commas, spaces
-    cleaned = re.sub(r'[£$€,\s]', '', str(value))
-    # Handle parentheses as negative
-    if cleaned.startswith('(') and cleaned.endswith(')'):
-        cleaned = cleaned[1:-1]
-    try:
-        return abs(float(cleaned))
-    except ValueError:
-        return 0
+
+    value = str(value).strip()
+
+    # Handle CommBank format: "550.00 $" or "6,000.00 (" - amount followed by symbol
+    # Also handle standard format: "$550.00"
+
+    # Remove currency symbols, parentheses, commas, spaces
+    cleaned = re.sub(r'[£$€(),\s]', '', value)
+
+    # Extract just the number
+    match = re.search(r'[\d,]+\.?\d*', cleaned)
+    if match:
+        num_str = match.group(0).replace(',', '')
+        try:
+            return abs(float(num_str))
+        except ValueError:
+            return 0
+    return 0
 
 
 def _extract_from_text(pdf) -> str:
@@ -333,38 +426,38 @@ def _looks_like_transaction(text: str) -> bool:
 
     text_lower = text.lower()
 
-    # Exclude summary/header/footer lines
+    # Exclude summary/header/footer lines (but allow "opening balance" in date check)
     exclude_keywords = [
-        'balance', 'total', 'opening', 'closing', 'statement', 'page',
-        'account number', 'account no', 'sort code', 'iban', 'bic',
-        'brought forward', 'carried forward', 'summary', 'previous',
-        'ending balance', 'beginning balance', 'available', 'pending',
-        'credit limit', 'minimum payment', 'payment due', 'annual fee',
-        'interest rate', 'apr', 'customer service', 'thank you'
+        'total', 'statement', 'page', 'account number', 'account no',
+        'sort code', 'iban', 'bic', 'brought forward', 'carried forward',
+        'summary', 'ending balance', 'beginning balance', 'available',
+        'pending', 'credit limit', 'minimum payment', 'payment due',
+        'annual fee', 'interest rate', 'apr', 'customer service', 'thank you'
     ]
     if any(kw in text_lower for kw in exclude_keywords):
         return False
 
-    # Common date patterns
+    # Common date patterns (including "01 Jul" format)
     date_patterns = [
         r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}',  # MM/DD/YYYY, DD-MM-YY, etc.
         r'\d{4}[/-]\d{1,2}[/-]\d{1,2}',     # YYYY-MM-DD
-        r'\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)',  # DD Mon
+        r'\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)',  # DD Mon (01 Jul)
         r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}',  # Mon DD
     ]
 
     has_date = any(re.search(pattern, text, re.IGNORECASE) for pattern in date_patterns)
 
-    # Amount patterns
+    # Amount patterns - including CommBank format "550.00 $" or "6,000.00 ("
     amount_patterns = [
         r'[\$£€]\s*[\d,]+\.?\d*',           # $123.45
+        r'[\d,]+\.\d{2}\s*[\$\(\)]',        # 123.45 $ or 123.45 ( (CommBank debit)
         r'[\d,]+\.\d{2}',                    # 123.45
         r'-\s*[\d,]+\.\d{2}',                # -123.45
     ]
     has_amount = any(re.search(pattern, text) for pattern in amount_patterns)
 
-    # Must have BOTH a date and an amount for better accuracy
-    return has_date and has_amount
+    # For table rows, having an amount is enough (date might be in separate column)
+    return has_amount
 
 
 def _parse_transaction_line(line: str) -> Optional[dict]:
