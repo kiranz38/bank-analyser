@@ -62,6 +62,7 @@ def pdf_to_csv(pdf_bytes: bytes) -> str:
             # Try multiple extraction strategies
             strategies = [
                 _extract_from_tables,
+                _extract_anz_format,
                 _extract_westpac_multiline,
                 _extract_western_format,
                 _extract_from_text,
@@ -248,6 +249,136 @@ def _process_table_rows_fallback(rows: List[List[str]]) -> str:
             desc = f'"{desc}"'
 
         csv_lines.append(f"{date},{desc},{amount}")
+
+    return '\n'.join(csv_lines)
+
+
+def _extract_anz_format(pdf) -> str:
+    """Extract transactions from ANZ-style PDFs.
+
+    ANZ format has:
+    - Date like "17 JUN" (DD MON)
+    - Multi-line descriptions with "EFFECTIVE DATE" lines
+    - Amounts line with: withdrawal, deposit (or "blank"), balance
+    """
+    all_text = []
+    for page in pdf.pages:
+        text = page.extract_text()
+        if text:
+            all_text.append(text)
+
+    if not all_text:
+        return ''
+
+    full_text = '\n'.join(all_text)
+
+    # Check if this looks like ANZ format (has "blank" and "DD MON" dates)
+    if 'blank' not in full_text.lower() and not re.search(r'\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\b', full_text, re.IGNORECASE):
+        return ''
+
+    csv_lines = ['Date,Description,Amount']
+    lines = full_text.split('\n')
+
+    # ANZ date pattern: "17 JUN" or "1 JAN"
+    date_pattern = r'^(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))\b'
+
+    # Build transaction blocks
+    tx_blocks = []
+    current_block = None
+
+    for line in lines:
+        line_stripped = line.strip()
+        if not line_stripped:
+            continue
+
+        # Skip header lines
+        line_lower = line_stripped.lower()
+        if 'transaction details' in line_lower or 'withdrawals' in line_lower and 'deposits' in line_lower:
+            continue
+
+        date_match = re.match(date_pattern, line_stripped, re.IGNORECASE)
+
+        if date_match:
+            # Save previous block
+            if current_block:
+                tx_blocks.append(current_block)
+            # Start new block
+            current_block = {
+                'date': date_match.group(1),
+                'lines': [line_stripped[date_match.end():].strip()]
+            }
+        elif current_block:
+            # Continuation line
+            current_block['lines'].append(line_stripped)
+
+    if current_block:
+        tx_blocks.append(current_block)
+
+    # Process each transaction block
+    for block in tx_blocks:
+        full_text_block = ' '.join(block['lines'])
+        full_text_upper = full_text_block.upper()
+
+        # Skip non-transaction lines
+        if 'OPENING BALANCE' in full_text_upper or 'CLOSING BALANCE' in full_text_upper:
+            continue
+
+        # Skip deposits/credits (but not "VISA DEBIT" which is a spending type)
+        if 'DEPOSIT' in full_text_upper and 'VISA DEBIT' not in full_text_upper:
+            continue
+
+        # Find the line with amounts (contains numbers and possibly "blank")
+        amounts_line = None
+        description_lines = []
+
+        for line in block['lines']:
+            # Check if this line has the amount pattern (numbers with blank)
+            if re.search(r'\d+\.\d{2}', line) and ('blank' in line.lower() or re.search(r'\d+\.\d{2}\s+\d', line)):
+                amounts_line = line
+            elif 'EFFECTIVE DATE' in line.upper():
+                # Skip effective date lines from description
+                continue
+            else:
+                description_lines.append(line)
+
+        if not amounts_line:
+            continue
+
+        # Parse amounts - format is: withdrawal deposit balance (with "blank" for empty)
+        parts = amounts_line.replace('blank', '').split()
+        amounts = []
+        for part in parts:
+            cleaned = part.replace(',', '').replace('$', '')
+            try:
+                amounts.append(float(cleaned))
+            except ValueError:
+                continue
+
+        if not amounts:
+            continue
+
+        # First amount is withdrawal (what we want), last is balance
+        # If only 2 amounts, first is withdrawal/deposit, second is balance
+        if len(amounts) >= 2:
+            amount = amounts[0]  # Withdrawal amount
+        else:
+            amount = amounts[0]
+
+        # Skip if amount is too large (likely balance was picked up)
+        if amount > 10000:
+            continue
+
+        description = ' '.join(description_lines).strip()
+        if not description or len(description) < 3:
+            continue
+
+        # Clean description
+        description = re.sub(r'\s+', ' ', description).strip()
+        description = description.replace('"', "'")
+        if ',' in description:
+            description = f'"{description}"'
+
+        csv_lines.append(f"{block['date']},{description},{amount}")
 
     return '\n'.join(csv_lines)
 
