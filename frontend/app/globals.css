@@ -393,6 +393,55 @@ h3 {
   color: var(--muted-light);
 }
 
+/* Outcome list */
+.outcome-list {
+  margin: 1.5rem 0 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--success-light);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--success);
+}
+
+.outcome-title {
+  font-weight: 600;
+  color: var(--success);
+  margin-bottom: 0.75rem;
+  font-size: 0.9375rem;
+}
+
+.outcome-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.outcome-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--foreground);
+}
+
+.outcome-list li svg {
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+/* Shock motivator */
+.shock-motivator {
+  text-align: center;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--danger);
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: var(--danger-light);
+  border-radius: var(--border-radius);
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;
@@ -820,6 +869,16 @@ h3 {
 
 .disclaimer-text strong {
   color: var(--foreground);
+}
+
+/* Info box */
+.info-box {
+  text-align: center;
+  padding: 1rem 1.5rem;
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 /* Error */

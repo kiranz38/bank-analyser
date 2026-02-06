@@ -5,6 +5,12 @@ import UploadForm from '@/components/UploadForm'
 import ResultCards from '@/components/ResultCards'
 import LoadingOverlay from '@/components/LoadingOverlay'
 
+// Simple event tracking (can be wired to analytics later)
+const trackEvent = (event: string, data?: Record<string, unknown>) => {
+  console.log(`[Analytics] ${event}`, data || '')
+  // Wire to your analytics here if needed
+}
+
 interface AnalysisResult {
   monthly_leak: number
   annual_savings: number
@@ -35,6 +41,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
 
   const handleAnalyze = async (data: File | string) => {
+    trackEvent('analyze_clicked', { type: data instanceof File ? 'file' : 'text' })
     setLoading(true)
     setError(null)
     setResults(null)
@@ -43,6 +50,7 @@ export default function Home() {
       const formData = new FormData()
 
       if (data instanceof File) {
+        trackEvent('upload_started', { filename: data.name, size: data.size })
         formData.append('file', data)
       } else {
         formData.append('text', data)
@@ -60,6 +68,7 @@ export default function Home() {
       }
 
       const result = await response.json()
+      trackEvent('analysis_completed', { monthly_leak: result.monthly_leak, annual_savings: result.annual_savings })
       setResults(result)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -100,21 +109,21 @@ export default function Home() {
           <h1>Bank Statement Analyzer</h1>
           <h2 className="brand-tagline">Where's My Money Going?</h2>
           <p className="subtitle">
-            Find hidden subscriptions, unexpected fees, and spending leaks in seconds.
+            Find hidden subscriptions, unexpected fees, and spending leaks — plus estimated yearly savings.
           </p>
           <div className="trust-badges">
-            <div className="trust-badge">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              <span>Secure processing (no data stored)</span>
-            </div>
             <div className="trust-badge">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
-              <span>Data never stored</span>
+              <span>No data stored</span>
+            </div>
+            <div className="trust-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              <span>Secure processing</span>
             </div>
             <div className="trust-badge">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -170,14 +179,21 @@ export default function Home() {
           </div>
         </footer>
 
+        <div className="info-box">
+          <p>
+            This free bank statement analyzer helps you upload CSV or PDF files to find hidden subscriptions,
+            analyze spending patterns, and understand where your money goes each month.
+          </p>
+        </div>
+
         <div className="support-section">
           <div className="support-content">
             <svg className="support-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
             <div className="support-message">
-              <p className="support-title">Built with care, free for everyone</p>
-              <p className="support-text">This tool is maintained by independent developers. If it helped you find savings, consider supporting us to keep it free and ad-free.</p>
+              <p className="support-title">Built independently, kept free for everyone</p>
+              <p className="support-text">If this helped you find savings, consider supporting the project to keep it running.</p>
             </div>
           </div>
           <a
@@ -193,7 +209,7 @@ export default function Home() {
               <line x1="10" y1="1" x2="10" y2="4" />
               <line x1="14" y1="1" x2="14" y2="4" />
             </svg>
-            Buy us a coffee
+            Support this project
           </a>
         </div>
       </main>
