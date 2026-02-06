@@ -147,6 +147,43 @@ Date,Description,Amount
           onChange={handleTextChange}
         />
 
+        {/* What you'll see outcome list */}
+        <div className="outcome-list">
+          <p className="outcome-title">What you'll see in seconds:</p>
+          <ul>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Hidden subscriptions you forgot about
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Monthly spending leaks draining your account
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Estimated yearly savings potential
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Unexpected bank fees & charges
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Simple recovery steps to save money
+            </li>
+          </ul>
+        </div>
+
         <button
           className="btn btn-primary btn-block"
           onClick={handleSubmit}
