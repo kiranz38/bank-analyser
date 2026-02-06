@@ -386,9 +386,14 @@ def _generate_share_summary(results: dict, subscriptions: list[dict]) -> dict:
     for leak in results.get("top_leaks", [])[:5]:
         cat = leak.get("category", "Other")
         if cat not in seen:
+            monthly_cost = leak.get("monthly_cost", 0)
+            try:
+                monthly_cost = float(monthly_cost) if monthly_cost is not None else 0
+            except (ValueError, TypeError):
+                monthly_cost = 0
             top_categories.append({
                 "category": cat,
-                "monthly": leak.get("monthly_cost", 0)
+                "monthly": round(monthly_cost, 2)
             })
             seen.add(cat)
         if len(top_categories) >= 3:
@@ -415,8 +420,21 @@ def _merge_results(heuristic: dict, claude: dict) -> dict:
         existing_merchants = {l["merchant"] for l in result["top_leaks"]}
         for leak in claude["enhanced_leaks"]:
             if leak.get("merchant") not in existing_merchants:
+                # Ensure valid numeric values for costs
+                monthly_cost = leak.get("monthly_cost")
+                yearly_cost = leak.get("yearly_cost")
+                try:
+                    monthly_cost = float(monthly_cost) if monthly_cost is not None else 0
+                    yearly_cost = float(yearly_cost) if yearly_cost is not None else monthly_cost * 12
+                except (ValueError, TypeError):
+                    monthly_cost = 0
+                    yearly_cost = 0
+
+                leak["monthly_cost"] = round(monthly_cost, 2)
+                leak["yearly_cost"] = round(yearly_cost, 2)
+
                 result["top_leaks"].append(leak)
-                result["monthly_leak"] += leak.get("monthly_cost", 0)
+                result["monthly_leak"] += leak["monthly_cost"]
 
     # Use Claude's easy wins if better
     if "easy_wins" in claude and claude["easy_wins"]:

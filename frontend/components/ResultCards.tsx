@@ -172,12 +172,12 @@ export default function ResultCards({ results }: ResultCardsProps) {
           return acc
         }, {} as Record<string, Leak[]>)
 
-        // Calculate category totals
+        // Calculate category totals (with NaN protection)
         const categoryTotals = Object.entries(groupedLeaks).map(([category, leaks]) => ({
           category,
           leaks,
-          monthlyTotal: leaks.reduce((sum, l) => sum + l.monthly_cost, 0),
-          yearlyTotal: leaks.reduce((sum, l) => sum + l.yearly_cost, 0)
+          monthlyTotal: leaks.reduce((sum, l) => sum + (Number(l.monthly_cost) || 0), 0),
+          yearlyTotal: leaks.reduce((sum, l) => sum + (Number(l.yearly_cost) || 0), 0)
         })).sort((a, b) => b.monthlyTotal - a.monthlyTotal)
 
         return (
@@ -216,8 +216,8 @@ export default function ResultCards({ results }: ResultCardsProps) {
                           <div className="leak-explanation">{leak.explanation}</div>
                         </div>
                         <div className="leak-amount">
-                          <div className="leak-monthly">{formatCurrencyPrecise(leak.monthly_cost)}/mo</div>
-                          <div className="leak-yearly">{formatCurrency(leak.yearly_cost)}/yr</div>
+                          <div className="leak-monthly">{formatCurrencyPrecise(Number(leak.monthly_cost) || 0)}/mo</div>
+                          <div className="leak-yearly">{formatCurrency(Number(leak.yearly_cost) || 0)}/yr</div>
                         </div>
                       </li>
                     ))}
