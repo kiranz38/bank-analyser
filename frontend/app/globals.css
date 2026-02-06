@@ -103,15 +103,9 @@ a:hover {
   color: #f1f5f9;
 }
 
-.header-logo {
-  width: 28px;
-  height: 28px;
-  background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.header-dollar {
   color: white;
+  flex-shrink: 0;
 }
 
 .header-brand-text {
@@ -412,12 +406,15 @@ a:hover {
   margin-bottom: 2rem;
 }
 
-/* Hero Section with Gradient Background */
+/* Hero Section with Gradient Background - Full Width */
 .hero-wrapper {
   background: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 40%, var(--background) 100%);
-  margin: -3rem -1.5rem 0;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  margin-top: -3rem;
   padding: 3rem 1.5rem 4rem;
   position: relative;
+  width: 100vw;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -455,7 +452,7 @@ a:hover {
 
 @media (max-width: 640px) {
   .hero-wrapper {
-    margin: -2rem -1rem 0;
+    margin-top: -2rem;
     padding: 2rem 1rem 3rem;
   }
 
