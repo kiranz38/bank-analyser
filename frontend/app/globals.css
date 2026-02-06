@@ -406,49 +406,77 @@ a:hover {
   padding: 3rem 1.5rem;
 }
 
-/* Header */
+/* Page Header (legacy - kept for compatibility) */
 .header {
   text-align: center;
-  margin-bottom: 3rem;
-  position: relative;
+  margin-bottom: 2rem;
 }
 
-.header-support-link {
-  position: absolute;
-  top: 0;
-  right: 0;
+/* Hero Section */
+.hero {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.hero-title-row {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 0.875rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--muted);
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 20px;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.header-support-link:hover {
-  color: var(--foreground);
-  border-color: var(--primary);
-  background: var(--primary-light);
-  text-decoration: none;
-}
-
-.header-support-link svg {
-  flex-shrink: 0;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
 .hero-icon {
-  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--primary-light) 0%, rgba(99, 102, 241, 0.1) 100%);
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.25rem;
   color: var(--primary);
-  opacity: 0.9;
+  flex-shrink: 0;
+}
+
+.hero-text {
+  text-align: left;
+}
+
+.hero-text h1 {
+  font-size: 1.75rem;
+  margin-bottom: 0.125rem;
+  background: none;
+  -webkit-text-fill-color: var(--foreground);
+}
+
+.hero-subtitle {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--primary);
+  margin: 0;
+}
+
+/* Workspace Divider */
+.workspace-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--card-border) 20%, var(--card-border) 80%, transparent 100%);
+  margin: 0 auto 2rem;
+  max-width: 400px;
+}
+
+@media (max-width: 640px) {
+  .hero-title-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .hero-text {
+    text-align: center;
+  }
+
+  .hero-text h1 {
+    font-size: 1.5rem;
+  }
 }
 
 h1 {

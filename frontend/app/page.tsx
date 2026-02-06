@@ -134,17 +134,21 @@ export default function Home() {
       <LoadingOverlay isLoading={loading} />
 
       <main className="container">
-        <header className="header">
-          <div className="hero-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-              <path d="M11 8v6" />
-              <path d="M8 11h6" />
-            </svg>
+        <section className="hero">
+          <div className="hero-title-row">
+            <div className="hero-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+                <path d="M11 8v6" />
+                <path d="M8 11h6" />
+              </svg>
+            </div>
+            <div className="hero-text">
+              <h1>Bank Statement Analyzer</h1>
+              <p className="hero-subtitle">Where's My Money Going?</p>
+            </div>
           </div>
-          <h1>Bank Statement Analyzer</h1>
-          <h2 className="brand-tagline">Where's My Money Going?</h2>
           <p className="subtitle">
             Find hidden subscriptions, unexpected fees, and spending leaks — plus estimated yearly savings.
           </p>
@@ -171,7 +175,9 @@ export default function Home() {
             </div>
           </div>
           <p className="shock-motivator">Most people discover <strong>$200–$600/month</strong> in hidden spending.</p>
-        </header>
+        </section>
+
+        <div className="workspace-divider"></div>
 
         {error && (
           <div className="error">
