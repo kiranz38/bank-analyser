@@ -12,6 +12,7 @@ DATE_PATTERNS = [
     r'\d{4}[/-]\d{1,2}[/-]\d{1,2}',         # YYYY-MM-DD (ISO)
     r'\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*(?:\s+\d{2,4})?',  # 01 Jul 2025, 1 January
     r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:,?\s+\d{2,4})?',  # Jul 01, 2025
+    r'\d{1,2}/\d{1,2}',  # MM/DD (short US format without year)
 ]
 
 # Currency symbols (Western + Indian Rupee)
@@ -62,6 +63,7 @@ def pdf_to_csv(pdf_bytes: bytes) -> str:
             # Try multiple extraction strategies
             strategies = [
                 _extract_from_tables,
+                _extract_us_bank_format,
                 _extract_anz_format,
                 _extract_westpac_multiline,
                 _extract_western_format,
@@ -277,6 +279,139 @@ def _process_table_rows_fallback(rows: List[List[str]]) -> str:
             desc = f'"{desc}"'
 
         csv_lines.append(f"{date},{desc},{amount}")
+
+    return '\n'.join(csv_lines)
+
+
+def _extract_us_bank_format(pdf) -> str:
+    """Extract transactions from US bank PDFs (PNC, Chase, Wells Fargo, etc.).
+
+    US bank format typically has:
+    - Short dates like MM/DD (01/02, 01/15)
+    - Separate Withdrawals and Deposits columns (no $ signs)
+    - Balance column at the end
+    - Transaction descriptions with merchant names
+    """
+    all_text = []
+    for page in pdf.pages:
+        text = page.extract_text()
+        if text:
+            all_text.append(text)
+
+    if not all_text:
+        return ''
+
+    full_text = '\n'.join(all_text)
+
+    # Check if this looks like US bank format
+    # Look for short MM/DD dates and keywords like "Withdrawals", "Deposits", "Debit Card"
+    has_short_date = re.search(r'\b\d{2}/\d{2}\b', full_text)
+    has_us_keywords = any(kw in full_text.lower() for kw in ['debit card', 'ach debit', 'ach deposit', 'zelle', 'withdrawals', 'deposits'])
+
+    if not (has_short_date and has_us_keywords):
+        return ''
+
+    csv_lines = ['Date,Description,Amount']
+    lines = full_text.split('\n')
+
+    # US date pattern: MM/DD at start of line
+    date_pattern = r'^(\d{2}/\d{2})\s+'
+
+    for line in lines:
+        line_stripped = line.strip()
+        if not line_stripped:
+            continue
+
+        # Skip header/summary lines
+        line_lower = line_stripped.lower()
+        skip_keywords = ['beginning balance', 'ending balance', 'account summary', 'transaction detail',
+                        'statement period', 'account number', 'page ', 'withdrawals deposits balance',
+                        'date description']
+        if any(kw in line_lower for kw in skip_keywords):
+            continue
+
+        date_match = re.match(date_pattern, line_stripped)
+        if not date_match:
+            continue
+
+        date = date_match.group(1)
+        rest = line_stripped[date_match.end():].strip()
+
+        # Find all numbers in the line (could be amounts or balance)
+        # US format: amounts are typically without $ signs, like 1,234.56 or 87.56
+        amounts = re.findall(r'[\d,]+\.\d{2}', rest)
+
+        if not amounts:
+            continue
+
+        # Parse amounts to floats
+        parsed_amounts = []
+        for amt_str in amounts:
+            try:
+                amt = float(amt_str.replace(',', ''))
+                parsed_amounts.append(amt)
+            except ValueError:
+                continue
+
+        if not parsed_amounts:
+            continue
+
+        # Extract description (everything before the amounts)
+        # Find where the first amount starts
+        first_amount_pos = rest.find(amounts[0])
+        if first_amount_pos > 0:
+            description = rest[:first_amount_pos].strip()
+        else:
+            description = rest
+
+        # Clean description
+        description = re.sub(r'\s+', ' ', description).strip()
+
+        if not description or len(description) < 3:
+            continue
+
+        # Determine the transaction amount
+        # US format typically: Description | Withdrawal | Deposit | Balance
+        # If 3 amounts: [withdrawal, deposit, balance] - withdrawal or deposit will be the transaction
+        # If 2 amounts: [amount, balance]
+        # If 1 amount: could be balance only (skip) or amount
+
+        # Skip credits/deposits - look for deposit keywords
+        desc_upper = description.upper()
+        is_deposit = any(kw in desc_upper for kw in ['DEPOSIT', 'PAYROLL', 'DIRECT DEP', 'PAYMENT RECEIVED', 'REFUND', 'CREDIT'])
+        is_zelle_receive = 'ZELLE' in desc_upper and 'FROM' in desc_upper
+
+        if is_deposit or is_zelle_receive:
+            continue
+
+        # The transaction amount is typically NOT the largest (balance is largest)
+        # Take the first amount that's less than the max
+        max_amount = max(parsed_amounts)
+        amount = None
+
+        for amt in parsed_amounts:
+            if amt != max_amount and amt > 0 and amt < 10000:
+                amount = amt
+                break
+
+        # If only one amount and it's reasonable, use it (might be a statement without balance column)
+        if amount is None and len(parsed_amounts) == 1 and parsed_amounts[0] < 5000:
+            amount = parsed_amounts[0]
+
+        # If first amount is much smaller than last, first is likely the transaction
+        if amount is None and len(parsed_amounts) >= 2:
+            if parsed_amounts[0] < parsed_amounts[-1] * 0.5 and parsed_amounts[0] < 5000:
+                amount = parsed_amounts[0]
+
+        if not amount or amount <= 0:
+            continue
+
+        # Format for CSV
+        description = description.replace('"', "'")
+        if ',' in description:
+            description = f'"{description}"'
+
+        csv_lines.append(f"{date},{description},{amount}")
 
     return '\n'.join(csv_lines)
 
