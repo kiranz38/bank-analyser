@@ -89,27 +89,21 @@ def _has_valid_data(csv_content: str) -> bool:
     if len(lines) <= 1:
         return False
 
-    # Sanity check: reject if amounts look unreasonable (likely parsing balance as amount)
-    total_amount = 0
+    # Count valid transactions - just check we have some reasonable data
     valid_transactions = 0
     for line in lines[1:]:  # Skip header
         parts = line.rsplit(',', 1)
         if len(parts) >= 2:
             try:
                 amount = float(parts[-1].replace('"', ''))
-                # Individual transaction shouldn't be > $50,000 for normal bank statements
-                if amount > 50000:
-                    return False
-                total_amount += amount
-                valid_transactions += 1
+                # Individual transaction shouldn't be > $100,000 for normal bank statements
+                if 0 < amount <= 100000:
+                    valid_transactions += 1
             except ValueError:
                 continue
 
-    # If average transaction is > $10,000, probably parsing wrong column
-    if valid_transactions > 0 and (total_amount / valid_transactions) > 10000:
-        return False
-
-    return True
+    # Need at least 1 valid transaction
+    return valid_transactions >= 1
 
 
 def _extract_from_tables(pdf) -> str:
@@ -291,8 +285,9 @@ def _extract_commbank_format(pdf) -> str:
     CommBank format has:
     - Dates like "03 Jul" or "11 Jul" (DD Mon without year)
     - Multi-line transactions
+    - Multiple amount columns: typically debit, credit, balance
     - Debit marker: amount followed by "(" like "550.00 ("
-    - Credit marker: "$" prefix like "$500.00"
+    - OR: first amount in a row of amounts (when followed by balance)
     """
     all_text = []
     for page in pdf.pages:
@@ -327,7 +322,8 @@ def _extract_commbank_format(pdf) -> str:
         # Skip header/summary lines
         line_lower = line_stripped.lower()
         skip_keywords = ['opening balance', 'closing balance', 'account number', 'statement',
-                        'page ', 'enquiries', 'note:', 'interest rates', 'effective date']
+                        'page ', 'enquiries', 'note:', 'interest rates', 'effective date',
+                        'bsb', 'account name', 'available balance', 'current balance']
         if any(kw in line_lower for kw in skip_keywords):
             continue
 
@@ -352,28 +348,62 @@ def _extract_commbank_format(pdf) -> str:
         full_text_upper = full_text_block.upper()
 
         # Skip credits/deposits
-        if any(kw in full_text_upper for kw in ['DIRECT CREDIT', 'TRANSFER FROM', 'SALARY',
-                                                  'FAST TRANSFER FROM', 'CREDIT TO ACCOUNT']):
+        credit_keywords = ['DIRECT CREDIT', 'TRANSFER FROM', 'SALARY', 'FAST TRANSFER FROM',
+                          'CREDIT TO ACCOUNT', 'PAYMENT RECEIVED', 'REFUND', 'DEPOSIT',
+                          'OSKO FROM', 'BPAY CREDIT', 'INTEREST CREDIT']
+        if any(kw in full_text_upper for kw in credit_keywords):
             continue
 
-        # Find debit amounts - CommBank uses "amount (" format for debits
-        # e.g., "550.00 (" or "6,000.00 ("
+        # Find all amounts in the block
+        all_amounts = re.findall(r'([\d,]+\.\d{2})', full_text_block)
+        if not all_amounts:
+            continue
+
+        # Parse amounts
+        parsed_amounts = []
+        for amt_str in all_amounts:
+            try:
+                amt = float(amt_str.replace(',', ''))
+                if amt > 0:
+                    parsed_amounts.append(amt)
+            except ValueError:
+                continue
+
+        if not parsed_amounts:
+            continue
+
+        # Determine which amount is the transaction vs balance
+        # Strategy: Look for "amount (" pattern first (classic CommBank debit marker)
         debit_match = re.search(r'([\d,]+\.\d{2})\s*\(', full_text_block)
 
-        if not debit_match:
+        amount = None
+        if debit_match:
+            amount = float(debit_match.group(1).replace(',', ''))
+        else:
+            # Fallback: If multiple amounts, the SMALLEST is likely the transaction
+            # (balance is typically the largest), but NOT if it's suspiciously large
+            # Also: first amount that's NOT the max is likely the transaction
+            if len(parsed_amounts) >= 2:
+                max_amount = max(parsed_amounts)
+                for amt in parsed_amounts:
+                    if amt != max_amount and amt < 10000:
+                        amount = amt
+                        break
+            elif len(parsed_amounts) == 1:
+                # Single amount - use it if reasonable
+                if parsed_amounts[0] < 5000:
+                    amount = parsed_amounts[0]
+
+        if not amount or amount <= 0 or amount > 50000:
             continue
 
-        amount = float(debit_match.group(1).replace(',', ''))
-
-        if amount <= 0 or amount > 50000:
-            continue
-
-        # Extract description (everything before the amount)
-        desc_end = full_text_block.find(debit_match.group(0))
+        # Extract description (everything before the first amount)
+        first_amount_str = all_amounts[0] if all_amounts else ''
+        desc_end = full_text_block.find(first_amount_str)
         description = full_text_block[:desc_end].strip() if desc_end > 0 else full_text_block
 
-        # Clean up description
-        description = re.sub(r'\$[\d,]+\.\d{2}', '', description)  # Remove credit amounts
+        # Clean up description - remove any amounts and $ signs
+        description = re.sub(r'\$?[\d,]+\.\d{2}', '', description)
         description = re.sub(r'\s+', ' ', description).strip()
 
         if not description or len(description) < 3:

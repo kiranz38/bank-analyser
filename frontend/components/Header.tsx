@@ -1,13 +1,41 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isVisible, setIsVisible] = useState(true)
+  const [lastScrollY, setLastScrollY] = useState(0)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      const scrollThreshold = 10
+
+      // Always show header at the top of the page
+      if (currentScrollY < 50) {
+        setIsVisible(true)
+      }
+      // Scrolling down - hide header
+      else if (currentScrollY > lastScrollY + scrollThreshold) {
+        setIsVisible(false)
+        setMobileMenuOpen(false) // Close mobile menu when hiding
+      }
+      // Scrolling up - show header
+      else if (currentScrollY < lastScrollY - scrollThreshold) {
+        setIsVisible(true)
+      }
+
+      setLastScrollY(currentScrollY)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [lastScrollY])
 
   return (
-    <header className="site-header">
+    <header className={`site-header ${isVisible ? 'header-visible' : 'header-hidden'}`}>
       <div className="header-container">
         <Link href="/" className="header-brand">
           <svg className="header-logo-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

@@ -160,9 +160,78 @@ export default function ResultCards({ results }: ResultCardsProps) {
         </div>
       </div>
 
+      {/* Top Leaks - Grouped by Category */}
+      {results.top_leaks.length > 0 && (() => {
+        // Group leaks by category
+        const groupedLeaks = results.top_leaks.reduce((acc, leak) => {
+          const category = leak.category || 'Other'
+          if (!acc[category]) {
+            acc[category] = []
+          }
+          acc[category].push(leak)
+          return acc
+        }, {} as Record<string, Leak[]>)
+
+        // Calculate category totals
+        const categoryTotals = Object.entries(groupedLeaks).map(([category, leaks]) => ({
+          category,
+          leaks,
+          monthlyTotal: leaks.reduce((sum, l) => sum + l.monthly_cost, 0),
+          yearlyTotal: leaks.reduce((sum, l) => sum + l.yearly_cost, 0)
+        })).sort((a, b) => b.monthlyTotal - a.monthlyTotal)
+
+        return (
+          <div className="card">
+            <h2>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              Recurring Spending Leaks
+            </h2>
+            <div className="leak-groups">
+              {categoryTotals.map(({ category, leaks, monthlyTotal, yearlyTotal }) => (
+                <div key={category} className="leak-group">
+                  <div className="leak-group-header">
+                    <div className="leak-group-badge">
+                      <span className="leak-group-category">{category}</span>
+                    </div>
+                    <div className="leak-group-insight">
+                      <span className="leak-group-message">
+                        You&apos;re spending <strong className="leak-highlight">{formatCurrencyPrecise(monthlyTotal)}</strong> per month
+                      </span>
+                      <span className="leak-group-yearly">That&apos;s {formatCurrency(yearlyTotal)} per year</span>
+                    </div>
+                    <div className="leak-group-total-badge">
+                      <span className="leak-total-amount">{formatCurrencyPrecise(monthlyTotal)}</span>
+                      <span className="leak-total-period">/month</span>
+                    </div>
+                  </div>
+                  <ul className="leak-group-items">
+                    {leaks.map((leak, index) => (
+                      <li key={index} className="leak-item">
+                        <div className="leak-info">
+                          <div className="leak-merchant">{leak.merchant}</div>
+                          <div className="leak-explanation">{leak.explanation}</div>
+                        </div>
+                        <div className="leak-amount">
+                          <div className="leak-monthly">{formatCurrencyPrecise(leak.monthly_cost)}/mo</div>
+                          <div className="leak-yearly">{formatCurrency(leak.yearly_cost)}/yr</div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Top 5 Biggest Transactions */}
       {results.top_spending && results.top_spending.length > 0 && (
-        <div className="card">
+        <div className="card top-transactions-card">
           <h2>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
               <path d="M12 20V10" />
@@ -171,53 +240,20 @@ export default function ResultCards({ results }: ResultCardsProps) {
             </svg>
             Top 5 Biggest Transactions
           </h2>
-          <ul className="leak-list">
+          <div className="top-transactions-list">
             {results.top_spending.map((item, index) => (
-              <li key={index} className="leak-item">
-                <div className="leak-info">
-                  <span className="leak-category" style={{ background: 'var(--warning-light)', color: 'var(--warning)' }}>
-                    #{index + 1}
-                  </span>
-                  <div className="leak-merchant">{item.merchant}</div>
-                  {item.date && <div className="leak-explanation">{item.date}</div>}
+              <div key={index} className="top-transaction-item">
+                <div className="top-transaction-rank">#{index + 1}</div>
+                <div className="top-transaction-info">
+                  <div className="top-transaction-merchant">{item.merchant}</div>
+                  {item.date && <div className="top-transaction-date">{item.date}</div>}
                 </div>
-                <div className="leak-amount">
-                  <div className="leak-monthly" style={{ color: 'var(--foreground)' }}>
-                    {formatCurrencyPrecise(item.amount)}
-                  </div>
+                <div className="top-transaction-amount">
+                  {formatCurrencyPrecise(item.amount)}
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Top Leaks */}
-      {results.top_leaks.length > 0 && (
-        <div className="card">
-          <h2>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-            Recurring Spending Leaks
-          </h2>
-          <ul className="leak-list">
-            {results.top_leaks.map((leak, index) => (
-              <li key={index} className="leak-item">
-                <div className="leak-info">
-                  <span className="leak-category">{leak.category}</span>
-                  <div className="leak-merchant">{leak.merchant}</div>
-                  <div className="leak-explanation">{leak.explanation}</div>
-                </div>
-                <div className="leak-amount">
-                  <div className="leak-monthly">{formatCurrencyPrecise(leak.monthly_cost)}/mo</div>
-                  <div className="leak-yearly">{formatCurrency(leak.yearly_cost)}/yr</div>
-                </div>
-              </li>
-            ))}
-          </ul>
+          </div>
         </div>
       )}
 
