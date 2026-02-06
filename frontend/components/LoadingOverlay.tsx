@@ -62,7 +62,7 @@ export default function LoadingOverlay({ isLoading }: LoadingOverlayProps) {
         <div className="loading-spinner" />
         <h3 className="loading-title">Analyzing Your Spending</h3>
         <p className="loading-subtitle">
-          This usually takes a few seconds...
+          Grab a coffee while we crunch the numbers for you...
         </p>
         <div className="progress-container">
           <div className="progress-bar">
