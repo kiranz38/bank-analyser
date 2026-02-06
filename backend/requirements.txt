@@ -1,6 +1,6 @@
-fastapi
-uvicorn
-python-multipart
-anthropic
-pandas
-pdfplumber
+fastapi>=0.109.0,<1.0.0
+uvicorn>=0.27.0,<1.0.0
+python-multipart>=0.0.6,<1.0.0
+pandas>=2.1.0,<3.0.0
+pdfplumber>=0.10.0,<1.0.0
+anthropic>=0.40.0,<1.0.0
