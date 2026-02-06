@@ -5,12 +5,19 @@ import Link from 'next/link'
 import UploadForm from '@/components/UploadForm'
 import ResultCards from '@/components/ResultCards'
 import LoadingOverlay from '@/components/LoadingOverlay'
+import ExamplePreview from '@/components/ExamplePreview'
 
-// Simple event tracking (can be wired to analytics later)
+// Event tracking hooks (can be wired to analytics later)
+// Supported events: analyze_clicked, upload_started, analysis_completed,
+// category_viewed, share_card_generated, share_clicked
 const trackEvent = (event: string, data?: Record<string, unknown>) => {
   console.log(`[Analytics] ${event}`, data || '')
-  // Wire to your analytics here if needed
+  // Wire to your analytics service here (e.g., Google Analytics, Mixpanel, etc.)
+  // Example: window.gtag?.('event', event, data)
 }
+
+// Export for use in other components
+export { trackEvent }
 
 interface AnalysisResult {
   monthly_leak: number
@@ -195,7 +202,12 @@ export default function Home() {
           </div>
         )}
 
-        {!results && <UploadForm onAnalyze={handleAnalyze} loading={loading} />}
+        {!results && (
+          <>
+            <UploadForm onAnalyze={handleAnalyze} loading={loading} />
+            <ExamplePreview />
+          </>
+        )}
 
         {results && (
           <>

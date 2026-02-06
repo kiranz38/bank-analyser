@@ -1,7 +1,13 @@
+import { useEffect } from 'react'
 import SpendingBreakdown from './SpendingBreakdown'
 import SubscriptionList from './SubscriptionList'
 import MonthComparison from './MonthComparison'
 import ShareCard from './ShareCard'
+
+// Event tracking helper
+const trackEvent = (event: string, data?: Record<string, unknown>) => {
+  console.log(`[Analytics] ${event}`, data || '')
+}
 
 interface Leak {
   category: string
@@ -90,6 +96,22 @@ interface ResultCardsProps {
 }
 
 export default function ResultCards({ results }: ResultCardsProps) {
+  // Track category_viewed and share_card_generated events
+  useEffect(() => {
+    if (results.category_summary && results.category_summary.length > 0) {
+      trackEvent('category_viewed', {
+        categories: results.category_summary.map(c => c.category),
+        top_category: results.category_summary[0]?.category
+      })
+    }
+    if (results.share_summary) {
+      trackEvent('share_card_generated', {
+        annual_savings: results.share_summary.annual_savings,
+        subscription_count: results.share_summary.subscription_count
+      })
+    }
+  }, [results])
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
