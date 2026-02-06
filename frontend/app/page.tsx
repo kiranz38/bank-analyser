@@ -16,9 +16,6 @@ const trackEvent = (event: string, data?: Record<string, unknown>) => {
   // Example: window.gtag?.('event', event, data)
 }
 
-// Export for use in other components
-export { trackEvent }
-
 interface AnalysisResult {
   monthly_leak: number
   annual_savings: number
