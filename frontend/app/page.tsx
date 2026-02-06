@@ -133,6 +133,7 @@ export default function Home() {
               <span>Free to use</span>
             </div>
           </div>
+          <p className="shock-motivator">Most people discover <strong>$200–$600/month</strong> in hidden spending.</p>
         </header>
 
         {error && (

@@ -184,9 +184,6 @@ Date,Description,Amount
           </ul>
         </div>
 
-        {/* Shock motivator */}
-        <p className="shock-motivator">Most people discover $200–$600/month in hidden spending.</p>
-
         <button
           className="btn btn-primary btn-block"
           onClick={handleSubmit}

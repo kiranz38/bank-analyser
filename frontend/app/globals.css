@@ -432,14 +432,19 @@ h3 {
 
 /* Shock motivator */
 .shock-motivator {
+  display: inline-block;
   text-align: center;
   font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--danger);
-  margin: 1rem 0;
-  padding: 0.75rem;
-  background: var(--danger-light);
-  border-radius: var(--border-radius);
+  color: var(--foreground);
+  margin-top: 1.5rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--primary-light);
+  border-radius: 50px;
+}
+
+.shock-motivator strong {
+  color: var(--primary);
+  font-weight: 700;
 }
 
 /* Buttons */
