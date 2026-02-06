@@ -25,13 +25,17 @@ export default function BankStatementAnalyzerPage() {
   return (
     <main className="container seo-page">
       <article className="seo-content">
-        <h1>Bank Statement Analyzer – Upload Your CSV to Find Hidden Subscriptions</h1>
+        <h1>Bank Statement Analyzer – Upload CSV or PDF to Find Hidden Subscriptions</h1>
 
         <p>
           A bank statement analyzer is a tool that scans your transaction history to uncover
           where your money is actually going. Instead of manually scrolling through hundreds
           of transactions, our analyzer automatically identifies patterns, recurring charges,
           and spending habits you may have overlooked.
+        </p>
+
+        <p className="seo-motivator">
+          Most people discover hundreds of dollars per year in forgotten subscriptions and small recurring charges.
         </p>
 
         <p>
@@ -91,7 +95,34 @@ export default function BankStatementAnalyzerPage() {
             </svg>
             Analyze My Bank Statement
           </Link>
+          <p className="seo-return-link">
+            Or <Link href="/">return to the main analyzer</Link> →
+          </p>
         </div>
+
+        <section className="seo-faq">
+          <h2>Frequently Asked Questions</h2>
+
+          <div className="faq-item">
+            <h3>Is this bank statement analyzer free?</h3>
+            <p>Yes — it's completely free to use with no signup.</p>
+          </div>
+
+          <div className="faq-item">
+            <h3>Do you store my bank data?</h3>
+            <p>No. Your statement is processed in memory and never saved.</p>
+          </div>
+
+          <div className="faq-item">
+            <h3>What file formats are supported?</h3>
+            <p>CSV and PDF bank statements.</p>
+          </div>
+
+          <div className="faq-item">
+            <h3>Is this financial advice?</h3>
+            <p>No. This tool provides informational insights only.</p>
+          </div>
+        </section>
 
         <p className="seo-disclaimer">
           Privacy-first: your data is processed in memory and never stored.
