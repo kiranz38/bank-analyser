@@ -135,12 +135,13 @@ export default function Home() {
 
       <main className="container">
         <header className="header">
-          <div className="logo">
-            <div className="logo-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-            </div>
+          <div className="hero-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+              <path d="M11 8v6" />
+              <path d="M8 11h6" />
+            </svg>
           </div>
           <h1>Bank Statement Analyzer</h1>
           <h2 className="brand-tagline">Where's My Money Going?</h2>
