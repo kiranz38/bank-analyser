@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import UploadForm from '@/components/UploadForm'
 import ResultCards from '@/components/ResultCards'
 import LoadingOverlay from '@/components/LoadingOverlay'
@@ -182,7 +183,7 @@ export default function Home() {
 
         <div className="info-box">
           <p>
-            This free bank statement analyzer helps you upload CSV or PDF files to find hidden subscriptions,
+            This free <Link href="/bank-statement-analyzer">bank statement analyzer</Link> helps you upload CSV or PDF files to find hidden subscriptions,
             analyze spending patterns, and understand where your money goes each month.
           </p>
         </div>
