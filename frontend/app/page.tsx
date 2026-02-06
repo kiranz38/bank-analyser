@@ -26,6 +26,7 @@ interface AnalysisResult {
     date: string
     merchant: string
     amount: number
+    category?: string
   }>
   easy_wins: Array<{
     title: string
@@ -34,6 +35,52 @@ interface AnalysisResult {
   }>
   recovery_plan: string[]
   disclaimer: string
+  category_summary?: Array<{
+    category: string
+    total: number
+    percent: number
+    transaction_count: number
+    top_merchants: Array<{ name: string; total: number }>
+  }>
+  subscriptions?: Array<{
+    merchant: string
+    monthly_cost: number
+    annual_cost: number
+    confidence: number
+    last_date: string
+    occurrences: number
+    reason: string
+  }>
+  comparison?: {
+    previous_month: string
+    current_month: string
+    previous_total: number
+    current_total: number
+    total_change: number
+    total_change_percent: number
+    top_changes: Array<{
+      category: string
+      previous: number
+      current: number
+      change: number
+      change_percent: number
+    }>
+    spikes: Array<{
+      category: string
+      previous: number
+      current: number
+      change: number
+      change_percent: number
+    }>
+    months_analyzed: number
+  } | null
+  share_summary?: {
+    monthly_leak: number
+    annual_savings: number
+    top_categories: Array<{ category: string; monthly: number }>
+    subscription_count: number
+    tagline: string
+  } | null
 }
 
 export default function Home() {

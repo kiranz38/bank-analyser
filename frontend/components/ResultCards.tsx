@@ -1,3 +1,8 @@
+import SpendingBreakdown from './SpendingBreakdown'
+import SubscriptionList from './SubscriptionList'
+import MonthComparison from './MonthComparison'
+import ShareCard from './ShareCard'
+
 interface Leak {
   category: string
   merchant: string
@@ -10,12 +15,63 @@ interface TopSpending {
   date: string
   merchant: string
   amount: number
+  category?: string
 }
 
 interface EasyWin {
   title: string
   estimated_yearly_savings: number
   action: string
+}
+
+interface CategorySummary {
+  category: string
+  total: number
+  percent: number
+  transaction_count: number
+  top_merchants: Array<{ name: string; total: number }>
+}
+
+interface Subscription {
+  merchant: string
+  monthly_cost: number
+  annual_cost: number
+  confidence: number
+  last_date: string
+  occurrences: number
+  reason: string
+}
+
+interface MonthComparisonData {
+  previous_month: string
+  current_month: string
+  previous_total: number
+  current_total: number
+  total_change: number
+  total_change_percent: number
+  top_changes: Array<{
+    category: string
+    previous: number
+    current: number
+    change: number
+    change_percent: number
+  }>
+  spikes: Array<{
+    category: string
+    previous: number
+    current: number
+    change: number
+    change_percent: number
+  }>
+  months_analyzed: number
+}
+
+interface ShareSummary {
+  monthly_leak: number
+  annual_savings: number
+  top_categories: Array<{ category: string; monthly: number }>
+  subscription_count: number
+  tagline: string
 }
 
 interface ResultCardsProps {
@@ -26,6 +82,10 @@ interface ResultCardsProps {
     top_spending: TopSpending[]
     easy_wins: EasyWin[]
     recovery_plan: string[]
+    category_summary?: CategorySummary[]
+    subscriptions?: Subscription[]
+    comparison?: MonthComparisonData | null
+    share_summary?: ShareSummary | null
   }
 }
 
@@ -163,6 +223,21 @@ export default function ResultCards({ results }: ResultCardsProps) {
         </div>
       )}
 
+      {/* Spending Breakdown by Category */}
+      {results.category_summary && results.category_summary.length > 0 && (
+        <SpendingBreakdown categories={results.category_summary} />
+      )}
+
+      {/* Detected Subscriptions */}
+      {results.subscriptions && results.subscriptions.length > 0 && (
+        <SubscriptionList subscriptions={results.subscriptions} />
+      )}
+
+      {/* Month-over-Month Comparison */}
+      {results.comparison && (
+        <MonthComparison comparison={results.comparison} />
+      )}
+
       {/* Recovery Plan */}
       {results.recovery_plan.length > 0 && (
         <div className="card">
@@ -184,8 +259,17 @@ export default function ResultCards({ results }: ResultCardsProps) {
         </div>
       )}
 
-      {/* Conversion / Share Section */}
-      <div className="share-section">
+      {/* Share Card Section */}
+      {results.share_summary && (
+        <ShareCard
+          shareSummary={results.share_summary}
+          onShare={(platform) => console.log(`[Analytics] share_clicked`, { platform })}
+        />
+      )}
+
+      {/* Fallback Share Section if no share_summary */}
+      {!results.share_summary && (
+        <div className="share-section">
         <div className="share-highlight">
           <span className="share-highlight-label">You're leaking</span>
           <span className="share-highlight-amount">{formatCurrency(results.monthly_leak)}/month</span>
@@ -252,7 +336,8 @@ export default function ResultCards({ results }: ResultCardsProps) {
             Send us feedback
           </a>
         </div>
-      </div>
+        </div>
+      )}
     </div>
   )
 }
