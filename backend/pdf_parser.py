@@ -63,6 +63,7 @@ def pdf_to_csv(pdf_bytes: bytes) -> str:
             # Try multiple extraction strategies
             strategies = [
                 _extract_from_tables,
+                _extract_commbank_format,
                 _extract_nab_format,
                 _extract_us_bank_format,
                 _extract_anz_format,
@@ -284,6 +285,110 @@ def _process_table_rows_fallback(rows: List[List[str]]) -> str:
     return '\n'.join(csv_lines)
 
 
+def _extract_commbank_format(pdf) -> str:
+    """Extract transactions from CommBank (Commonwealth Bank) PDFs.
+
+    CommBank format has:
+    - Dates like "03 Jul" or "11 Jul" (DD Mon without year)
+    - Multi-line transactions
+    - Debit marker: amount followed by "(" like "550.00 ("
+    - Credit marker: "$" prefix like "$500.00"
+    """
+    all_text = []
+    for page in pdf.pages:
+        text = page.extract_text()
+        if text:
+            all_text.append(text)
+
+    if not all_text:
+        return ''
+
+    full_text = '\n'.join(all_text)
+
+    # Check if this looks like CommBank format
+    if 'commbank' not in full_text.lower() and 'commonwealth' not in full_text.lower():
+        return ''
+
+    csv_lines = ['Date,Description,Amount']
+    lines = full_text.split('\n')
+
+    # CommBank date pattern: "03 Jul" or "11 Jul" (DD Mon)
+    date_pattern = r'^(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec))\s+'
+
+    # Build transaction blocks
+    tx_blocks = []
+    current_block = None
+
+    for line in lines:
+        line_stripped = line.strip()
+        if not line_stripped:
+            continue
+
+        # Skip header/summary lines
+        line_lower = line_stripped.lower()
+        skip_keywords = ['opening balance', 'closing balance', 'account number', 'statement',
+                        'page ', 'enquiries', 'note:', 'interest rates', 'effective date']
+        if any(kw in line_lower for kw in skip_keywords):
+            continue
+
+        date_match = re.match(date_pattern, line_stripped, re.IGNORECASE)
+
+        if date_match:
+            if current_block:
+                tx_blocks.append(current_block)
+            current_block = {
+                'date': date_match.group(1),
+                'lines': [line_stripped[date_match.end():].strip()]
+            }
+        elif current_block:
+            current_block['lines'].append(line_stripped)
+
+    if current_block:
+        tx_blocks.append(current_block)
+
+    # Process each transaction block
+    for block in tx_blocks:
+        full_text_block = ' '.join(block['lines'])
+        full_text_upper = full_text_block.upper()
+
+        # Skip credits/deposits
+        if any(kw in full_text_upper for kw in ['DIRECT CREDIT', 'TRANSFER FROM', 'SALARY',
+                                                  'FAST TRANSFER FROM', 'CREDIT TO ACCOUNT']):
+            continue
+
+        # Find debit amounts - CommBank uses "amount (" format for debits
+        # e.g., "550.00 (" or "6,000.00 ("
+        debit_match = re.search(r'([\d,]+\.\d{2})\s*\(', full_text_block)
+
+        if not debit_match:
+            continue
+
+        amount = float(debit_match.group(1).replace(',', ''))
+
+        if amount <= 0 or amount > 50000:
+            continue
+
+        # Extract description (everything before the amount)
+        desc_end = full_text_block.find(debit_match.group(0))
+        description = full_text_block[:desc_end].strip() if desc_end > 0 else full_text_block
+
+        # Clean up description
+        description = re.sub(r'\$[\d,]+\.\d{2}', '', description)  # Remove credit amounts
+        description = re.sub(r'\s+', ' ', description).strip()
+
+        if not description or len(description) < 3:
+            continue
+
+        # Format for CSV
+        description = description.replace('"', "'")
+        if ',' in description:
+            description = f'"{description}"'
+
+        csv_lines.append(f"{block['date']},{description},{amount}")
+
+    return '\n'.join(csv_lines)
+
+
 def _extract_nab_format(pdf) -> str:
     """Extract transactions from NAB (National Australia Bank) PDFs.
 
@@ -409,11 +514,17 @@ def _extract_us_bank_format(pdf) -> str:
         return ''
 
     full_text = '\n'.join(all_text)
+    full_text_lower = full_text.lower()
+
+    # Skip if this is clearly an Australian bank
+    australian_banks = ['westpac', 'commbank', 'commonwealth', 'nab', 'national australia', 'anz', 'bsb']
+    if any(bank in full_text_lower for bank in australian_banks):
+        return ''
 
     # Check if this looks like US bank format
-    # Look for short MM/DD dates and keywords like "Withdrawals", "Deposits", "Debit Card"
+    # Look for short MM/DD dates and US-specific keywords
     has_short_date = re.search(r'\b\d{2}/\d{2}\b', full_text)
-    has_us_keywords = any(kw in full_text.lower() for kw in ['debit card', 'ach debit', 'ach deposit', 'zelle', 'withdrawals', 'deposits'])
+    has_us_keywords = any(kw in full_text_lower for kw in ['ach debit', 'ach deposit', 'zelle', 'virtual wallet', 'pnc', 'chase', 'wells fargo', 'bank of america', 'citibank', 'td bank', 'us bank', 'truist', 'capital one'])
 
     if not (has_short_date and has_us_keywords):
         return ''
@@ -696,7 +807,8 @@ def _extract_westpac_multiline(pdf) -> str:
     csv_lines = ['Date,Description,Amount']
 
     lines = full_text.split('\n')
-    date_pattern = r'^(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+'
+    # Support both DD/MM/YYYY and DD/MM/YY formats
+    date_pattern = r'^(\d{1,2}/\d{1,2}/\d{2,4})\s+'
 
     # Build transaction blocks: date line + continuation lines
     tx_blocks = []
@@ -745,12 +857,14 @@ def _extract_westpac_multiline(pdf) -> str:
             continue
 
         # Skip credits/deposits
-        credit_keywords = ['DEPOSIT', 'OSKO PAYMENT', 'DIRECT CREDIT', 'TRANSFER IN',
-                          'PAYMENT RECEIVED', 'REFUND', 'CREDIT']
-        # But NOT "Debit Card" which contains "CREDIT" substring check carefully
-        is_credit = any(kw in full_text_upper for kw in credit_keywords)
-        is_debit_card = 'DEBIT CARD' in full_text_upper
-        if is_credit and not is_debit_card:
+        # "Deposit-Osko" is a credit, "Withdrawal-Osko" is a debit
+        is_deposit_osko = 'DEPOSIT-OSKO' in full_text_upper or 'DEPOSIT OSKO' in full_text_upper
+        is_direct_credit = 'DIRECT CREDIT' in full_text_upper
+        is_transfer_in = 'TRANSFER IN' in full_text_upper
+        is_payment_received = 'PAYMENT RECEIVED' in full_text_upper
+        is_refund = 'REFUND' in full_text_upper
+
+        if is_deposit_osko or is_direct_credit or is_transfer_in or is_payment_received or is_refund:
             continue
 
         # Parse amounts from the combined text
