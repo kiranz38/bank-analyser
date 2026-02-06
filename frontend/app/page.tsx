@@ -97,9 +97,10 @@ export default function Home() {
               </svg>
             </div>
           </div>
-          <h1>Where's My Money?</h1>
+          <h1>Bank Statement Analyzer – Find Hidden Subscriptions & Spending Leaks</h1>
+          <h2 className="brand-tagline">Where's My Money Going?</h2>
           <p className="subtitle">
-            Discover hidden subscriptions, unnecessary fees, and spending leaks.
+            Upload your bank statement and discover unnecessary fees, forgotten subscriptions, and spending leaks.
             Get a personalized plan to save money.
           </p>
           <div className="trust-badges">
