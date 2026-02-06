@@ -66,13 +66,14 @@ def parse_amount(value: str) -> Optional[float]:
 
 def parse_space_separated(content: str) -> list[dict]:
     """
-    Parse space-separated bank statement text (like Westpac format).
+    Parse space-separated bank statement text (like Westpac, PNC, Chase format).
 
     Handles multi-line descriptions where amounts appear on continuation lines.
     Format: DATE DESCRIPTION DEBIT CREDIT BALANCE
     """
     transactions = []
-    date_pattern = r'^(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+'
+    # Support both full dates (DD/MM/YYYY) and short US dates (MM/DD)
+    date_pattern = r'^(\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)\s+'
 
     lines = content.strip().split('\n')
 
@@ -110,9 +111,17 @@ def parse_space_separated(content: str) -> list[dict]:
         full_text_upper = full_text.upper()
 
         # Skip header/balance/deposit lines
-        if any(skip in full_text_upper for skip in ['OPENING BALANCE', 'CLOSING BALANCE', 'STATEMENT',
-                                                     'DEPOSIT', 'TRANSFER IN', 'PAYMENT RECEIVED',
-                                                     'OSKO PAYMENT', 'DIRECT CREDIT']):
+        # ACH Deposit and Payroll are income - skip them
+        is_deposit = any(skip in full_text_upper for skip in ['OPENING BALANCE', 'CLOSING BALANCE', 'STATEMENT',
+                                                     'TRANSFER IN', 'PAYMENT RECEIVED',
+                                                     'OSKO PAYMENT', 'DIRECT CREDIT', 'PAYROLL'])
+        # "ACH Deposit" is income, but "ACH Debit" is spending
+        if 'ACH DEPOSIT' in full_text_upper or ('DEPOSIT' in full_text_upper and 'ACH DEBIT' not in full_text_upper):
+            is_deposit = True
+        # Zelle received is income
+        if 'ZELLE' in full_text_upper and 'FROM' in full_text_upper:
+            is_deposit = True
+        if is_deposit:
             continue
 
         # Find amounts - look for rightmost numbers on the last line with amounts
