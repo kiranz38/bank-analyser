@@ -136,7 +136,22 @@ export default function Home() {
       <main className="container">
         <div className="hero-wrapper">
           <section className="hero">
-            <h1>Bank Statement Analyzer</h1>
+            <div className="hero-title">
+              <svg className="hero-icon" width="36" height="36" viewBox="0 0 32 32" fill="none">
+                {/* Steam wisps */}
+                <path d="M10 8c0-2 1-3 1-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/>
+                <path d="M14 7c0-1.5 0.5-2.5 0.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.3"/>
+                <path d="M18 8c0-2-1-3-1-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/>
+                {/* Mug body */}
+                <path d="M6 12h16v12a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V12z" stroke="currentColor" strokeWidth="2" fill="none"/>
+                {/* Mug handle */}
+                <path d="M22 14h2a3 3 0 0 1 0 6h-2" stroke="currentColor" strokeWidth="2" fill="none"/>
+                {/* Dollar sign on mug */}
+                <path d="M14 15v8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M11.5 17.5c0-1 1.1-1.5 2.5-1.5s2.5 0.5 2.5 1.5c0 1-1.1 1.5-2.5 1.5s-2.5 0.5-2.5 1.5c0 1 1.1 1.5 2.5 1.5s2.5-0.5 2.5-1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+              </svg>
+              <h1>Bank Statement Analyzer</h1>
+            </div>
             <p className="hero-tagline">Where's My Money Going?</p>
             <p className="subtitle">
               Find hidden subscriptions, unexpected fees, and spending leaks — plus estimated yearly savings.
