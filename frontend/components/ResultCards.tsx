@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect } from 'react'
 import SpendingBreakdown from './SpendingBreakdown'
 import SubscriptionList from './SubscriptionList'
