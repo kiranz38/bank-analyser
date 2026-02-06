@@ -259,7 +259,7 @@ def _extract_anz_format(pdf) -> str:
     ANZ format has:
     - Date like "17 JUN" (DD MON)
     - Multi-line descriptions with "EFFECTIVE DATE" lines
-    - Amounts line with: withdrawal, deposit (or "blank"), balance
+    - Columns: Date, Transaction Details, Withdrawals ($), Deposits ($), Balance ($)
     """
     all_text = []
     for page in pdf.pages:
@@ -272,8 +272,12 @@ def _extract_anz_format(pdf) -> str:
 
     full_text = '\n'.join(all_text)
 
-    # Check if this looks like ANZ format (has "blank" and "DD MON" dates)
-    if 'blank' not in full_text.lower() and not re.search(r'\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\b', full_text, re.IGNORECASE):
+    # Check if this looks like ANZ format (has "blank" OR "DD MON" dates with Withdrawals/Deposits headers)
+    has_blank = 'blank' in full_text.lower()
+    has_anz_date = re.search(r'\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\b', full_text, re.IGNORECASE)
+    has_anz_headers = 'withdrawals' in full_text.lower() and 'deposits' in full_text.lower()
+
+    if not (has_blank or (has_anz_date and has_anz_headers)):
         return ''
 
     csv_lines = ['Date,Description,Amount']
@@ -293,7 +297,9 @@ def _extract_anz_format(pdf) -> str:
 
         # Skip header lines
         line_lower = line_stripped.lower()
-        if 'transaction details' in line_lower or 'withdrawals' in line_lower and 'deposits' in line_lower:
+        if 'transaction details' in line_lower:
+            continue
+        if 'withdrawals' in line_lower and 'deposits' in line_lower:
             continue
 
         date_match = re.match(date_pattern, line_stripped, re.IGNORECASE)
@@ -324,51 +330,67 @@ def _extract_anz_format(pdf) -> str:
             continue
 
         # Skip deposits/credits (but not "VISA DEBIT" which is a spending type)
-        if 'DEPOSIT' in full_text_upper and 'VISA DEBIT' not in full_text_upper:
+        is_deposit = 'DEPOSIT' in full_text_upper or 'CREDIT' in full_text_upper
+        is_visa_debit = 'VISA DEBIT' in full_text_upper
+        if is_deposit and not is_visa_debit:
             continue
 
-        # Find the line with amounts (contains numbers and possibly "blank")
-        amounts_line = None
-        description_lines = []
+        # Collect all amounts from all lines in the block
+        all_amounts = []
+        description_parts = []
 
         for line in block['lines']:
-            # Check if this line has the amount pattern (numbers with blank)
-            if re.search(r'\d+\.\d{2}', line) and ('blank' in line.lower() or re.search(r'\d+\.\d{2}\s+\d', line)):
-                amounts_line = line
-            elif 'EFFECTIVE DATE' in line.upper():
-                # Skip effective date lines from description
+            # Skip EFFECTIVE DATE lines from description
+            if 'EFFECTIVE DATE' in line.upper():
                 continue
+
+            # Find all amounts in this line
+            line_amounts = re.findall(r'[\d,]+\.\d{2}', line)
+
+            if line_amounts:
+                for amt_str in line_amounts:
+                    try:
+                        amt = float(amt_str.replace(',', ''))
+                        all_amounts.append(amt)
+                    except ValueError:
+                        continue
+                # Remove amounts and "blank" from line to get description
+                cleaned_line = re.sub(r'[\d,]+\.\d{2}', '', line)
+                cleaned_line = re.sub(r'\bblank\b', '', cleaned_line, flags=re.IGNORECASE)
+                cleaned_line = cleaned_line.strip()
+                if cleaned_line and len(cleaned_line) > 2:
+                    description_parts.append(cleaned_line)
             else:
-                description_lines.append(line)
+                # No amounts, this is description
+                cleaned_line = re.sub(r'\bblank\b', '', line, flags=re.IGNORECASE).strip()
+                if cleaned_line:
+                    description_parts.append(cleaned_line)
 
-        if not amounts_line:
+        if not all_amounts:
             continue
 
-        # Parse amounts - format is: withdrawal deposit balance (with "blank" for empty)
-        parts = amounts_line.replace('blank', '').split()
-        amounts = []
-        for part in parts:
-            cleaned = part.replace(',', '').replace('$', '')
-            try:
-                amounts.append(float(cleaned))
-            except ValueError:
+        # ANZ format: [withdrawal, deposit, balance] or [withdrawal, balance] or [deposit, balance]
+        # Balance is typically the largest and last value
+        # Withdrawal/deposit are typically smaller values
+        # Sort to identify: smallest values are likely transaction amounts, largest is balance
+
+        # The first amount that's NOT the largest is likely the transaction amount
+        max_amount = max(all_amounts)
+        transaction_amount = None
+
+        for amt in all_amounts:
+            # Skip the balance (largest value or values > 1000 that look like balances)
+            if amt == max_amount:
                 continue
+            # Take the first non-balance amount as transaction
+            if amt < 5000:  # Reasonable transaction limit
+                transaction_amount = amt
+                break
 
-        if not amounts:
+        if transaction_amount is None or transaction_amount <= 0:
             continue
 
-        # First amount is withdrawal (what we want), last is balance
-        # If only 2 amounts, first is withdrawal/deposit, second is balance
-        if len(amounts) >= 2:
-            amount = amounts[0]  # Withdrawal amount
-        else:
-            amount = amounts[0]
-
-        # Skip if amount is too large (likely balance was picked up)
-        if amount > 10000:
-            continue
-
-        description = ' '.join(description_lines).strip()
+        description = ' '.join(description_parts).strip()
         if not description or len(description) < 3:
             continue
 
@@ -378,7 +400,7 @@ def _extract_anz_format(pdf) -> str:
         if ',' in description:
             description = f'"{description}"'
 
-        csv_lines.append(f"{block['date']},{description},{amount}")
+        csv_lines.append(f"{block['date']},{description},{transaction_amount}")
 
     return '\n'.join(csv_lines)
 
