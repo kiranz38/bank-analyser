@@ -80,6 +80,36 @@ a:hover {
 .header {
   text-align: center;
   margin-bottom: 3rem;
+  position: relative;
+}
+
+.header-support-link {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.header-support-link:hover {
+  color: var(--foreground);
+  border-color: var(--primary);
+  background: var(--primary-light);
+  text-decoration: none;
+}
+
+.header-support-link svg {
+  flex-shrink: 0;
 }
 
 .logo {
@@ -725,46 +755,68 @@ h3 {
 
 /* Support/Donate section */
 .support-section {
-  text-align: center;
   margin-top: 2rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: var(--border-radius);
-  border: 1px solid #ffeeba;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  .support-section {
-    background: linear-gradient(135deg, #3d3522 0%, #4a3f2a 100%);
-    border-color: #5c4d33;
-  }
+.support-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  text-align: left;
+  max-width: 500px;
+}
+
+.support-icon {
+  flex-shrink: 0;
+  color: var(--danger);
+  margin-top: 0.125rem;
+}
+
+.support-message {
+  flex: 1;
+}
+
+.support-title {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--foreground);
+  margin-bottom: 0.25rem;
 }
 
 .support-text {
   color: var(--muted);
-  font-size: 0.9375rem;
-  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  margin: 0;
 }
 
 .bmc-button {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: #ffdd00;
-  color: #000000;
-  font-weight: 600;
-  font-size: 0.9375rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--card-bg);
+  color: var(--foreground);
+  font-weight: 500;
+  font-size: 0.875rem;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   text-decoration: none;
   transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(255, 221, 0, 0.3);
 }
 
 .bmc-button:hover {
-  background: #ffed4a;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 221, 0, 0.4);
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
   text-decoration: none;
 }
 
