@@ -63,6 +63,7 @@ def pdf_to_csv(pdf_bytes: bytes) -> str:
             # Try multiple extraction strategies
             strategies = [
                 _extract_from_tables,
+                _extract_nab_format,
                 _extract_us_bank_format,
                 _extract_anz_format,
                 _extract_westpac_multiline,
@@ -279,6 +280,112 @@ def _process_table_rows_fallback(rows: List[List[str]]) -> str:
             desc = f'"{desc}"'
 
         csv_lines.append(f"{date},{desc},{amount}")
+
+    return '\n'.join(csv_lines)
+
+
+def _extract_nab_format(pdf) -> str:
+    """Extract transactions from NAB (National Australia Bank) PDFs.
+
+    NAB format has:
+    - Dates like "2 Jan 2025" or "15 Jan 2025" (D Mon YYYY)
+    - Columns: Date, Particulars, Debits ($), Credits ($), Balance ($)
+    """
+    all_text = []
+    for page in pdf.pages:
+        text = page.extract_text()
+        if text:
+            all_text.append(text)
+
+    if not all_text:
+        return ''
+
+    full_text = '\n'.join(all_text)
+
+    # Check if this looks like NAB format
+    if 'nab' not in full_text.lower() and 'national australia bank' not in full_text.lower():
+        return ''
+
+    csv_lines = ['Date,Description,Amount']
+    lines = full_text.split('\n')
+
+    # NAB date pattern: "2 Jan 2025" or "15 Jan 2025"
+    date_pattern = r'^(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4})\s+'
+
+    for line in lines:
+        line_stripped = line.strip()
+        if not line_stripped:
+            continue
+
+        # Skip header/summary lines
+        line_lower = line_stripped.lower()
+        skip_keywords = ['brought forward', 'closing balance', 'opening balance', 'total credits',
+                        'total debits', 'account summary', 'page ', 'statement period', 'bsb:',
+                        'account number', 'important', 'government charges', 'please check']
+        if any(kw in line_lower for kw in skip_keywords):
+            continue
+
+        date_match = re.match(date_pattern, line_stripped, re.IGNORECASE)
+        if not date_match:
+            continue
+
+        date = date_match.group(1)
+        rest = line_stripped[date_match.end():].strip()
+
+        # Skip credits/deposits
+        rest_upper = rest.upper()
+        if any(kw in rest_upper for kw in ['DIRECT CREDIT', 'SALARY', 'OSKO PAYMENT FROM', 'CREDIT -']):
+            continue
+
+        # Find amounts in the line (format: description amount amount or description amount)
+        amounts = re.findall(r'[\d,]+\.\d{2}', rest)
+
+        if not amounts:
+            continue
+
+        # Parse amounts
+        parsed_amounts = []
+        for amt_str in amounts:
+            try:
+                amt = float(amt_str.replace(',', ''))
+                parsed_amounts.append(amt)
+            except ValueError:
+                continue
+
+        if not parsed_amounts:
+            continue
+
+        # Extract description (everything before the first amount)
+        first_amount_pos = rest.find(amounts[0])
+        if first_amount_pos > 0:
+            description = rest[:first_amount_pos].strip()
+        else:
+            description = rest
+
+        # Remove trailing dots from description
+        description = re.sub(r'\.+$', '', description).strip()
+
+        if not description or len(description) < 3:
+            continue
+
+        # The transaction amount is the first amount (debit), last is usually balance
+        # For NAB: [debit, balance] or [credit, balance]
+        amount = None
+        if len(parsed_amounts) >= 2:
+            # First amount is the transaction, last is balance
+            amount = parsed_amounts[0]
+        elif len(parsed_amounts) == 1:
+            amount = parsed_amounts[0]
+
+        if not amount or amount <= 0 or amount > 10000:
+            continue
+
+        # Format for CSV
+        description = description.replace('"', "'")
+        if ',' in description:
+            description = f'"{description}"'
+
+        csv_lines.append(f"{date},{description},{amount}")
 
     return '\n'.join(csv_lines)
 
