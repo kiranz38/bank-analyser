@@ -134,52 +134,41 @@ export default function Home() {
       <LoadingOverlay isLoading={loading} />
 
       <main className="container">
-        <section className="hero">
-          <div className="hero-title-row">
-            <div className="hero-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="11" cy="11" r="8" />
-                <path d="M21 21l-4.35-4.35" />
-                <path d="M11 8v6" />
-                <path d="M8 11h6" />
-              </svg>
+        <div className="hero-wrapper">
+          <section className="hero">
+            <h1>Bank Statement Analyzer</h1>
+            <p className="hero-tagline">Where's My Money Going?</p>
+            <p className="subtitle">
+              Find hidden subscriptions, unexpected fees, and spending leaks — plus estimated yearly savings.
+            </p>
+            <div className="trust-badges">
+              <div className="trust-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <span>No data stored</span>
+              </div>
+              <div className="trust-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <span>Secure processing</span>
+              </div>
+              <div className="trust-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+                <span>Free to use</span>
+              </div>
             </div>
-            <div className="hero-text">
-              <h1>Bank Statement Analyzer</h1>
-              <p className="hero-subtitle">Where's My Money Going?</p>
-            </div>
-          </div>
-          <p className="subtitle">
-            Find hidden subscriptions, unexpected fees, and spending leaks — plus estimated yearly savings.
-          </p>
-          <div className="trust-badges">
-            <div className="trust-badge">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              <span>No data stored</span>
-            </div>
-            <div className="trust-badge">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              <span>Secure processing</span>
-            </div>
-            <div className="trust-badge">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
-              <span>Free to use</span>
-            </div>
-          </div>
-          <p className="shock-motivator">Most people discover <strong>$200–$600/month</strong> in hidden spending.</p>
-        </section>
+            <p className="shock-motivator">Most people discover <strong>$200–$600/month</strong> in hidden spending.</p>
+          </section>
+        </div>
 
-        <div className="workspace-divider"></div>
-
-        {error && (
+        <div className="workspace">
+          {error && (
           <div className="error">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
@@ -213,6 +202,7 @@ export default function Home() {
             </div>
           </>
         )}
+        </div>
 
         <footer className="disclaimer">
           <div className="disclaimer-icon">
