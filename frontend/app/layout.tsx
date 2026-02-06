@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
   title: 'Bank Statement Analyzer – Find Hidden Subscriptions & Spending Leaks | Where Is My Money Go',
@@ -33,7 +35,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Header />
+        <div className="site-content">
+          {children}
+        </div>
+        <Footer />
+      </body>
     </html>
   )
 }
