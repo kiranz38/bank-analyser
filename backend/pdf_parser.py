@@ -80,9 +80,32 @@ def pdf_to_csv(pdf_bytes: bytes) -> str:
 
 
 def _has_valid_data(csv_content: str) -> bool:
-    """Check if CSV content has actual data rows beyond header."""
+    """Check if CSV content has actual data rows beyond header with reasonable amounts."""
     lines = [l.strip() for l in csv_content.strip().split('\n') if l.strip()]
-    return len(lines) > 1
+    if len(lines) <= 1:
+        return False
+
+    # Sanity check: reject if amounts look unreasonable (likely parsing balance as amount)
+    total_amount = 0
+    valid_transactions = 0
+    for line in lines[1:]:  # Skip header
+        parts = line.rsplit(',', 1)
+        if len(parts) >= 2:
+            try:
+                amount = float(parts[-1].replace('"', ''))
+                # Individual transaction shouldn't be > $50,000 for normal bank statements
+                if amount > 50000:
+                    return False
+                total_amount += amount
+                valid_transactions += 1
+            except ValueError:
+                continue
+
+    # If average transaction is > $10,000, probably parsing wrong column
+    if valid_transactions > 0 and (total_amount / valid_transactions) > 10000:
+        return False
+
+    return True
 
 
 def _extract_from_tables(pdf) -> str:
@@ -164,6 +187,7 @@ def _process_table_rows(rows: List[List[str]], indices: Dict[str, int]) -> str:
     debit_idx = indices.get('debit')
     credit_idx = indices.get('credit')
     amount_idx = indices.get('amount')
+    balance_idx = indices.get('balance')  # Track balance column to avoid it
 
     for row in rows:
         try:
@@ -177,13 +201,13 @@ def _process_table_rows(rows: List[List[str]], indices: Dict[str, int]) -> str:
             if not desc or len(desc) < 2:
                 continue
 
-            # Get amount - prefer debit column
+            # Get amount - prefer debit column, but NEVER use balance column
             amount = 0
 
-            if debit_idx is not None and debit_idx < len(row):
+            if debit_idx is not None and debit_idx < len(row) and debit_idx != balance_idx:
                 amount = _parse_amount(row[debit_idx])
 
-            if amount == 0 and amount_idx is not None and amount_idx < len(row):
+            if amount == 0 and amount_idx is not None and amount_idx < len(row) and amount_idx != balance_idx:
                 amt_val = row[amount_idx]
                 # For combined amount column, check if it's a debit (negative or DR marker)
                 if amt_val:
@@ -193,6 +217,10 @@ def _process_table_rows(rows: List[List[str]], indices: Dict[str, int]) -> str:
                         amount = _parse_amount(amt_val)
 
             if amount == 0:
+                continue
+
+            # Skip unreasonably large amounts (likely picked up balance by mistake)
+            if amount > 50000:
                 continue
 
             # Format for CSV
