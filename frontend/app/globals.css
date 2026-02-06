@@ -93,7 +93,6 @@ a:hover {
 .header-brand {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
   text-decoration: none;
   color: #f1f5f9;
 }
@@ -103,20 +102,10 @@ a:hover {
   color: #f1f5f9;
 }
 
-.header-logo {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
 .header-brand-text {
-  font-weight: 600;
-  font-size: 1rem;
+  font-weight: 500;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
 }
 
 .header-nav {
@@ -215,16 +204,11 @@ a:hover {
 }
 
 .footer-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   color: #f1f5f9;
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
   margin-bottom: 0.5rem;
-}
-
-.footer-brand svg {
-  color: #38bdf8;
 }
 
 .footer-tagline {
