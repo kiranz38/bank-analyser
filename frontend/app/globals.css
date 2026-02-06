@@ -424,6 +424,82 @@ h3 {
   margin-top: 1.5rem;
 }
 
+/* Instructions toggle and panel */
+.instructions-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  margin-top: 1rem;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.instructions-toggle:hover {
+  color: var(--foreground);
+}
+
+.instructions-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.instructions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.instruction-item h4 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.375rem;
+  border-bottom: 2px solid var(--primary);
+  display: inline-block;
+}
+
+.instruction-item ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.instruction-item li {
+  margin-bottom: 0.25rem;
+}
+
+.instructions-note {
+  margin-top: 1.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--primary-light);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.instructions-note strong {
+  color: var(--primary);
+}
+
+@media (max-width: 640px) {
+  .instructions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Loading overlay */
 .loading-overlay {
   position: fixed;

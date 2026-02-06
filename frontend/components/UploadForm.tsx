@@ -11,6 +11,7 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
   const [text, setText] = useState('')
   const [fileName, setFileName] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [showInstructions, setShowInstructions] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const selectedFileRef = useRef<File | null>(null)
 
@@ -158,6 +159,75 @@ Date,Description,Amount
           Analyze My Spending
         </button>
       </div>
+
+      <button
+        className="instructions-toggle"
+        onClick={() => setShowInstructions(!showInstructions)}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        How to download your bank statement
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          style={{ transform: showInstructions ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {showInstructions && (
+        <div className="instructions-panel">
+          <div className="instructions-grid">
+            <div className="instruction-item">
+              <h4>ANZ</h4>
+              <ol>
+                <li>Log in to ANZ Internet Banking</li>
+                <li>Go to your account and click "Transactions"</li>
+                <li>Click "Export" and select PDF or CSV</li>
+                <li>Choose date range and download</li>
+              </ol>
+            </div>
+            <div className="instruction-item">
+              <h4>Westpac</h4>
+              <ol>
+                <li>Log in to Westpac Online Banking</li>
+                <li>Select your account</li>
+                <li>Click "Export transactions"</li>
+                <li>Choose CSV or PDF format</li>
+              </ol>
+            </div>
+            <div className="instruction-item">
+              <h4>CommBank</h4>
+              <ol>
+                <li>Log in to NetBank</li>
+                <li>Go to "View accounts" → select account</li>
+                <li>Click "Export" at the top</li>
+                <li>Select format and date range</li>
+              </ol>
+            </div>
+            <div className="instruction-item">
+              <h4>NAB</h4>
+              <ol>
+                <li>Log in to NAB Internet Banking</li>
+                <li>Click on your account</li>
+                <li>Select "Export transactions"</li>
+                <li>Choose CSV and download</li>
+              </ol>
+            </div>
+          </div>
+          <p className="instructions-note">
+            <strong>Tip:</strong> PDF statements work best. If you have issues, try exporting as CSV instead.
+          </p>
+        </div>
+      )}
     </section>
   )
 }
