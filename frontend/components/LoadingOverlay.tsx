@@ -64,6 +64,9 @@ export default function LoadingOverlay({ isLoading }: LoadingOverlayProps) {
         <p className="loading-subtitle">
           Grab a coffee while we crunch the numbers for you...
         </p>
+        <p className="loading-time-hint">
+          This typically takes 30 seconds to a minute.
+        </p>
         <div className="progress-container">
           <div className="progress-bar">
             <div

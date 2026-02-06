@@ -609,6 +609,12 @@ h3 {
 .loading-subtitle {
   color: var(--muted);
   font-size: 0.9375rem;
+  margin-bottom: 0.5rem;
+}
+
+.loading-time-hint {
+  color: var(--muted-light);
+  font-size: 0.8125rem;
   margin-bottom: 1.5rem;
 }
 
