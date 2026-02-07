@@ -125,7 +125,7 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
                 </svg>
               </div>
               <p>
-                <strong>Drop your bank statement here</strong> or click to browse
+                <strong>Drop your transaction statement here</strong> or click to browse
               </p>
               <p className="upload-formats">Supports CSV and PDF files</p>
             </>

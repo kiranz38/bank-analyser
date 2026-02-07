@@ -772,21 +772,21 @@ h3 {
 }
 
 .dark .upload-card {
-  background: #1e293b;
+  background: #0a0a0a;
 }
 
 .dark .upload-area {
-  background: #1e293b;
-  border-color: #334155;
+  background: #111111;
+  border-color: #222222;
 }
 
 .dark .upload-area:hover {
-  background: #263548;
+  background: #161616;
   border-color: var(--primary);
 }
 
 .dark .upload-area.dragging {
-  background: #263548;
+  background: #161616;
   border-color: var(--primary);
 }
 
