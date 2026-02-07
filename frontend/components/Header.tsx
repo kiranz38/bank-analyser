@@ -38,10 +38,19 @@ export default function Header() {
     <header className={`site-header ${isVisible ? 'header-visible' : 'header-hidden'}`}>
       <div className="header-container">
         <Link href="/" className="header-brand">
-          <svg className="header-logo-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          <svg className="header-logo-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+            {/* Wallet body */}
+            <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+            {/* Wallet fold/flap */}
+            <path d="M3 7V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1" />
+            {/* Card clasp */}
+            <rect x="15" y="10" width="6" height="4" rx="1" />
+            {/* Leak drops - subtle coins falling */}
+            <circle cx="6" cy="21" r="1.2" fill="currentColor" fillOpacity="0.45" stroke="none" />
+            <circle cx="10" cy="22" r="1" fill="currentColor" fillOpacity="0.35" stroke="none" />
+            <circle cx="13.5" cy="21.5" r="0.8" fill="currentColor" fillOpacity="0.25" stroke="none" />
           </svg>
-          <span className="header-brand-text">Where Is My Money Going?</span>
+          <span className="header-brand-text">Leaky Wallet</span>
         </Link>
 
         {/* Desktop Navigation */}
