@@ -210,6 +210,7 @@ export default function Home() {
                 onClick={() => {
                   setResults(null)
                   setError(null)
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
               >
                 Analyze Another Statement
