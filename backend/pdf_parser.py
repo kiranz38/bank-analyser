@@ -347,11 +347,13 @@ def _extract_commbank_format(pdf) -> str:
         full_text_block = ' '.join(block['lines'])
         full_text_upper = full_text_block.upper()
 
-        # Skip credits/deposits
-        credit_keywords = ['DIRECT CREDIT', 'TRANSFER FROM', 'SALARY', 'FAST TRANSFER FROM',
-                          'CREDIT TO ACCOUNT', 'PAYMENT RECEIVED', 'REFUND', 'DEPOSIT',
-                          'OSKO FROM', 'BPAY CREDIT', 'INTEREST CREDIT']
-        if any(kw in full_text_upper for kw in credit_keywords):
+        # Skip credits/deposits and internal transfers
+        skip_keywords = ['DIRECT CREDIT', 'TRANSFER FROM', 'SALARY', 'FAST TRANSFER FROM',
+                        'CREDIT TO ACCOUNT', 'PAYMENT RECEIVED', 'REFUND', 'DEPOSIT',
+                        'OSKO FROM', 'BPAY CREDIT', 'INTEREST CREDIT',
+                        # Internal transfers - skip these
+                        'TRANSFER TO', 'TRANSFER TO XX']
+        if any(kw in full_text_upper for kw in skip_keywords):
             continue
 
         # Find all amounts in the block
@@ -373,12 +375,18 @@ def _extract_commbank_format(pdf) -> str:
             continue
 
         # Determine which amount is the transaction vs balance
-        # Strategy: Look for "amount (" pattern first (classic CommBank debit marker)
-        debit_match = re.search(r'([\d,]+\.\d{2})\s*\(', full_text_block)
+        # Strategy: Look for "amount (" or "amount $" pattern (CommBank debit markers)
+        # The ( or $ after the amount indicates it's a debit, followed by the balance
+        debit_match = re.search(r'([\d,]+\.\d{2})\s*[\(\$]', full_text_block)
 
         amount = None
         if debit_match:
-            amount = float(debit_match.group(1).replace(',', ''))
+            # Make sure this isn't the balance (balance has $amount format, not amount$)
+            matched_amount = debit_match.group(1)
+            # Check if there's a $ before this amount (which would make it a credit/balance)
+            before_match = full_text_block[:debit_match.start()]
+            if not before_match.rstrip().endswith('$'):
+                amount = float(matched_amount.replace(',', ''))
         else:
             # Fallback: If multiple amounts, the SMALLEST is likely the transaction
             # (balance is typically the largest), but NOT if it's suspiciously large
