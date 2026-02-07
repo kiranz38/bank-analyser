@@ -1,6 +1,7 @@
 """CSV parsing with heuristic column detection for bank statements."""
 
 import io
+import math
 import re
 from typing import Optional
 import pandas as pd
@@ -52,7 +53,11 @@ def parse_amount(value: str) -> Optional[float]:
     if pd.isna(value) or value == '':
         return None
     if isinstance(value, (int, float)):
-        return float(value)
+        result = float(value)
+        # Check for NaN
+        if math.isnan(result):
+            return None
+        return result
     # Remove currency symbols (including Indian Rupee) and whitespace
     cleaned = re.sub(r'[£$€₹,\s]', '', str(value))
     # Handle parentheses for negative numbers
@@ -175,7 +180,7 @@ def parse_space_separated(content: str) -> list[dict]:
         elif len(amounts_found) == 1:
             amount = amounts_found[0]
 
-        if amount and amount > 0:
+        if amount and amount > 0 and not math.isnan(amount):
             transactions.append({
                 "date": block['date'],
                 "merchant": normalize_merchant(description),
@@ -290,7 +295,7 @@ def parse_csv(content: str) -> list[dict]:
             else:
                 continue
 
-        if amount is None or amount == 0:
+        if amount is None or amount == 0 or math.isnan(amount):
             continue
 
         transactions.append({

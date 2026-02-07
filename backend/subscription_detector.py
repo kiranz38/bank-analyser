@@ -1,5 +1,6 @@
 """Improved recurring subscription detection."""
 
+import math
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Optional
@@ -84,14 +85,18 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
         if len(txns) == 0:
             continue
 
-        # Get amounts and dates
+        # Get amounts and dates (filter out NaN values)
         amounts = [t.get("amount", 0) for t in txns]
+        amounts = [a for a in amounts if a is not None and not math.isnan(a)]
         dates = [parse_date(t.get("date", "")) for t in txns]
         dates = [d for d in dates if d is not None]
 
-        avg_amount = sum(amounts) / len(amounts) if amounts else 0
-        max_amount = max(amounts) if amounts else 0
-        min_amount = min(amounts) if amounts else 0
+        if not amounts:
+            continue
+
+        avg_amount = sum(amounts) / len(amounts)
+        max_amount = max(amounts)
+        min_amount = min(amounts)
 
         # Check if amounts are consistent (within 5% or $2 tolerance)
         amount_variance = max_amount - min_amount
@@ -130,8 +135,8 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
             confidence = 0.6
             reason = "Known subscription (single charge)"
 
-        # Add if confidence is high enough
-        if confidence >= 0.5:
+        # Add if confidence is high enough and amount is valid
+        if confidence >= 0.5 and avg_amount > 0 and not math.isnan(avg_amount):
             last_date = max(dates).strftime("%Y-%m-%d") if dates else ""
 
             subscriptions.append({
