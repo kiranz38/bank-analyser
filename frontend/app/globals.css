@@ -22,21 +22,21 @@
 
 /* Dark mode - class-based toggle (professional dark theme) */
 :root.dark {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card-bg: #18181b;
-  --card-border: #27272a;
+  --background: #111111;
+  --foreground: #eeeeee;
+  --card-bg: #1a1a1a;
+  --card-border: #2a2a2a;
   --primary: #3b82f6;
   --primary-hover: #60a5fa;
-  --primary-light: rgba(59, 130, 246, 0.15);
+  --primary-light: #1e293b;
   --success: #22c55e;
-  --success-light: rgba(34, 197, 94, 0.15);
+  --success-light: #14532d;
   --warning: #eab308;
-  --warning-light: rgba(234, 179, 8, 0.15);
+  --warning-light: #713f12;
   --danger: #ef4444;
-  --danger-light: rgba(239, 68, 68, 0.15);
-  --muted: #a1a1aa;
-  --muted-light: #71717a;
+  --danger-light: #7f1d1d;
+  --muted: #999999;
+  --muted-light: #666666;
 }
 
 * {
@@ -1233,8 +1233,8 @@ h3 {
 }
 
 .dark .leak-group {
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
   box-shadow: none;
 }
 
@@ -1302,13 +1302,13 @@ h3 {
 }
 
 .dark .leak-group-total-badge {
-  background: #27272a;
+  background: #222222;
 }
 
 .dark .leak-group-category {
-  background: #27272a;
-  color: #a1a1aa;
-  border-color: #3f3f46;
+  background: #222222;
+  color: #999999;
+  border-color: #333333;
 }
 
 .leak-total-amount {
@@ -1420,8 +1420,8 @@ h3 {
 }
 
 .dark .top-transaction-item {
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
 }
 
 .top-transaction-rank {
@@ -1467,7 +1467,7 @@ h3 {
 }
 
 .dark .top-transaction-amount {
-  background: #27272a;
+  background: #222222;
 }
 
 @media (max-width: 640px) {
@@ -1745,8 +1745,8 @@ h3 {
 }
 
 .dark .support-section {
-  background: #18181b;
-  border-color: #27272a;
+  background: #1a1a1a;
+  border-color: #2a2a2a;
 }
 
 .support-content {
