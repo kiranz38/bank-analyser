@@ -20,23 +20,23 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
-/* Dark mode - class-based toggle (neutral grey theme) */
+/* Dark mode - class-based toggle (professional dark theme) */
 :root.dark {
-  --background: #121212;
-  --foreground: #e5e5e5;
-  --card-bg: #1c1c1c;
-  --card-border: #2e2e2e;
-  --primary: #60a5fa;
-  --primary-hover: #93c5fd;
-  --primary-light: #1e3a5f;
-  --success: #4ade80;
-  --success-light: #14532d;
-  --warning: #fbbf24;
-  --warning-light: #713f12;
-  --danger: #f87171;
-  --danger-light: #7f1d1d;
-  --muted: #a3a3a3;
-  --muted-light: #737373;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card-bg: #18181b;
+  --card-border: #27272a;
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-light: rgba(59, 130, 246, 0.15);
+  --success: #22c55e;
+  --success-light: rgba(34, 197, 94, 0.15);
+  --warning: #eab308;
+  --warning-light: rgba(234, 179, 8, 0.15);
+  --danger: #ef4444;
+  --danger-light: rgba(239, 68, 68, 0.15);
+  --muted: #a1a1aa;
+  --muted-light: #71717a;
 }
 
 * {
@@ -472,7 +472,7 @@ a:hover {
 }
 
 .dark .hero-wrapper {
-  background: linear-gradient(180deg, #1a1a1a 0%, #141414 60%, var(--background) 100%);
+  background: var(--background);
 }
 
 .hero {
@@ -1233,11 +1233,9 @@ h3 {
 }
 
 .dark .leak-group {
-  background: linear-gradient(135deg, #1c1c1c 0%, #181818 100%);
-  border: 1px solid #2e2e2e;
-  box-shadow:
-    0 2px 8px -2px rgba(0, 0, 0, 0.3),
-    0 1px 2px rgba(0, 0, 0, 0.2);
+  background: #18181b;
+  border: 1px solid #27272a;
+  box-shadow: none;
 }
 
 .leak-group-header {
@@ -1304,13 +1302,13 @@ h3 {
 }
 
 .dark .leak-group-total-badge {
-  background: #1c1c1c;
+  background: #27272a;
 }
 
 .dark .leak-group-category {
-  background: rgba(96, 165, 250, 0.12);
-  color: #60a5fa;
-  border-color: rgba(96, 165, 250, 0.2);
+  background: #27272a;
+  color: #a1a1aa;
+  border-color: #3f3f46;
 }
 
 .leak-total-amount {
@@ -1422,8 +1420,8 @@ h3 {
 }
 
 .dark .top-transaction-item {
-  background: linear-gradient(135deg, #1c1c1c 0%, #181818 100%);
-  border: 1px solid #2e2e2e;
+  background: #18181b;
+  border: 1px solid #27272a;
 }
 
 .top-transaction-rank {
@@ -1469,7 +1467,7 @@ h3 {
 }
 
 .dark .top-transaction-amount {
-  background: #1c1c1c;
+  background: #27272a;
 }
 
 @media (max-width: 640px) {
@@ -1747,8 +1745,8 @@ h3 {
 }
 
 .dark .support-section {
-  background: linear-gradient(135deg, rgba(96, 165, 250, 0.06) 0%, rgba(139, 92, 246, 0.06) 100%);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: #18181b;
+  border-color: #27272a;
 }
 
 .support-content {
