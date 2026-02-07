@@ -10,7 +10,7 @@ export default function Footer() {
           {/* Left Column - Brand */}
           <div className="footer-brand-col">
             <div className="footer-brand">
-              <span>Where Is My Money Going?</span>
+              <span>Leaky Wallet</span>
             </div>
             <p className="footer-tagline">Free privacy-first bank statement analyzer.</p>
           </div>
