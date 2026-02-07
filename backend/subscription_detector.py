@@ -67,8 +67,12 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
         "AFTERPAY", "KLARNA", "ZIP PAY", "AFFIRM",
         "HEADSPACE", "CALM", "NOOM",
         "HELLO FRESH", "BLUE APRON",
-        "CHATGPT", "CLAUDE", "OPENAI"
+        "CHATGPT", "CLAUDE", "OPENAI",
+        "COMMSEC", "DIRECT DEBIT"
     ]
+
+    # Recurring payment patterns (may have variable amounts)
+    RECURRING_PATTERNS = ["DIRECT DEBIT", "BPAY", "AUTOPAY", "AUTO PAY"]
 
     # Group transactions by normalized merchant
     merchant_groups = defaultdict(list)
@@ -108,6 +112,13 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
         # Check for known subscription keywords
         is_known_sub = any(kw in merchant for kw in KNOWN_SUBSCRIPTIONS)
 
+        # Check for recurring payment patterns (more lenient - 15% variance allowed)
+        is_recurring_pattern = any(kw in merchant for kw in RECURRING_PATTERNS)
+        is_loosely_consistent = (
+            amount_variance <= 10.0 or
+            (avg_amount > 0 and amount_variance / avg_amount <= 0.15)
+        )
+
         # Check periodicity if we have dates
         is_periodic = False
         avg_interval = 0
@@ -125,9 +136,15 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
         if is_known_sub:
             confidence = 0.95
             reason = "Known subscription service"
+        elif is_recurring_pattern and len(txns) >= 3 and is_periodic:
+            confidence = 0.9
+            reason = f"Recurring payment: {len(txns)} charges, ~{avg_interval:.0f} days apart"
         elif len(txns) >= 3 and is_consistent and is_periodic:
             confidence = 0.85
             reason = f"Recurring pattern: {len(txns)} charges, ~{avg_interval:.0f} days apart"
+        elif is_recurring_pattern and len(txns) >= 3 and is_loosely_consistent:
+            confidence = 0.75
+            reason = f"Direct debit: {len(txns)} charges of ~${avg_amount:.2f}"
         elif len(txns) >= 2 and is_consistent:
             confidence = 0.7
             reason = f"Consistent amounts: {len(txns)} charges of ~${avg_amount:.2f}"

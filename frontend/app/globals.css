@@ -826,6 +826,13 @@ h3 {
   right: 0;
 }
 
+@media (max-width: 640px) {
+  .or-divider::before,
+  .or-divider::after {
+    width: 30%;
+  }
+}
+
 .textarea {
   width: 100%;
   min-height: 140px;
