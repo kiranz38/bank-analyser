@@ -801,36 +801,20 @@ h3 {
 }
 
 .or-divider {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   color: var(--muted);
   margin: 1.5rem 0;
-  position: relative;
   font-size: 0.875rem;
 }
 
 .or-divider::before,
 .or-divider::after {
   content: '';
-  position: absolute;
-  top: 50%;
-  width: 40%;
+  flex: 1;
   height: 1px;
   background: var(--card-border);
-}
-
-.or-divider::before {
-  left: 0;
-}
-
-.or-divider::after {
-  right: 0;
-}
-
-@media (max-width: 640px) {
-  .or-divider::before,
-  .or-divider::after {
-    width: 30%;
-  }
 }
 
 .textarea {
