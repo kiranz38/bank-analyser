@@ -7,13 +7,32 @@ interface UploadFormProps {
   loading: boolean
 }
 
+// Security constants - must match backend
+const MAX_FILE_SIZE = 10 * 1024 * 1024  // 10MB
+const MAX_TEXT_SIZE = 5 * 1024 * 1024   // 5MB
+const ALLOWED_EXTENSIONS = ['.csv', '.pdf']
+
 export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
   const [text, setText] = useState('')
   const [fileName, setFileName] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const [showInstructions, setShowInstructions] = useState(false)
+  const [fileError, setFileError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const selectedFileRef = useRef<File | null>(null)
+
+  const validateFile = (file: File): string | null => {
+    // Check file extension
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return 'Please upload a CSV or PDF file.'
+    }
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      return `File too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`
+    }
+    return null
+  }
 
   const handleDragOver = (e: DragEvent) => {
     e.preventDefault()
@@ -27,9 +46,15 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
   const handleDrop = (e: DragEvent) => {
     e.preventDefault()
     setDragging(false)
+    setFileError(null)
 
     const file = e.dataTransfer.files[0]
-    if (file && (file.name.endsWith('.csv') || file.name.endsWith('.pdf'))) {
+    if (file) {
+      const error = validateFile(file)
+      if (error) {
+        setFileError(error)
+        return
+      }
       setFileName(file.name)
       selectedFileRef.current = file
       setText('')
@@ -37,8 +62,17 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
   }
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setFileError(null)
     const file = e.target.files?.[0]
     if (file) {
+      const error = validateFile(file)
+      if (error) {
+        setFileError(error)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+        return
+      }
       setFileName(file.name)
       selectedFileRef.current = file
       setText('')
@@ -46,7 +80,16 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
   }
 
   const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setText(e.target.value)
+    const newText = e.target.value
+    setFileError(null)
+
+    // Check text size
+    if (new Blob([newText]).size > MAX_TEXT_SIZE) {
+      setFileError(`Text too large. Maximum size is ${MAX_TEXT_SIZE / (1024 * 1024)}MB.`)
+      return
+    }
+
+    setText(newText)
     setFileName(null)
     selectedFileRef.current = null
   }
@@ -61,13 +104,14 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
 
   const clearFile = () => {
     setFileName(null)
+    setFileError(null)
     selectedFileRef.current = null
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
 
-  const canSubmit = (selectedFileRef.current || text.trim()) && !loading
+  const canSubmit = (selectedFileRef.current || text.trim()) && !loading && !fileError
 
   return (
     <section className="upload-section">
@@ -127,8 +171,13 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
               <p>
                 <strong>Drop your transaction statement here</strong> or click to browse
               </p>
-              <p className="upload-formats">Supports CSV and PDF files</p>
+              <p className="upload-formats">CSV and PDF files up to 10MB</p>
             </>
+          )}
+          {fileError && (
+            <p className="upload-error" style={{ color: '#ef4444', marginTop: '0.5rem', fontSize: '0.875rem' }}>
+              {fileError}
+            </p>
           )}
         </div>
 
