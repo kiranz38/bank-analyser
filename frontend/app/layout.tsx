@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import './globals.css'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+
+const GA_TRACKING_ID = 'G-BD8VF1JPDZ'
 
 export const metadata: Metadata = {
   title: 'Bank Statement Analyzer – Find Hidden Subscriptions & Spending Leaks | Where Is My Money Go',
@@ -35,6 +38,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_TRACKING_ID}');
+          `}
+        </Script>
+      </head>
       <body>
         <Header />
         <div className="site-content">
