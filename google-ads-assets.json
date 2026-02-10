@@ -1,0 +1,198 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-02-10",
+  "campaign": {
+    "name": "Leaky Wallet - Bank Statement Analyzer",
+    "url": "https://whereismymoneygo.com"
+  },
+  "responsiveSearchAds": {
+    "headlines": [
+      {
+        "text": "Find Your Hidden Subscriptions",
+        "charCount": 27,
+        "theme": "discovery"
+      },
+      {
+        "text": "Stop Wasting Money Monthly",
+        "charCount": 26,
+        "theme": "savings"
+      },
+      {
+        "text": "Free Bank Statement Analysis",
+        "charCount": 28,
+        "theme": "free"
+      },
+      {
+        "text": "Spot Duplicate Charges Fast",
+        "charCount": 27,
+        "theme": "discovery"
+      },
+      {
+        "text": "Track All Your Subscriptions",
+        "charCount": 28,
+        "theme": "tracking"
+      },
+      {
+        "text": "Where Is My Money Going?",
+        "charCount": 24,
+        "theme": "brand"
+      },
+      {
+        "text": "Leaky Wallet Analyzer",
+        "charCount": 21,
+        "theme": "brand"
+      },
+      {
+        "text": "Save Money Every Month",
+        "charCount": 22,
+        "theme": "savings"
+      },
+      {
+        "text": "Analyze Your Spending Free",
+        "charCount": 26,
+        "theme": "free"
+      },
+      {
+        "text": "Find Price Increases Now",
+        "charCount": 24,
+        "theme": "discovery"
+      },
+      {
+        "text": "Upload CSV or PDF Statement",
+        "charCount": 27,
+        "theme": "features"
+      },
+      {
+        "text": "No Login Required",
+        "charCount": 17,
+        "theme": "privacy"
+      },
+      {
+        "text": "100% Private Analysis",
+        "charCount": 21,
+        "theme": "privacy"
+      },
+      {
+        "text": "Find Cheaper Alternatives",
+        "charCount": 25,
+        "theme": "savings"
+      },
+      {
+        "text": "Instant Statement Insights",
+        "charCount": 26,
+        "theme": "speed"
+      }
+    ],
+    "descriptions": [
+      {
+        "text": "Upload your bank statement and instantly find forgotten subscriptions, duplicate charges, and price hikes. Free to use.",
+        "charCount": 117,
+        "theme": "comprehensive"
+      },
+      {
+        "text": "Stop paying for services you forgot about. Our free analyzer spots hidden subscriptions in your bank statements.",
+        "charCount": 112,
+        "theme": "subscriptions"
+      },
+      {
+        "text": "Analyze your spending in seconds. Works with CSV and PDF statements from any bank. No signup needed.",
+        "charCount": 100,
+        "theme": "easy"
+      },
+      {
+        "text": "Find out where your money is really going. Free bank statement analyzer with instant results. Try it now.",
+        "charCount": 107,
+        "theme": "discovery"
+      },
+      {
+        "text": "Your data stays private. We analyze locally and never store your financial information. 100% secure.",
+        "charCount": 99,
+        "theme": "privacy"
+      },
+      {
+        "text": "Spot sneaky price increases on your subscriptions. Get alerts for services that raised prices without telling you.",
+        "charCount": 114,
+        "theme": "price-tracking"
+      },
+      {
+        "text": "Find duplicate streaming services and forgotten trials. See potential monthly savings instantly.",
+        "charCount": 97,
+        "theme": "duplicates"
+      },
+      {
+        "text": "Works with statements from major banks worldwide. Upload PDF or CSV and get instant spending insights.",
+        "charCount": 102,
+        "theme": "compatibility"
+      }
+    ]
+  },
+  "displayAds": {
+    "headlines": [
+      "Find Hidden Subscriptions",
+      "Stop Money Leaks",
+      "Free Spending Analysis",
+      "Where's Your Money Going?"
+    ],
+    "descriptions": [
+      "Analyze your bank statement free",
+      "Find forgotten subscriptions instantly",
+      "Spot duplicate charges and save"
+    ]
+  },
+  "keywords": {
+    "primary": [
+      "bank statement analyzer",
+      "subscription tracker",
+      "find hidden subscriptions",
+      "where is my money going",
+      "spending analyzer",
+      "duplicate charge finder"
+    ],
+    "secondary": [
+      "free budget tool",
+      "CSV statement upload",
+      "PDF bank statement",
+      "cancel unused subscriptions",
+      "subscription audit",
+      "monthly expense tracker"
+    ],
+    "negative": [
+      "bank login",
+      "credit score",
+      "loan",
+      "mortgage",
+      "credit card application"
+    ]
+  },
+  "callouts": [
+    "Free to Use",
+    "No Signup Required",
+    "100% Private",
+    "Instant Results",
+    "Works With Any Bank",
+    "PDF & CSV Support"
+  ],
+  "sitelinks": [
+    {
+      "headline": "Analyze Statement",
+      "description": "Upload your bank statement now",
+      "url": "https://whereismymoneygo.com"
+    },
+    {
+      "headline": "Find Subscriptions",
+      "description": "Spot recurring charges instantly",
+      "url": "https://whereismymoneygo.com#subscriptions"
+    },
+    {
+      "headline": "Privacy First",
+      "description": "Learn how we protect your data",
+      "url": "https://whereismymoneygo.com#privacy"
+    }
+  ],
+  "notes": {
+    "headlineLimit": "30 characters max for responsive search ads",
+    "descriptionLimit": "90 characters max for responsive search ads (we use up to 120 for expanded)",
+    "recommendation": "Use 10-15 headlines and 4+ descriptions for responsive search ads",
+    "themes": "Mix brand, savings, discovery, privacy, and feature themes for best performance"
+  }
+}
