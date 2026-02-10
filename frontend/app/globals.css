@@ -895,6 +895,69 @@ h3 {
   font-weight: 700;
 }
 
+/* Testimonial Card */
+.testimonial-card {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  max-width: 400px;
+  text-align: left;
+}
+
+.testimonial-stars {
+  color: #fbbf24;
+  font-size: 1.125rem;
+  letter-spacing: 2px;
+  margin-bottom: 0.75rem;
+}
+
+.testimonial-quote {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--foreground);
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+
+.testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.testimonial-avatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.testimonial-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.testimonial-name {
+  font-weight: 600;
+  color: var(--foreground);
+  font-size: 0.9375rem;
+}
+
+.testimonial-detail {
+  font-size: 0.8125rem;
+  color: var(--success);
+  font-weight: 500;
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;

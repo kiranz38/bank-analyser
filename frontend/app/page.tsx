@@ -360,6 +360,9 @@ export default function Home() {
               <p className="shock-motivator">
                 Most people discover <strong>$200–$600/month</strong> in hidden spending.
               </p>
+
+              {/* Example Preview */}
+              <ExamplePreview />
             </section>
           </div>
         )}
