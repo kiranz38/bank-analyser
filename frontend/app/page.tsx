@@ -1,20 +1,32 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import UploadForm from '@/components/UploadForm'
 import ResultCards from '@/components/ResultCards'
 import LoadingOverlay from '@/components/LoadingOverlay'
 import ExamplePreview from '@/components/ExamplePreview'
+import MethodChooser from '@/components/MethodChooser'
+import WaitlistForm from '@/components/WaitlistForm'
+import {
+  trackCTAClicked,
+  trackUploadStarted,
+  trackAnalysisGenerated,
+  trackResultsViewed,
+  trackRecurringDetected,
+} from '@/lib/analytics'
 
-// Event tracking hooks (can be wired to analytics later)
-// Supported events: analyze_clicked, upload_started, analysis_completed,
-// category_viewed, share_card_generated, share_clicked
-const trackEvent = (event: string, data?: Record<string, unknown>) => {
-  console.log(`[Analytics] ${event}`, data || '')
-  // Wire to your analytics service here (e.g., Google Analytics, Mixpanel, etc.)
-  // Example: window.gtag?.('event', event, data)
+// Feature flags
+const BANK_CONNECT_ENABLED = process.env.NEXT_PUBLIC_BANK_CONNECT_BETA === 'true'
+
+// Hero copy variants for A/B testing
+const HERO_VARIANTS = {
+  A: 'Find where your money is leaking: subscriptions, fees, and silent overspending.',
+  B: 'See where your money goes and fix the leaks in minutes.',
 }
+
+// Use variant A by default - can be randomized for A/B testing later
+const ACTIVE_VARIANT = 'A'
 
 interface AnalysisResult {
   monthly_leak: number
@@ -87,13 +99,57 @@ interface AnalysisResult {
   } | null
 }
 
+type ViewState = 'landing' | 'method-chooser' | 'upload' | 'waitlist' | 'results'
+
 export default function Home() {
   const [results, setResults] = useState<AnalysisResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [viewState, setViewState] = useState<ViewState>('landing')
+
+  // Track results viewed when results are shown
+  useEffect(() => {
+    if (results) {
+      trackResultsViewed()
+      if (results.subscriptions) {
+        trackRecurringDetected(results.subscriptions.length)
+      }
+    }
+  }, [results])
+
+  const handleCTAClick = () => {
+    trackCTAClicked()
+    setViewState('method-chooser')
+  }
+
+  const handleSelectUpload = () => {
+    setViewState('upload')
+  }
+
+  const handleSelectBankConnect = () => {
+    // For now, always show waitlist since Plaid integration is not complete
+    setViewState('waitlist')
+  }
+
+  const handleBackToMethodChooser = () => {
+    setViewState('method-chooser')
+  }
 
   const handleAnalyze = async (data: File | string) => {
-    trackEvent('analyze_clicked', { type: data instanceof File ? 'file' : 'text' })
+    if (data instanceof File) {
+      trackUploadStarted({
+        filename: data.name,
+        size: data.size,
+        type: 'file'
+      })
+    } else {
+      trackUploadStarted({
+        filename: 'pasted-text',
+        size: data.length,
+        type: 'text'
+      })
+    }
+
     setLoading(true)
     setError(null)
     setResults(null)
@@ -102,7 +158,6 @@ export default function Home() {
       const formData = new FormData()
 
       if (data instanceof File) {
-        trackEvent('upload_started', { filename: data.name, size: data.size })
         formData.append('file', data)
       } else {
         formData.append('text', data)
@@ -120,8 +175,15 @@ export default function Home() {
       }
 
       const result = await response.json()
-      trackEvent('analysis_completed', { monthly_leak: result.monthly_leak, annual_savings: result.annual_savings })
+
+      trackAnalysisGenerated({
+        monthlyLeak: result.monthly_leak,
+        annualSavings: result.annual_savings,
+        subscriptionCount: result.subscriptions?.length || 0
+      })
+
       setResults(result)
+      setViewState('results')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -129,144 +191,211 @@ export default function Home() {
     }
   }
 
+  const handleReset = () => {
+    setResults(null)
+    setError(null)
+    setViewState('landing')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   return (
     <>
       <LoadingOverlay isLoading={loading} />
 
       <main className="container">
-        <div className="hero-wrapper">
-          <section className="hero">
-            <div className="hero-title">
-              <svg className="hero-icon" width="36" height="36" viewBox="0 0 32 32" fill="none">
-                {/* Steam wisps */}
-                <path d="M10 8c0-2 1-3 1-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/>
-                <path d="M14 7c0-1.5 0.5-2.5 0.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.3"/>
-                <path d="M18 8c0-2-1-3-1-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/>
-                {/* Mug body */}
-                <path d="M6 12h16v12a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V12z" stroke="currentColor" strokeWidth="2" fill="none"/>
-                {/* Mug handle */}
-                <path d="M22 14h2a3 3 0 0 1 0 6h-2" stroke="currentColor" strokeWidth="2" fill="none"/>
-                {/* Dollar sign on mug */}
-                <path d="M14 15v8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                <path d="M11.5 17.5c0-1 1.1-1.5 2.5-1.5s2.5 0.5 2.5 1.5c0 1-1.1 1.5-2.5 1.5s-2.5 0.5-2.5 1.5c0 1 1.1 1.5 2.5 1.5s2.5-0.5 2.5-1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-              </svg>
-              <h1>Bank Statement Analyzer</h1>
-            </div>
-            <p className="hero-tagline">Where's My Money Going?</p>
-            <p className="subtitle">
-              Find hidden subscriptions, unexpected fees, and spending leaks — plus estimated yearly savings.
-            </p>
-            <div className="trust-badges">
-              <div className="trust-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        {/* Hero Section - Always visible on landing */}
+        {viewState === 'landing' && (
+          <div className="hero-wrapper">
+            <section className="hero hero-enhanced">
+              <div className="hero-title">
+                <svg className="hero-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                  {/* Wallet body */}
+                  <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+                  {/* Wallet fold/flap */}
+                  <path d="M3 7V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1" />
+                  {/* Card clasp */}
+                  <rect x="15" y="10" width="6" height="4" rx="1" />
+                  {/* Leak drops */}
+                  <circle cx="6" cy="21" r="1.2" fill="currentColor" fillOpacity="0.45" stroke="none" />
+                  <circle cx="10" cy="22" r="1" fill="currentColor" fillOpacity="0.35" stroke="none" />
+                  <circle cx="13.5" cy="21.5" r="0.8" fill="currentColor" fillOpacity="0.25" stroke="none" />
                 </svg>
-                <span>No data stored</span>
+                <h1>Leaky Wallet</h1>
               </div>
-              <div className="trust-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-                <span>Secure processing</span>
-              </div>
-              <div className="trust-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-                <span>Free to use</span>
-              </div>
-            </div>
-            <p className="shock-motivator">Most people discover <strong>$200–$600/month</strong> in hidden spending.</p>
-          </section>
-        </div>
 
-        <div className="workspace">
-          {error && (
-          <div className="error">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            {error}
+              <p className="hero-tagline">
+                {HERO_VARIANTS[ACTIVE_VARIANT]}
+              </p>
+
+              {/* Primary CTA */}
+              <button
+                className="btn btn-primary btn-hero"
+                onClick={handleCTAClick}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                Find my money leaks
+              </button>
+
+              {/* Trust Strip */}
+              <div className="trust-strip">
+                <span className="trust-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  No signup required
+                </span>
+                <span className="trust-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Data not stored
+                </span>
+                <span className="trust-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Privacy-first
+                </span>
+              </div>
+
+              <p className="shock-motivator">
+                Most people discover <strong>$200–$600/month</strong> in hidden spending.
+              </p>
+            </section>
           </div>
         )}
 
-        {!results && (
-          <>
-            <UploadForm onAnalyze={handleAnalyze} loading={loading} />
-            <ExamplePreview />
-          </>
+        {/* Method Chooser */}
+        {viewState === 'method-chooser' && (
+          <div className="workspace">
+            <MethodChooser
+              onSelectUpload={handleSelectUpload}
+              onSelectBankConnect={handleSelectBankConnect}
+              bankConnectEnabled={BANK_CONNECT_ENABLED}
+            />
+            <button
+              className="btn btn-text back-link"
+              onClick={() => setViewState('landing')}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              Back
+            </button>
+          </div>
         )}
 
-        {results && (
-          <>
+        {/* Waitlist Form */}
+        {viewState === 'waitlist' && (
+          <div className="workspace">
+            <WaitlistForm
+              onClose={() => setViewState('landing')}
+              onBack={handleBackToMethodChooser}
+            />
+          </div>
+        )}
+
+        {/* Upload Form */}
+        {viewState === 'upload' && (
+          <div className="workspace">
+            {error && (
+              <div className="error">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                {error}
+              </div>
+            )}
+
+            <UploadForm onAnalyze={handleAnalyze} loading={loading} />
+            <ExamplePreview />
+
+            <button
+              className="btn btn-text back-link"
+              onClick={handleBackToMethodChooser}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              Back to options
+            </button>
+          </div>
+        )}
+
+        {/* Results */}
+        {viewState === 'results' && results && (
+          <div className="workspace">
             <ResultCards results={results} />
             <div style={{ textAlign: 'center', marginTop: '2rem' }}>
               <button
                 className="btn btn-primary"
-                onClick={() => {
-                  setResults(null)
-                  setError(null)
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                }}
+                onClick={handleReset}
               >
                 Analyze Another Statement
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Footer Disclaimer - Only on landing */}
+        {viewState === 'landing' && (
+          <>
+            <footer className="disclaimer">
+              <div className="disclaimer-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+              </div>
+              <div className="disclaimer-text">
+                <strong>Privacy First:</strong> Your financial data is processed entirely in your browser session and our server memory.
+                We never store, log, or share your bank statement data. This tool is for informational purposes only and does not constitute financial advice.
+              </div>
+            </footer>
+
+            <div className="info-box">
+              <p>
+                This free <Link href="/bank-statement-analyzer">bank statement analyzer</Link> helps you upload CSV or PDF files to find hidden subscriptions,
+                analyze spending patterns, and understand where your money goes each month.
+              </p>
+            </div>
+
+            <div className="support-section">
+              <div className="support-content">
+                <svg className="support-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                <div className="support-message">
+                  <p className="support-title">Built independently, kept free for everyone</p>
+                  <p className="support-text">If this helped you find savings, consider supporting the project to keep it running.</p>
+                </div>
+              </div>
+              <a
+                href="https://buymeacoffee.com/joh38"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bmc-button"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+                  <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+                  <line x1="6" y1="1" x2="6" y2="4" />
+                  <line x1="10" y1="1" x2="10" y2="4" />
+                  <line x1="14" y1="1" x2="14" y2="4" />
+                </svg>
+                Support this project
+              </a>
+            </div>
           </>
         )}
-        </div>
-
-        <footer className="disclaimer">
-          <div className="disclaimer-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="16" x2="12" y2="12" />
-              <line x1="12" y1="8" x2="12.01" y2="8" />
-            </svg>
-          </div>
-          <div className="disclaimer-text">
-            <strong>Privacy First:</strong> Your financial data is processed entirely in your browser session and our server memory.
-            We never store, log, or share your bank statement data. This tool is for informational purposes only and does not constitute financial advice.
-          </div>
-        </footer>
-
-        <div className="info-box">
-          <p>
-            This free <Link href="/bank-statement-analyzer">bank statement analyzer</Link> helps you upload CSV or PDF files to find hidden subscriptions,
-            analyze spending patterns, and understand where your money goes each month.
-          </p>
-        </div>
-
-        <div className="support-section">
-          <div className="support-content">
-            <svg className="support-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-            </svg>
-            <div className="support-message">
-              <p className="support-title">Built independently, kept free for everyone</p>
-              <p className="support-text">If this helped you find savings, consider supporting the project to keep it running.</p>
-            </div>
-          </div>
-          <a
-            href="https://buymeacoffee.com/joh38"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bmc-button"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-              <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-              <line x1="6" y1="1" x2="6" y2="4" />
-              <line x1="10" y1="1" x2="10" y2="4" />
-              <line x1="14" y1="1" x2="14" y2="4" />
-            </svg>
-            Support this project
-          </a>
-        </div>
       </main>
     </>
   )
