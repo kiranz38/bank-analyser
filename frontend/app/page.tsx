@@ -9,7 +9,10 @@ import ExamplePreview from '@/components/ExamplePreview'
 import MethodChooser from '@/components/MethodChooser'
 import WaitlistForm from '@/components/WaitlistForm'
 import PlaidLink from '@/components/PlaidLink'
+import ErrorBoundary from '@/components/ErrorBoundary'
+import ErrorMessage from '@/components/ErrorMessage'
 import { PlaidLinkResult } from '@/lib/plaid'
+import { saveToSession, loadFromSession, clearSession } from '@/lib/sessionCache'
 import {
   trackCTAClicked,
   trackUploadStarted,
@@ -138,9 +141,19 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [viewState, setViewState] = useState<ViewState>('landing')
 
-  // Track results viewed when results are shown
+  // Load cached results from session storage on mount
+  useEffect(() => {
+    const cached = loadFromSession<AnalysisResult>()
+    if (cached) {
+      setResults(cached)
+      setViewState('results')
+    }
+  }, [])
+
+  // Save results to session storage when they change
   useEffect(() => {
     if (results) {
+      saveToSession(results)
       trackResultsViewed()
       if (results.subscriptions) {
         trackRecurringDetected(results.subscriptions.length)
@@ -272,8 +285,13 @@ export default function Home() {
   const handleReset = () => {
     setResults(null)
     setError(null)
+    clearSession() // Clear cached results
     setViewState('landing')
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleDismissError = () => {
+    setError(null)
   }
 
   return (
@@ -381,14 +399,10 @@ export default function Home() {
         {viewState === 'plaid' && (
           <div className="workspace">
             {error && (
-              <div className="error">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                {error}
-              </div>
+              <ErrorMessage
+                message={error}
+                onDismiss={handleDismissError}
+              />
             )}
 
             <PlaidLink
@@ -414,14 +428,11 @@ export default function Home() {
         {viewState === 'upload' && (
           <div className="workspace">
             {error && (
-              <div className="error">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                {error}
-              </div>
+              <ErrorMessage
+                message={error}
+                onDismiss={handleDismissError}
+                onRetry={() => setError(null)}
+              />
             )}
 
             <UploadForm onAnalyze={handleAnalyze} loading={loading} />
@@ -443,13 +454,25 @@ export default function Home() {
         {/* Results */}
         {viewState === 'results' && results && (
           <div className="workspace">
-            <ResultCards results={results} />
-            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <ErrorBoundary>
+              <ResultCards results={results} />
+            </ErrorBoundary>
+            <div className="results-actions">
               <button
                 className="btn btn-primary"
                 onClick={handleReset}
               >
                 Analyze Another Statement
+              </button>
+              <button
+                className="btn btn-text btn-clear-session"
+                onClick={handleReset}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+                Clear my data
               </button>
             </div>
           </div>
