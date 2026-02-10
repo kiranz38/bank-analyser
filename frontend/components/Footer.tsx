@@ -17,19 +17,22 @@ export default function Footer() {
 
           {/* Middle Column - Links */}
           <div className="footer-links-col">
-            <h4>Resources</h4>
+            <h4>Product</h4>
             <nav className="footer-links">
-              <Link href="/privacy">Privacy Policy</Link>
-              <Link href="/terms">Terms of Use</Link>
-              <Link href="/bank-statement-analyzer">How it works</Link>
-              <Link href="/bank-statement-analyzer#download-guide">Bank CSV Guide</Link>
+              <Link href="/how-it-works">How it works</Link>
+              <Link href="/example">Example Report</Link>
+              <Link href="/pricing">Pricing</Link>
+              <Link href="/banks">Bank Connect</Link>
             </nav>
           </div>
 
           {/* Right Column - Legal */}
-          <div className="footer-legal-col">
-            <p className="footer-care">Built with care</p>
-            <p className="footer-disclaimer">Not financial advice</p>
+          <div className="footer-links-col">
+            <h4>Legal</h4>
+            <nav className="footer-links">
+              <Link href="/privacy">Privacy Policy</Link>
+              <Link href="/terms">Terms of Use</Link>
+            </nav>
             <p className="footer-copyright">&copy; {currentYear} whereismymoneygo.com</p>
           </div>
         </div>

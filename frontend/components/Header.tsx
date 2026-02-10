@@ -77,11 +77,14 @@ export default function Header() {
 
         {/* Desktop Navigation */}
         <nav className="header-nav desktop-nav">
-          <Link href="/bank-statement-analyzer" className="header-link">
+          <Link href="/how-it-works" className="header-link">
             How it works
           </Link>
-          <Link href="/privacy" className="header-link">
-            Privacy
+          <Link href="/pricing" className="header-link">
+            Pricing
+          </Link>
+          <Link href="/example" className="header-link">
+            Example
           </Link>
           <a
             href="https://buymeacoffee.com/joh38"
@@ -150,18 +153,25 @@ export default function Header() {
       {mobileMenuOpen && (
         <nav className="header-nav mobile-nav">
           <Link
-            href="/bank-statement-analyzer"
+            href="/how-it-works"
             className="header-link"
             onClick={() => setMobileMenuOpen(false)}
           >
             How it works
           </Link>
           <Link
-            href="/privacy"
+            href="/pricing"
             className="header-link"
             onClick={() => setMobileMenuOpen(false)}
           >
-            Privacy
+            Pricing
+          </Link>
+          <Link
+            href="/example"
+            className="header-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Example
           </Link>
           <a
             href="https://buymeacoffee.com/joh38"
