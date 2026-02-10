@@ -8,11 +8,14 @@ import ShareCard from './ShareCard'
 import AlternativesPanel from './AlternativesPanel'
 import PriceChangesPanel from './PriceChangesPanel'
 import DuplicateSubscriptionsPanel from './DuplicateSubscriptionsPanel'
-
-// Event tracking helper
-const trackEvent = (event: string, data?: Record<string, unknown>) => {
-  console.log(`[Analytics] ${event}`, data || '')
-}
+import {
+  trackCategoryViewed,
+  trackShareCardGenerated,
+  trackShareClicked,
+  trackAlternativesViewed,
+  trackPriceChangesViewed,
+  trackDuplicatesViewed
+} from '@/lib/analytics'
 
 interface Leak {
   category: string
@@ -135,18 +138,38 @@ interface ResultCardsProps {
 }
 
 export default function ResultCards({ results }: ResultCardsProps) {
-  // Track category_viewed and share_card_generated events
+  // Track analytics events when results are displayed
   useEffect(() => {
+    // Track category breakdown viewed
     if (results.category_summary && results.category_summary.length > 0) {
-      trackEvent('category_viewed', {
-        categories: results.category_summary.map(c => c.category),
-        top_category: results.category_summary[0]?.category
+      trackCategoryViewed(results.category_summary.map(c => c.category))
+    }
+
+    // Track share card generated
+    if (results.share_summary) {
+      trackShareCardGenerated(results.share_summary.annual_savings)
+    }
+
+    // Track alternatives viewed
+    if (results.alternatives && results.alternatives.length > 0) {
+      trackAlternativesViewed(results.alternatives.length)
+    }
+
+    // Track price changes viewed
+    if (results.price_changes && results.price_changes.length > 0) {
+      const totalImpact = results.price_changes.reduce((sum, pc) => sum + pc.yearly_impact, 0)
+      trackPriceChangesViewed({
+        count: results.price_changes.length,
+        totalYearlyImpact: totalImpact
       })
     }
-    if (results.share_summary) {
-      trackEvent('share_card_generated', {
-        annual_savings: results.share_summary.annual_savings,
-        subscription_count: results.share_summary.subscription_count
+
+    // Track duplicate subscriptions viewed
+    if (results.duplicate_subscriptions && results.duplicate_subscriptions.length > 0) {
+      const totalMonthly = results.duplicate_subscriptions.reduce((sum, d) => sum + d.combined_monthly, 0)
+      trackDuplicatesViewed({
+        categoryCount: results.duplicate_subscriptions.length,
+        totalMonthly
       })
     }
   }, [results])
@@ -375,7 +398,7 @@ export default function ResultCards({ results }: ResultCardsProps) {
       {results.share_summary && (
         <ShareCard
           shareSummary={results.share_summary}
-          onShare={(platform) => console.log(`[Analytics] share_clicked`, { platform })}
+          onShare={(platform) => trackShareClicked(platform)}
         />
       )}
 

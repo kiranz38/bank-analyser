@@ -1,5 +1,7 @@
 'use client'
 
+import { trackAlternativeClicked } from '@/lib/analytics'
+
 interface Alternative {
   original: string
   alternative: string
@@ -78,7 +80,26 @@ export default function AlternativesPanel({ alternatives }: AlternativesPanelPro
             </div>
             <div className="alternative-options">
               {alts.slice(0, 3).map((alt, index) => (
-                <div key={index} className="alternative-option">
+                <div
+                  key={index}
+                  className="alternative-option"
+                  onClick={() => trackAlternativeClicked({
+                    original: alt.original,
+                    alternative: alt.alternative,
+                    potentialSavings: alt.yearly_savings
+                  })}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      trackAlternativeClicked({
+                        original: alt.original,
+                        alternative: alt.alternative,
+                        potentialSavings: alt.yearly_savings
+                      })
+                    }
+                  }}
+                >
                   <div className="alternative-info">
                     <span className="alternative-name">
                       {alt.alternative}

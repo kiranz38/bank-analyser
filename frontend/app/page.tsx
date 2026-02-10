@@ -11,6 +11,7 @@ import WaitlistForm from '@/components/WaitlistForm'
 import {
   trackCTAClicked,
   trackUploadStarted,
+  trackUploadCompleted,
   trackAnalysisGenerated,
   trackResultsViewed,
   trackRecurringDetected,
@@ -207,6 +208,15 @@ export default function Home() {
       }
 
       const result = await response.json()
+
+      // Track upload completion
+      trackUploadCompleted({
+        fileCount: Array.isArray(data) ? data.length : 1,
+        totalTransactions: result.category_summary?.reduce(
+          (sum: number, cat: { transaction_count: number }) => sum + cat.transaction_count,
+          0
+        ) || 0
+      })
 
       trackAnalysisGenerated({
         monthlyLeak: result.monthly_leak,

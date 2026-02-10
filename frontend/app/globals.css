@@ -4358,6 +4358,19 @@ h3 {
   background: var(--card-bg);
   border-radius: 8px;
   border: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.alternative-option:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.alternative-option:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
 }
 
 .alternative-info {

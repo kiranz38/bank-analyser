@@ -113,8 +113,49 @@ export function trackRecurringDetected(count: number): void {
 /**
  * Alternative clicked
  */
-export function trackAlternativeClicked(merchant: string): void {
-  trackEvent('alternatives_clicked', { merchant })
+export function trackAlternativeClicked(params: {
+  original: string
+  alternative: string
+  potentialSavings: number
+}): void {
+  trackEvent('alternatives_clicked', {
+    original_service: params.original,
+    alternative_service: params.alternative,
+    potential_savings: params.potentialSavings
+  })
+}
+
+/**
+ * Alternatives panel viewed
+ */
+export function trackAlternativesViewed(count: number): void {
+  trackEvent('alternatives_viewed', { count })
+}
+
+/**
+ * Price changes detected and viewed
+ */
+export function trackPriceChangesViewed(params: {
+  count: number
+  totalYearlyImpact: number
+}): void {
+  trackEvent('price_changes_viewed', {
+    count: params.count,
+    total_yearly_impact: params.totalYearlyImpact
+  })
+}
+
+/**
+ * Duplicate subscriptions detected and viewed
+ */
+export function trackDuplicatesViewed(params: {
+  categoryCount: number
+  totalMonthly: number
+}): void {
+  trackEvent('duplicates_viewed', {
+    category_count: params.categoryCount,
+    total_monthly: params.totalMonthly
+  })
 }
 
 // ============================================
