@@ -135,11 +135,12 @@ export default function Home() {
     setViewState('method-chooser')
   }
 
-  const handleAnalyze = async (data: File | string) => {
-    if (data instanceof File) {
+  const handleAnalyze = async (data: File[] | string) => {
+    if (Array.isArray(data)) {
+      const totalSize = data.reduce((sum, f) => sum + f.size, 0)
       trackUploadStarted({
-        filename: data.name,
-        size: data.size,
+        filename: data.map(f => f.name).join(', '),
+        size: totalSize,
         type: 'file'
       })
     } else {
@@ -156,14 +157,17 @@ export default function Home() {
 
     try {
       const formData = new FormData()
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-      if (data instanceof File) {
-        formData.append('file', data)
+      if (Array.isArray(data)) {
+        // Multi-file upload
+        data.forEach((file) => {
+          formData.append('files', file)
+        })
       } else {
         formData.append('text', data)
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${apiUrl}/analyze`, {
         method: 'POST',
         body: formData,

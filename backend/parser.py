@@ -3,6 +3,7 @@
 import io
 import math
 import re
+import hashlib
 from typing import Optional
 import pandas as pd
 
@@ -306,3 +307,75 @@ def parse_csv(content: str) -> list[dict]:
         })
 
     return transactions
+
+
+def transaction_hash(tx: dict) -> str:
+    """Generate a hash for a transaction for deduplication.
+
+    Uses date + normalized merchant + amount to identify duplicates.
+    """
+    # Create a consistent string representation
+    key = f"{tx.get('date', '')}|{tx.get('merchant', '')}|{tx.get('amount', 0):.2f}"
+    return hashlib.md5(key.encode()).hexdigest()
+
+
+def merge_transactions(transactions: list[dict]) -> list[dict]:
+    """Merge and deduplicate transactions from multiple files.
+
+    Conservative deduplication: only removes exact matches on
+    date + normalized merchant + amount.
+
+    Returns sorted transactions by date (most recent first).
+    """
+    seen_hashes = set()
+    unique_transactions = []
+
+    for tx in transactions:
+        tx_hash = transaction_hash(tx)
+        if tx_hash not in seen_hashes:
+            seen_hashes.add(tx_hash)
+            unique_transactions.append(tx)
+
+    # Sort by date (most recent first)
+    def parse_date_for_sort(date_str: str) -> tuple:
+        """Parse date string for sorting. Returns tuple for comparison."""
+        if not date_str:
+            return (0, 0, 0)
+
+        # Try common date formats
+        date_str = str(date_str).strip()
+
+        # Remove time component if present
+        if ' ' in date_str:
+            date_str = date_str.split()[0]
+
+        # Try different separators
+        for sep in ['/', '-', '.']:
+            if sep in date_str:
+                parts = date_str.split(sep)
+                if len(parts) >= 2:
+                    try:
+                        # Check for year position
+                        if len(parts[0]) == 4:
+                            # YYYY-MM-DD
+                            return (int(parts[0]), int(parts[1]), int(parts[2]) if len(parts) > 2 else 1)
+                        elif len(parts[-1]) == 4:
+                            # DD/MM/YYYY or MM/DD/YYYY
+                            year = int(parts[-1])
+                            # Assume DD/MM/YYYY for non-US
+                            return (year, int(parts[1]) if len(parts) > 2 else int(parts[0]), int(parts[0]))
+                        elif len(parts[-1]) == 2:
+                            # DD/MM/YY
+                            year = 2000 + int(parts[-1])
+                            return (year, int(parts[1]) if len(parts) > 2 else int(parts[0]), int(parts[0]))
+                        else:
+                            # MM/DD format (no year)
+                            return (9999, int(parts[0]), int(parts[1]))
+                    except (ValueError, IndexError):
+                        pass
+
+        return (0, 0, 0)
+
+    unique_transactions.sort(key=lambda x: parse_date_for_sort(x.get('date', '')), reverse=True)
+
+    return unique_transactions
