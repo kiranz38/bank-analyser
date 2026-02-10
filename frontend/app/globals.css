@@ -4803,3 +4803,253 @@ h3 {
 .dark .plaid-link-card {
   background: var(--card-bg);
 }
+
+/* ============================================
+   MILESTONE 7: Feedback Widget
+   ============================================ */
+
+.feedback-widget {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.feedback-question {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: var(--foreground);
+}
+
+.feedback-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.feedback-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: 2px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.feedback-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.feedback-btn-positive:hover {
+  border-color: var(--success);
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.feedback-btn-positive:hover svg {
+  stroke: var(--success);
+}
+
+.feedback-btn-negative:hover {
+  border-color: var(--danger);
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.feedback-btn-negative:hover svg {
+  stroke: var(--danger);
+}
+
+/* Feedback followup step */
+.feedback-followup {
+  text-align: left;
+}
+
+.feedback-followup .feedback-question {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.feedback-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.feedback-reason {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  background: var(--background);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.feedback-reason:hover {
+  border-color: var(--primary);
+}
+
+.feedback-reason.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.feedback-reason svg {
+  flex-shrink: 0;
+}
+
+.feedback-comment {
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.feedback-comment label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--muted);
+}
+
+.feedback-comment textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.feedback-comment textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.feedback-char-count {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted-light);
+}
+
+.feedback-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: var(--danger-light);
+  color: var(--danger);
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.feedback-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.feedback-actions .btn {
+  min-width: 140px;
+}
+
+/* Feedback submitted state */
+.feedback-submitted {
+  padding: 2rem;
+}
+
+.feedback-success-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--success-light);
+  color: var(--success);
+  border-radius: 50%;
+}
+
+.feedback-thanks {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--foreground);
+}
+
+.feedback-message {
+  color: var(--muted);
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+/* Responsive - Feedback Widget */
+@media (max-width: 480px) {
+  .feedback-widget {
+    padding: 1.25rem;
+  }
+
+  .feedback-buttons {
+    flex-direction: column;
+  }
+
+  .feedback-btn {
+    justify-content: center;
+  }
+
+  .feedback-reasons {
+    flex-direction: column;
+  }
+
+  .feedback-reason {
+    width: 100%;
+  }
+
+  .feedback-actions {
+    flex-direction: column;
+  }
+
+  .feedback-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Dark mode - Feedback Widget */
+.dark .feedback-widget {
+  background: var(--card-bg);
+}
+
+.dark .feedback-btn {
+  background: var(--background);
+}
+
+.dark .feedback-reason {
+  background: var(--card-bg);
+}
+
+.dark .feedback-comment textarea {
+  background: var(--card-bg);
+}

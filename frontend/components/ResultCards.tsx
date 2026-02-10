@@ -8,6 +8,7 @@ import ShareCard from './ShareCard'
 import AlternativesPanel from './AlternativesPanel'
 import PriceChangesPanel from './PriceChangesPanel'
 import DuplicateSubscriptionsPanel from './DuplicateSubscriptionsPanel'
+import FeedbackWidget from './FeedbackWidget'
 import {
   trackCategoryViewed,
   trackShareCardGenerated,
@@ -473,6 +474,14 @@ export default function ResultCards({ results }: ResultCardsProps) {
         </div>
         </div>
       )}
+
+      {/* Feedback Widget */}
+      <FeedbackWidget
+        context={{
+          monthlyLeak: results.monthly_leak,
+          subscriptionCount: results.subscriptions?.length || 0
+        }}
+      />
     </div>
   )
 }
