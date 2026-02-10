@@ -337,7 +337,7 @@ export default function ResultCards({ results }: ResultCardsProps) {
               <ResponsiveContainer width="100%" height={80}>
                 <BarChart data={comparisonData} barGap={4}>
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value) || 0)} />
                   <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={40}>
                     {comparisonData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
