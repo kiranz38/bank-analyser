@@ -1,13 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
-import SpendingBreakdown from './SpendingBreakdown'
-import SubscriptionList from './SubscriptionList'
-import MonthComparison from './MonthComparison'
+import { useEffect, useState } from 'react'
+import SpendingPieChart from './dashboard/SpendingPieChart'
+import ComparisonBarChart from './dashboard/ComparisonBarChart'
+import InsightsTabs from './dashboard/InsightsTabs'
 import ShareCard from './ShareCard'
-import AlternativesPanel from './AlternativesPanel'
-import PriceChangesPanel from './PriceChangesPanel'
-import DuplicateSubscriptionsPanel from './DuplicateSubscriptionsPanel'
 import FeedbackWidget from './FeedbackWidget'
 import {
   trackCategoryViewed,
@@ -139,24 +136,20 @@ interface ResultCardsProps {
 }
 
 export default function ResultCards({ results }: ResultCardsProps) {
+  const [leaksExpanded, setLeaksExpanded] = useState(false)
+  const [recoveryExpanded, setRecoveryExpanded] = useState(false)
+
   // Track analytics events when results are displayed
   useEffect(() => {
-    // Track category breakdown viewed
     if (results.category_summary && results.category_summary.length > 0) {
       trackCategoryViewed(results.category_summary.map(c => c.category))
     }
-
-    // Track share card generated
     if (results.share_summary) {
       trackShareCardGenerated(results.share_summary.annual_savings)
     }
-
-    // Track alternatives viewed
     if (results.alternatives && results.alternatives.length > 0) {
       trackAlternativesViewed(results.alternatives.length)
     }
-
-    // Track price changes viewed
     if (results.price_changes && results.price_changes.length > 0) {
       const totalImpact = results.price_changes.reduce((sum, pc) => sum + pc.yearly_impact, 0)
       trackPriceChangesViewed({
@@ -164,8 +157,6 @@ export default function ResultCards({ results }: ResultCardsProps) {
         totalYearlyImpact: totalImpact
       })
     }
-
-    // Track duplicate subscriptions viewed
     if (results.duplicate_subscriptions && results.duplicate_subscriptions.length > 0) {
       const totalMonthly = results.duplicate_subscriptions.reduce((sum, d) => sum + d.combined_monthly, 0)
       trackDuplicatesViewed({
@@ -193,209 +184,251 @@ export default function ResultCards({ results }: ResultCardsProps) {
     }).format(amount)
   }
 
+  // Group leaks by category
+  const groupedLeaks = results.top_leaks.reduce((acc, leak) => {
+    const category = leak.category || 'Other'
+    if (!acc[category]) {
+      acc[category] = []
+    }
+    acc[category].push(leak)
+    return acc
+  }, {} as Record<string, Leak[]>)
+
+  const categoryTotals = Object.entries(groupedLeaks).map(([category, leaks]) => ({
+    category,
+    leaks,
+    monthlyTotal: leaks.reduce((sum, l) => sum + (Number(l.monthly_cost) || 0), 0),
+    yearlyTotal: leaks.reduce((sum, l) => sum + (Number(l.yearly_cost) || 0), 0)
+  })).sort((a, b) => b.monthlyTotal - a.monthlyTotal)
+
+  // Filter confirmed subscriptions
+  const confirmedSubs = (results.subscriptions || []).filter(s => s.confidence >= 0.6)
+  const totalMonthlySubscriptions = confirmedSubs.reduce((sum, s) => sum + s.monthly_cost, 0)
+
   return (
-    <div className="results">
-      {/* Summary Stats */}
-      <div className="card-grid">
-        <div className="card stat-card">
-          <div className="stat-icon danger">
+    <div className="dashboard-results">
+      {/* Hero Stats Row */}
+      <div className="dashboard-hero-stats">
+        <div className="hero-stat-card danger">
+          <div className="hero-stat-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="12" y1="1" x2="12" y2="23" />
               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
             </svg>
           </div>
-          <div className="stat-label">Monthly Leak</div>
-          <div className="stat-value danger">{formatCurrency(results.monthly_leak)}</div>
-          <p className="stat-sublabel">potential savings per month</p>
+          <div className="hero-stat-content">
+            <span className="hero-stat-label">Monthly Leak</span>
+            <span className="hero-stat-value">{formatCurrency(results.monthly_leak)}</span>
+            <span className="hero-stat-sub">potential savings/month</span>
+          </div>
         </div>
-        <div className="card stat-card">
-          <div className="stat-icon success">
+        <div className="hero-stat-card success">
+          <div className="hero-stat-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
               <polyline points="17 6 23 6 23 12" />
             </svg>
           </div>
-          <div className="stat-label">Annual Savings</div>
-          <div className="stat-value success">{formatCurrency(results.annual_savings)}</div>
-          <p className="stat-sublabel">if you address these leaks</p>
+          <div className="hero-stat-content">
+            <span className="hero-stat-label">Annual Savings</span>
+            <span className="hero-stat-value">{formatCurrency(results.annual_savings)}</span>
+            <span className="hero-stat-sub">if you address these</span>
+          </div>
         </div>
       </div>
 
-      {/* Top Leaks - Grouped by Category */}
-      {results.top_leaks.length > 0 && (() => {
-        // Group leaks by category
-        const groupedLeaks = results.top_leaks.reduce((acc, leak) => {
-          const category = leak.category || 'Other'
-          if (!acc[category]) {
-            acc[category] = []
-          }
-          acc[category].push(leak)
-          return acc
-        }, {} as Record<string, Leak[]>)
+      {/* 3-Column Grid: Pie Chart, Subscriptions, Quick Wins */}
+      <div className="dashboard-grid-3">
+        {/* Spending Pie Chart */}
+        {results.category_summary && results.category_summary.length > 0 && (
+          <SpendingPieChart categories={results.category_summary} />
+        )}
 
-        // Calculate category totals (with NaN protection)
-        const categoryTotals = Object.entries(groupedLeaks).map(([category, leaks]) => ({
-          category,
-          leaks,
-          monthlyTotal: leaks.reduce((sum, l) => sum + (Number(l.monthly_cost) || 0), 0),
-          yearlyTotal: leaks.reduce((sum, l) => sum + (Number(l.yearly_cost) || 0), 0)
-        })).sort((a, b) => b.monthlyTotal - a.monthlyTotal)
-
-        return (
-          <div className="card">
-            <h2>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
+        {/* Subscriptions Compact List */}
+        {confirmedSubs.length > 0 && (
+          <div className="dashboard-card subscriptions-compact-card">
+            <h3 className="dashboard-card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
               </svg>
-              Recurring Spending Leaks
-            </h2>
-            <div className="leak-groups">
-              {categoryTotals.map(({ category, leaks, monthlyTotal, yearlyTotal }) => (
-                <div key={category} className="leak-group">
-                  <div className="leak-group-header">
-                    <div className="leak-group-badge">
-                      <span className="leak-group-category">{category}</span>
-                    </div>
-                    <div className="leak-group-insight">
-                      <span className="leak-group-message">
-                        You&apos;re spending <strong className="leak-highlight">{formatCurrencyPrecise(monthlyTotal)}</strong> per month
-                      </span>
-                      <span className="leak-group-yearly">That&apos;s {formatCurrency(yearlyTotal)} per year</span>
-                    </div>
-                    <div className="leak-group-total-badge">
-                      <span className="leak-total-amount">{formatCurrencyPrecise(monthlyTotal)}</span>
-                      <span className="leak-total-period">/month</span>
-                    </div>
+              Subscriptions
+              <span className="card-badge">{confirmedSubs.length}</span>
+            </h3>
+            <div className="subscriptions-compact-total">
+              <span>{formatCurrencyPrecise(totalMonthlySubscriptions)}</span>
+              <span className="subscriptions-total-period">/month</span>
+            </div>
+            <ul className="subscriptions-compact-list">
+              {confirmedSubs.slice(0, 5).map((sub, index) => (
+                <li key={index} className="subscription-compact-item">
+                  <span className="subscription-compact-name">{sub.merchant}</span>
+                  <span className="subscription-compact-cost">{formatCurrencyPrecise(sub.monthly_cost)}</span>
+                </li>
+              ))}
+            </ul>
+            {confirmedSubs.length > 5 && (
+              <button className="view-all-btn">
+                View all {confirmedSubs.length} subscriptions
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Quick Wins */}
+        {results.easy_wins.length > 0 && (
+          <div className="dashboard-card quick-wins-card">
+            <h3 className="dashboard-card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+              Quick Wins
+            </h3>
+            <div className="quick-wins-list">
+              {results.easy_wins.slice(0, 3).map((win, index) => (
+                <div key={index} className="quick-win-item">
+                  <div className="quick-win-content">
+                    <span className="quick-win-title">{win.title}</span>
+                    <span className="quick-win-action">{win.action}</span>
                   </div>
-                  <ul className="leak-group-items">
-                    {leaks.map((leak, index) => (
-                      <li key={index} className="leak-item">
-                        <div className="leak-info">
-                          <div className="leak-merchant">{leak.merchant}</div>
-                          <div className="leak-explanation">{leak.explanation}</div>
-                        </div>
-                        <div className="leak-amount">
-                          <div className="leak-monthly">{formatCurrencyPrecise(Number(leak.monthly_cost) || 0)}/mo</div>
-                          <div className="leak-yearly">{formatCurrency(Number(leak.yearly_cost) || 0)}/yr</div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <span className="quick-win-savings">
+                    {formatCurrency(win.estimated_yearly_savings)}/yr
+                  </span>
                 </div>
               ))}
             </div>
           </div>
-        )
-      })()}
+        )}
+      </div>
 
-      {/* Top 5 Biggest Transactions */}
-      {results.top_spending && results.top_spending.length > 0 && (
-        <div className="card top-transactions-card">
-          <h2>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
-              <path d="M12 20V10" />
-              <path d="M18 20V4" />
-              <path d="M6 20v-4" />
-            </svg>
-            Top 5 Biggest Transactions
-          </h2>
-          <div className="top-transactions-list">
-            {results.top_spending.map((item, index) => (
-              <div key={index} className="top-transaction-item">
-                <div className="top-transaction-rank">#{index + 1}</div>
-                <div className="top-transaction-info">
-                  <div className="top-transaction-merchant">{item.merchant}</div>
-                  {item.date && <div className="top-transaction-date">{item.date}</div>}
-                </div>
-                <div className="top-transaction-amount">
-                  {formatCurrencyPrecise(item.amount)}
-                </div>
+      {/* 2-Column Grid: Spending Leaks, Month Comparison */}
+      <div className="dashboard-grid-2">
+        {/* Spending Leaks - Collapsible */}
+        {results.top_leaks.length > 0 && (
+          <div className="dashboard-card leaks-collapsible-card">
+            <button
+              className="collapsible-header"
+              onClick={() => setLeaksExpanded(!leaksExpanded)}
+            >
+              <h3 className="dashboard-card-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                Recurring Spending Leaks
+                <span className="card-badge">{categoryTotals.length} categories</span>
+              </h3>
+              <svg
+                className={`collapse-icon ${leaksExpanded ? 'expanded' : ''}`}
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {/* Preview when collapsed */}
+            {!leaksExpanded && (
+              <div className="leaks-preview">
+                {categoryTotals.slice(0, 2).map(({ category, monthlyTotal }) => (
+                  <div key={category} className="leak-preview-item">
+                    <span className="leak-preview-category">{category}</span>
+                    <span className="leak-preview-amount">{formatCurrencyPrecise(monthlyTotal)}/mo</span>
+                  </div>
+                ))}
+                {categoryTotals.length > 2 && (
+                  <span className="leak-preview-more">+{categoryTotals.length - 2} more</span>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            )}
 
-      {/* Easy Wins */}
-      {results.easy_wins.length > 0 && (
-        <div className="card">
-          <h2>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-            Easy Wins
-          </h2>
-          <div className="easy-wins-list">
-            {results.easy_wins.map((win, index) => (
-              <div key={index} className="easy-win">
-                <div className="easy-win-header">
-                  <span className="easy-win-title">{win.title}</span>
-                  <span className="easy-win-savings">
-                    Save {formatCurrency(win.estimated_yearly_savings)}/yr
-                  </span>
-                </div>
-                <div className="easy-win-action">{win.action}</div>
+            {/* Full content when expanded */}
+            {leaksExpanded && (
+              <div className="leaks-expanded">
+                {categoryTotals.map(({ category, leaks, monthlyTotal, yearlyTotal }) => (
+                  <div key={category} className="leak-group-compact">
+                    <div className="leak-group-header-compact">
+                      <span className="leak-group-category-badge">{category}</span>
+                      <div className="leak-group-totals">
+                        <span className="leak-monthly-total">{formatCurrencyPrecise(monthlyTotal)}/mo</span>
+                        <span className="leak-yearly-total">{formatCurrency(yearlyTotal)}/yr</span>
+                      </div>
+                    </div>
+                    <ul className="leak-items-compact">
+                      {leaks.map((leak, index) => (
+                        <li key={index} className="leak-item-compact">
+                          <span className="leak-merchant-compact">{leak.merchant}</span>
+                          <span className="leak-cost-compact">{formatCurrencyPrecise(Number(leak.monthly_cost) || 0)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Spending Breakdown by Category */}
-      {results.category_summary && results.category_summary.length > 0 && (
-        <SpendingBreakdown categories={results.category_summary} />
-      )}
+        {/* Month Comparison Bar Chart */}
+        {results.comparison && (
+          <ComparisonBarChart comparison={results.comparison} />
+        )}
+      </div>
 
-      {/* Detected Subscriptions */}
-      {results.subscriptions && results.subscriptions.length > 0 && (
-        <SubscriptionList subscriptions={results.subscriptions} />
-      )}
+      {/* Tabbed Insights */}
+      <InsightsTabs
+        priceChanges={results.price_changes}
+        duplicates={results.duplicate_subscriptions}
+        alternatives={results.alternatives}
+        topSpending={results.top_spending}
+      />
 
-      {/* Price Increases */}
-      {results.price_changes && results.price_changes.length > 0 && (
-        <PriceChangesPanel priceChanges={results.price_changes} />
-      )}
-
-      {/* Duplicate Subscriptions */}
-      {results.duplicate_subscriptions && results.duplicate_subscriptions.length > 0 && (
-        <DuplicateSubscriptionsPanel duplicates={results.duplicate_subscriptions} />
-      )}
-
-      {/* Cheaper Alternatives */}
-      {results.alternatives && results.alternatives.length > 0 && (
-        <AlternativesPanel alternatives={results.alternatives} />
-      )}
-
-      {/* Month-over-Month Comparison */}
-      {results.comparison && (
-        <MonthComparison comparison={results.comparison} />
-      )}
-
-      {/* Recovery Plan */}
+      {/* Recovery Plan - Collapsible */}
       {results.recovery_plan.length > 0 && (
-        <div className="card">
-          <h2>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
+        <div className="dashboard-card recovery-plan-card">
+          <button
+            className="collapsible-header"
+            onClick={() => setRecoveryExpanded(!recoveryExpanded)}
+          >
+            <h3 className="dashboard-card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+              Your Recovery Plan
+              <span className="card-badge">{results.recovery_plan.length} steps</span>
+            </h3>
+            <svg
+              className={`collapse-icon ${recoveryExpanded ? 'expanded' : ''}`}
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <polyline points="6 9 12 15 18 9" />
             </svg>
-            Your Recovery Plan
-          </h2>
-          <ol className="recovery-list">
-            {results.recovery_plan.map((step, index) => (
-              <li key={index}>{step}</li>
-            ))}
-          </ol>
+          </button>
+
+          {recoveryExpanded && (
+            <ol className="recovery-list-compact">
+              {results.recovery_plan.map((step, index) => (
+                <li key={index}>{step}</li>
+              ))}
+            </ol>
+          )}
         </div>
       )}
 
-      {/* Share Card Section */}
+      {/* Share Card */}
       {results.share_summary && (
         <ShareCard
           shareSummary={results.share_summary}
@@ -403,75 +436,51 @@ export default function ResultCards({ results }: ResultCardsProps) {
         />
       )}
 
-      {/* Fallback Share Section if no share_summary */}
+      {/* Fallback Share Section */}
       {!results.share_summary && (
-        <div className="share-section">
-        <div className="share-highlight">
-          <span className="share-highlight-label">You're leaking</span>
-          <span className="share-highlight-amount">{formatCurrency(results.monthly_leak)}/month</span>
-          <span className="share-highlight-sublabel">(~{formatCurrency(results.annual_savings)}/year)</span>
-        </div>
-
-        <p className="share-cta">Found savings? Share this tool with friends & family.</p>
-
-        <div className="share-buttons">
-          <a
-            href={`https://twitter.com/intent/tweet?text=I just found ${formatCurrency(results.annual_savings)}/year in hidden spending leaks using this free tool!&url=https://whereismymoneygo.com`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="share-btn share-twitter"
-            title="Share on Twitter"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-            </svg>
-          </a>
-          <a
-            href={`https://www.facebook.com/sharer/sharer.php?u=https://whereismymoneygo.com`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="share-btn share-facebook"
-            title="Share on Facebook"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-            </svg>
-          </a>
-          <a
-            href={`https://wa.me/?text=I found ${formatCurrency(results.annual_savings)}/year in hidden spending leaks! Try this free tool: https://whereismymoneygo.com`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="share-btn share-whatsapp"
-            title="Share on WhatsApp"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-            </svg>
-          </a>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText('https://whereismymoneygo.com')
-              alert('Link copied!')
-            }}
-            className="share-btn share-copy"
-            title="Copy link"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-          </button>
-        </div>
-
-        <div className="feedback-link">
-          <a href="mailto:raleobob@gmail.com?subject=Feedback for Where Is My Money Go">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
-            </svg>
-            Send us feedback
-          </a>
-        </div>
+        <div className="share-section-compact">
+          <div className="share-highlight-compact">
+            <span>You&apos;re leaking</span>
+            <strong>{formatCurrency(results.monthly_leak)}/month</strong>
+            <span className="share-yearly">(~{formatCurrency(results.annual_savings)}/year)</span>
+          </div>
+          <div className="share-buttons-compact">
+            <a
+              href={`https://twitter.com/intent/tweet?text=I just found ${formatCurrency(results.annual_savings)}/year in hidden spending leaks using this free tool!&url=https://whereismymoneygo.com`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="share-btn-compact"
+              title="Share on Twitter"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+            </a>
+            <a
+              href={`https://www.facebook.com/sharer/sharer.php?u=https://whereismymoneygo.com`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="share-btn-compact"
+              title="Share on Facebook"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+            </a>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText('https://whereismymoneygo.com')
+                alert('Link copied!')
+              }}
+              className="share-btn-compact"
+              title="Copy link"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+          </div>
         </div>
       )}
 
