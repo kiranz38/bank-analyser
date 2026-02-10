@@ -27,7 +27,7 @@ const BANK_CONNECT_ENABLED = process.env.NEXT_PUBLIC_BANK_CONNECT_BETA === 'true
 
 // Hero copy variants for A/B testing
 const HERO_VARIANTS = {
-  A: 'Find where your money is leaking: subscriptions, fees, and silent overspending.',
+  A: 'Find where your money is going: subscriptions, fees, and silent overspending.',
   B: 'See where your money goes and fix the leaks in minutes.',
 }
 
