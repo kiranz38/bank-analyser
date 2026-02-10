@@ -5,6 +5,9 @@ import SpendingBreakdown from './SpendingBreakdown'
 import SubscriptionList from './SubscriptionList'
 import MonthComparison from './MonthComparison'
 import ShareCard from './ShareCard'
+import AlternativesPanel from './AlternativesPanel'
+import PriceChangesPanel from './PriceChangesPanel'
+import DuplicateSubscriptionsPanel from './DuplicateSubscriptionsPanel'
 
 // Event tracking helper
 const trackEvent = (event: string, data?: Record<string, unknown>) => {
@@ -82,6 +85,37 @@ interface ShareSummary {
   tagline: string
 }
 
+interface Alternative {
+  original: string
+  alternative: string
+  current_price: number
+  alternative_price: number
+  monthly_savings: number
+  yearly_savings: number
+  note: string
+  category: string
+}
+
+interface PriceChange {
+  merchant: string
+  old_price: number
+  new_price: number
+  increase: number
+  percent_change: number
+  first_date: string
+  latest_date: string
+  yearly_impact: number
+}
+
+interface DuplicateSubscription {
+  category: string
+  services: string[]
+  count: number
+  combined_monthly: number
+  combined_yearly: number
+  suggestion: string
+}
+
 interface ResultCardsProps {
   results: {
     monthly_leak: number
@@ -94,6 +128,9 @@ interface ResultCardsProps {
     subscriptions?: Subscription[]
     comparison?: MonthComparisonData | null
     share_summary?: ShareSummary | null
+    alternatives?: Alternative[]
+    price_changes?: PriceChange[]
+    duplicate_subscriptions?: DuplicateSubscription[]
   }
 }
 
@@ -291,6 +328,21 @@ export default function ResultCards({ results }: ResultCardsProps) {
       {/* Detected Subscriptions */}
       {results.subscriptions && results.subscriptions.length > 0 && (
         <SubscriptionList subscriptions={results.subscriptions} />
+      )}
+
+      {/* Price Increases */}
+      {results.price_changes && results.price_changes.length > 0 && (
+        <PriceChangesPanel priceChanges={results.price_changes} />
+      )}
+
+      {/* Duplicate Subscriptions */}
+      {results.duplicate_subscriptions && results.duplicate_subscriptions.length > 0 && (
+        <DuplicateSubscriptionsPanel duplicates={results.duplicate_subscriptions} />
+      )}
+
+      {/* Cheaper Alternatives */}
+      {results.alternatives && results.alternatives.length > 0 && (
+        <AlternativesPanel alternatives={results.alternatives} />
       )}
 
       {/* Month-over-Month Comparison */}

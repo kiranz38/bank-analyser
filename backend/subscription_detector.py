@@ -284,3 +284,144 @@ def generate_month_comparison(transactions: list[dict]) -> Optional[dict]:
         "spikes": spikes[:3],
         "months_analyzed": len(sorted_months)
     }
+
+
+def detect_price_changes(transactions: list[dict]) -> list[dict]:
+    """
+    Detect subscription price increases over time.
+
+    Looks for merchants with:
+    - Multiple transactions at different amounts
+    - Later transactions higher than earlier ones
+    - Amount change > $1 (to filter out rounding)
+    """
+    # Group by merchant
+    merchant_txns = defaultdict(list)
+    for txn in transactions:
+        merchant = txn.get("normalized_merchant") or txn.get("merchant", "")
+        if not merchant:
+            continue
+        date = parse_date(txn.get("date", ""))
+        amount = txn.get("amount", 0)
+        if date and amount > 0 and not math.isnan(amount):
+            merchant_txns[merchant.upper()].append({
+                "date": date,
+                "amount": amount
+            })
+
+    price_changes = []
+
+    for merchant, txns in merchant_txns.items():
+        if len(txns) < 2:
+            continue
+
+        # Sort by date
+        txns.sort(key=lambda x: x["date"])
+
+        # Get unique amounts in chronological order
+        unique_amounts = []
+        last_amount = None
+        for t in txns:
+            if last_amount is None or abs(t["amount"] - last_amount) > 0.50:
+                unique_amounts.append({
+                    "amount": t["amount"],
+                    "date": t["date"]
+                })
+                last_amount = t["amount"]
+
+        if len(unique_amounts) < 2:
+            continue
+
+        # Check if latest price is higher than earliest
+        first = unique_amounts[0]
+        last = unique_amounts[-1]
+
+        price_diff = last["amount"] - first["amount"]
+        pct_change = (price_diff / first["amount"] * 100) if first["amount"] > 0 else 0
+
+        # Only report significant increases (> $1 or > 5%)
+        if price_diff >= 1.0 or pct_change >= 5:
+            price_changes.append({
+                "merchant": merchant,
+                "old_price": round(first["amount"], 2),
+                "new_price": round(last["amount"], 2),
+                "increase": round(price_diff, 2),
+                "percent_change": round(pct_change, 1),
+                "first_date": first["date"].strftime("%Y-%m-%d"),
+                "latest_date": last["date"].strftime("%Y-%m-%d"),
+                "yearly_impact": round(price_diff * 12, 2)
+            })
+
+    # Sort by yearly impact
+    price_changes.sort(key=lambda x: x["yearly_impact"], reverse=True)
+    return price_changes[:10]
+
+
+def detect_duplicate_subscriptions(subscriptions: list[dict]) -> list[dict]:
+    """
+    Detect potential duplicate or overlapping subscriptions.
+
+    Groups subscriptions by service category:
+    - Multiple streaming services
+    - Multiple music services
+    - Multiple cloud storage
+    - Multiple fitness memberships
+    """
+    # Category keywords
+    CATEGORIES = {
+        "streaming": ["NETFLIX", "HULU", "DISNEY", "HBO", "MAX", "PARAMOUNT", "PEACOCK", "APPLE TV", "AMAZON PRIME VIDEO", "STAN", "BINGE"],
+        "music": ["SPOTIFY", "APPLE MUSIC", "AMAZON MUSIC", "YOUTUBE MUSIC", "TIDAL", "DEEZER", "PANDORA"],
+        "cloud": ["DROPBOX", "GOOGLE ONE", "ICLOUD", "ONEDRIVE", "BOX"],
+        "fitness": ["GYM", "FITNESS", "PELOTON", "PLANET FITNESS", "LA FITNESS", "ANYTIME FITNESS", "EQUINOX", "CLASSPASS", "APPLE FITNESS"],
+        "food_delivery": ["DOORDASH", "UBER EATS", "GRUBHUB", "POSTMATES", "MENULOG", "DELIVEROO", "JUST EAT"],
+        "password_manager": ["1PASSWORD", "LASTPASS", "DASHLANE", "BITWARDEN"],
+        "vpn": ["NORDVPN", "EXPRESSVPN", "SURFSHARK", "PRIVATE INTERNET ACCESS"]
+    }
+
+    duplicates = []
+
+    # Categorize subscriptions
+    categorized = defaultdict(list)
+
+    for sub in subscriptions:
+        merchant = sub.get("merchant", "").upper()
+        for category, keywords in CATEGORIES.items():
+            if any(kw in merchant for kw in keywords):
+                categorized[category].append(sub)
+                break
+
+    # Find categories with multiple subscriptions
+    for category, subs in categorized.items():
+        if len(subs) >= 2:
+            total_monthly = sum(s.get("monthly_cost", 0) for s in subs)
+            total_yearly = total_monthly * 12
+
+            duplicates.append({
+                "category": category.replace("_", " ").title(),
+                "services": [s.get("merchant", "") for s in subs],
+                "count": len(subs),
+                "combined_monthly": round(total_monthly, 2),
+                "combined_yearly": round(total_yearly, 2),
+                "suggestion": _get_duplicate_suggestion(category, subs)
+            })
+
+    # Sort by combined yearly cost
+    duplicates.sort(key=lambda x: x["combined_yearly"], reverse=True)
+    return duplicates
+
+
+def _get_duplicate_suggestion(category: str, subs: list[dict]) -> str:
+    """Generate suggestion for duplicate subscriptions."""
+    count = len(subs)
+
+    suggestions = {
+        "streaming": f"Consider keeping only 1-2 streaming services and rotating monthly. You have {count} active.",
+        "music": f"Most music services have similar catalogs. Pick one favorite and cancel the rest.",
+        "cloud": f"Consolidate to one cloud storage provider. {count} services likely means duplicate backups.",
+        "fitness": f"You're paying for {count} fitness memberships. Consider keeping only the one you use most.",
+        "food_delivery": f"Pick one delivery service for best rewards. {count} services may mean no loyalty benefits.",
+        "password_manager": f"One password manager is enough. Using {count} reduces security benefits.",
+        "vpn": f"Multiple VPN subscriptions provide no extra benefit. Keep the fastest one."
+    }
+
+    return suggestions.get(category, f"Consider consolidating these {count} similar services.")

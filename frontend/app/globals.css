@@ -4287,3 +4287,371 @@ h3 {
     margin-top: 0.25rem;
   }
 }
+
+/* ============================================
+   MILESTONE 4: Analysis Upgrades
+   ============================================ */
+
+/* Alternatives Panel */
+.alternatives-panel h2 {
+  color: var(--success);
+}
+
+.alternatives-header {
+  margin-bottom: 1.5rem;
+}
+
+.alternatives-intro {
+  color: var(--muted);
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+.savings-highlight {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.alternatives-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.alternative-group {
+  padding: 1rem 1.25rem;
+  background: var(--background);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--card-border);
+}
+
+.alternative-original {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.alternative-service {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.alternative-current {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.alternative-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.alternative-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+}
+
+.alternative-info {
+  flex: 1;
+}
+
+.alternative-name {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.free-badge {
+  font-size: 0.6875rem;
+  padding: 0.125rem 0.5rem;
+  background: var(--success-light);
+  color: var(--success);
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.alternative-note {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.alternative-savings {
+  text-align: right;
+}
+
+.alternative-price {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.alternative-save {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--success);
+}
+
+/* Price Changes Panel */
+.price-changes-panel h2 {
+  color: var(--warning);
+}
+
+.price-changes-header {
+  margin-bottom: 1.5rem;
+}
+
+.price-changes-intro {
+  color: var(--muted);
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+.warning-highlight {
+  color: var(--warning);
+  font-weight: 700;
+}
+
+.price-changes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.price-change-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: var(--background);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--card-border);
+}
+
+.price-change-info {
+  flex: 1;
+}
+
+.price-change-merchant {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.price-change-dates {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.price-change-amounts {
+  text-align: right;
+}
+
+.price-change-comparison {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.375rem;
+}
+
+.price-old {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.price-new {
+  font-weight: 600;
+}
+
+.price-change-comparison svg {
+  color: var(--muted-light);
+}
+
+.price-increase-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  background: var(--warning-light);
+  color: var(--warning);
+  border-radius: 4px;
+}
+
+.price-changes-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.875rem 1rem;
+  margin-top: 1rem;
+  background: var(--primary-light);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: var(--foreground);
+  line-height: 1.5;
+}
+
+.price-changes-tip svg {
+  flex-shrink: 0;
+  color: var(--primary);
+  margin-top: 0.125rem;
+}
+
+/* Duplicate Subscriptions Panel */
+.duplicates-panel h2 {
+  color: var(--danger);
+}
+
+.duplicates-intro {
+  color: var(--muted);
+  font-size: 0.9375rem;
+  margin-bottom: 1.5rem;
+}
+
+.duplicates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.duplicate-item {
+  padding: 1rem 1.25rem;
+  background: var(--background);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--card-border);
+}
+
+.duplicate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.duplicate-category {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.duplicate-category svg {
+  color: var(--primary);
+}
+
+.duplicate-cost {
+  text-align: right;
+}
+
+.duplicate-count {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.duplicate-amount {
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.duplicate-services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.service-badge {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.duplicate-suggestion {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.75rem;
+  background: var(--warning-light);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: var(--foreground);
+  line-height: 1.4;
+}
+
+.duplicate-suggestion svg {
+  flex-shrink: 0;
+  color: var(--warning);
+  margin-top: 0.125rem;
+}
+
+/* Responsive - Milestone 4 panels */
+@media (max-width: 640px) {
+  .alternative-option {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .alternative-savings {
+    text-align: left;
+  }
+
+  .price-change-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .price-change-amounts {
+    text-align: left;
+    width: 100%;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--card-border);
+  }
+
+  .duplicate-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .duplicate-cost {
+    text-align: left;
+  }
+}
+
+/* Dark mode adjustments for Milestone 4 */
+.dark .alternative-group {
+  background: var(--card-bg);
+}
+
+.dark .alternative-option {
+  background: var(--background);
+}
+
+.dark .price-change-item {
+  background: var(--card-bg);
+}
+
+.dark .duplicate-item {
+  background: var(--card-bg);
+}
+
+.dark .service-badge {
+  background: var(--background);
+}

@@ -1,10 +1,81 @@
 """Spending analyzer with categorization, subscription detection, and Claude enhancement."""
 
+import json
+import os
 from collections import defaultdict
 from typing import Optional
 from claude_client import get_claude_analysis
 from categorizer import categorize_transactions, generate_category_summary, Category
-from subscription_detector import detect_subscriptions, generate_month_comparison, detect_date_range
+from subscription_detector import detect_subscriptions, generate_month_comparison, detect_date_range, detect_price_changes, detect_duplicate_subscriptions
+
+# Load alternatives data
+ALTERNATIVES_PATH = os.path.join(os.path.dirname(__file__), "data", "alternatives.json")
+ALTERNATIVES_DATA = {}
+try:
+    with open(ALTERNATIVES_PATH, "r") as f:
+        ALTERNATIVES_DATA = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    pass
+
+
+def find_alternatives(merchant: str, monthly_cost: float) -> list[dict]:
+    """Find cheaper alternatives for a given merchant."""
+    merchant_upper = merchant.upper()
+    alternatives_found = []
+
+    for category, services in ALTERNATIVES_DATA.items():
+        for service_key, service_data in services.items():
+            if service_key.upper() in merchant_upper or service_data["name"].upper() in merchant_upper:
+                for alt in service_data["alternatives"]:
+                    savings = monthly_cost - alt["price"]
+                    if savings > 0:
+                        alternatives_found.append({
+                            "original": service_data["name"],
+                            "alternative": alt["name"],
+                            "current_price": round(monthly_cost, 2),
+                            "alternative_price": alt["price"],
+                            "monthly_savings": round(savings, 2),
+                            "yearly_savings": round(savings * 12, 2),
+                            "note": alt["note"],
+                            "category": category
+                        })
+                break
+
+    # Sort by savings (highest first)
+    alternatives_found.sort(key=lambda x: x["monthly_savings"], reverse=True)
+    return alternatives_found[:3]  # Top 3 alternatives per service
+
+
+def find_all_alternatives(subscriptions: list[dict], top_leaks: list[dict]) -> list[dict]:
+    """Find alternatives for all detected spending."""
+    all_alternatives = []
+    seen_services = set()
+
+    # Check subscriptions first
+    for sub in subscriptions:
+        merchant = sub.get("merchant", "")
+        if merchant in seen_services:
+            continue
+
+        alternatives = find_alternatives(merchant, sub.get("monthly_cost", 0))
+        if alternatives:
+            seen_services.add(merchant)
+            all_alternatives.extend(alternatives)
+
+    # Check top leaks
+    for leak in top_leaks:
+        merchant = leak.get("merchant", "")
+        if merchant in seen_services:
+            continue
+
+        alternatives = find_alternatives(merchant, leak.get("monthly_cost", 0))
+        if alternatives:
+            seen_services.add(merchant)
+            all_alternatives.extend(alternatives)
+
+    # Sort by yearly savings
+    all_alternatives.sort(key=lambda x: x["yearly_savings"], reverse=True)
+    return all_alternatives[:10]  # Top 10 overall
 
 
 # Fee-related keywords
@@ -98,11 +169,20 @@ def analyze_transactions(transactions: list[dict], use_claude: bool = True) -> d
     # Detect subscriptions with improved algorithm
     subscriptions = detect_subscriptions(categorized_txns)
 
+    # Detect price changes in subscriptions
+    price_changes = detect_price_changes(categorized_txns)
+
+    # Detect potential duplicate subscriptions
+    duplicate_subscriptions = detect_duplicate_subscriptions(subscriptions)
+
     # Generate month-over-month comparison if enough data
     comparison = generate_month_comparison(categorized_txns)
 
     # Run heuristic analysis for leaks
     heuristic_results = _heuristic_analysis(categorized_txns, subscriptions)
+
+    # Find cheaper alternatives for detected spending
+    alternatives = find_all_alternatives(subscriptions, heuristic_results.get("top_leaks", []))
 
     # Enhance with Claude if enabled
     if use_claude:
@@ -115,6 +195,9 @@ def analyze_transactions(transactions: list[dict], use_claude: bool = True) -> d
     result["category_summary"] = category_summary
     result["subscriptions"] = subscriptions
     result["comparison"] = comparison
+    result["alternatives"] = alternatives
+    result["price_changes"] = price_changes
+    result["duplicate_subscriptions"] = duplicate_subscriptions
 
     # Generate share summary (privacy-safe)
     result["share_summary"] = _generate_share_summary(result, subscriptions)
@@ -139,7 +222,10 @@ def _empty_result() -> dict:
         "category_summary": [],
         "subscriptions": [],
         "comparison": None,
-        "share_summary": None
+        "share_summary": None,
+        "alternatives": [],
+        "price_changes": [],
+        "duplicate_subscriptions": []
     }
 
 

@@ -1,0 +1,225 @@
+{
+  "streaming": {
+    "netflix": {
+      "name": "Netflix",
+      "alternatives": [
+        {"name": "Tubi", "price": 0, "note": "Free with ads, good movie selection"},
+        {"name": "Pluto TV", "price": 0, "note": "Free with ads, live TV channels"},
+        {"name": "Amazon Prime Video", "price": 8.99, "note": "Included with Prime membership"}
+      ]
+    },
+    "hulu": {
+      "name": "Hulu",
+      "alternatives": [
+        {"name": "Peacock Free", "price": 0, "note": "Free tier with ads"},
+        {"name": "Tubi", "price": 0, "note": "Free with ads"},
+        {"name": "Paramount+ Essential", "price": 5.99, "note": "Lower cost with ads"}
+      ]
+    },
+    "disney": {
+      "name": "Disney+",
+      "alternatives": [
+        {"name": "Disney+ with Ads", "price": 7.99, "note": "Same content, lower price"},
+        {"name": "Bundle with Hulu", "price": 9.99, "note": "Better value if you use both"}
+      ]
+    },
+    "hbo": {
+      "name": "HBO Max",
+      "alternatives": [
+        {"name": "Max with Ads", "price": 9.99, "note": "Same content, lower price"},
+        {"name": "Rotate monthly", "price": 0, "note": "Subscribe 1 month, binge, cancel"}
+      ]
+    },
+    "spotify": {
+      "name": "Spotify",
+      "alternatives": [
+        {"name": "YouTube Music", "price": 10.99, "note": "Similar catalog, included with YouTube Premium"},
+        {"name": "Amazon Music", "price": 0, "note": "Free with Prime membership"},
+        {"name": "Spotify Free", "price": 0, "note": "Free tier with ads"}
+      ]
+    },
+    "apple music": {
+      "name": "Apple Music",
+      "alternatives": [
+        {"name": "Spotify Free", "price": 0, "note": "Free tier with ads"},
+        {"name": "YouTube Music", "price": 10.99, "note": "Includes YouTube Premium"}
+      ]
+    },
+    "youtube premium": {
+      "name": "YouTube Premium",
+      "alternatives": [
+        {"name": "uBlock Origin", "price": 0, "note": "Free browser extension blocks ads"},
+        {"name": "YouTube Music only", "price": 10.99, "note": "If you mainly want music"}
+      ]
+    },
+    "paramount": {
+      "name": "Paramount+",
+      "alternatives": [
+        {"name": "Paramount+ Essential", "price": 5.99, "note": "With ads, same content"},
+        {"name": "Pluto TV", "price": 0, "note": "Free, same parent company"}
+      ]
+    }
+  },
+  "food_delivery": {
+    "uber eats": {
+      "name": "Uber Eats",
+      "alternatives": [
+        {"name": "Restaurant pickup", "price": 0, "note": "Save 20-30% on fees"},
+        {"name": "DoorDash DashPass", "price": 9.99, "note": "If ordering 3+ times/month"}
+      ]
+    },
+    "doordash": {
+      "name": "DoorDash",
+      "alternatives": [
+        {"name": "Restaurant pickup", "price": 0, "note": "Save delivery fees and tips"},
+        {"name": "Meal prep Sunday", "price": 0, "note": "Batch cook to reduce orders"}
+      ]
+    },
+    "grubhub": {
+      "name": "Grubhub",
+      "alternatives": [
+        {"name": "Direct restaurant ordering", "price": 0, "note": "Many restaurants have own apps"},
+        {"name": "Grubhub+", "price": 9.99, "note": "Free delivery if ordering often"}
+      ]
+    },
+    "postmates": {
+      "name": "Postmates",
+      "alternatives": [
+        {"name": "Uber Eats", "price": 0, "note": "Same company, often better deals"},
+        {"name": "Local pickup", "price": 0, "note": "Skip the fees entirely"}
+      ]
+    },
+    "menulog": {
+      "name": "Menulog",
+      "alternatives": [
+        {"name": "Restaurant direct", "price": 0, "note": "Call restaurant, save fees"},
+        {"name": "Hey You", "price": 0, "note": "Order ahead for pickup, earn rewards"}
+      ]
+    }
+  },
+  "rideshare": {
+    "uber": {
+      "name": "Uber",
+      "alternatives": [
+        {"name": "Public transit", "price": 0, "note": "Often 80% cheaper"},
+        {"name": "Lyft", "price": 0, "note": "Compare prices, often cheaper"},
+        {"name": "Uber Pool/Share", "price": 0, "note": "Save 30-50% sharing rides"}
+      ]
+    },
+    "lyft": {
+      "name": "Lyft",
+      "alternatives": [
+        {"name": "Uber", "price": 0, "note": "Compare prices each trip"},
+        {"name": "Bike share", "price": 0, "note": "Often free first 30 mins"}
+      ]
+    }
+  },
+  "fitness": {
+    "planet fitness": {
+      "name": "Planet Fitness",
+      "alternatives": [
+        {"name": "YouTube workouts", "price": 0, "note": "Free home workouts"},
+        {"name": "Outdoor running", "price": 0, "note": "Free cardio"}
+      ]
+    },
+    "equinox": {
+      "name": "Equinox",
+      "alternatives": [
+        {"name": "Planet Fitness", "price": 10, "note": "Basic gym at fraction of cost"},
+        {"name": "ClassPass", "price": 49, "note": "Variety of studios"}
+      ]
+    },
+    "peloton": {
+      "name": "Peloton",
+      "alternatives": [
+        {"name": "Peloton app only", "price": 12.99, "note": "Cancel equipment subscription"},
+        {"name": "Apple Fitness+", "price": 9.99, "note": "Similar classes, lower cost"},
+        {"name": "YouTube fitness", "price": 0, "note": "Free workout videos"}
+      ]
+    },
+    "classpass": {
+      "name": "ClassPass",
+      "alternatives": [
+        {"name": "One gym membership", "price": 30, "note": "Pick favorite, commit to it"},
+        {"name": "Free trial hopping", "price": 0, "note": "Many studios offer free first class"}
+      ]
+    }
+  },
+  "software": {
+    "adobe": {
+      "name": "Adobe Creative Cloud",
+      "alternatives": [
+        {"name": "Canva Pro", "price": 12.99, "note": "Good for most design needs"},
+        {"name": "Affinity Suite", "price": 169, "note": "One-time purchase, no subscription"},
+        {"name": "GIMP + Inkscape", "price": 0, "note": "Free open source alternatives"}
+      ]
+    },
+    "microsoft 365": {
+      "name": "Microsoft 365",
+      "alternatives": [
+        {"name": "Google Workspace", "price": 0, "note": "Free personal tier"},
+        {"name": "LibreOffice", "price": 0, "note": "Free, compatible with Office files"}
+      ]
+    },
+    "dropbox": {
+      "name": "Dropbox",
+      "alternatives": [
+        {"name": "Google Drive", "price": 0, "note": "15GB free"},
+        {"name": "iCloud", "price": 0.99, "note": "50GB for $1/month"}
+      ]
+    },
+    "1password": {
+      "name": "1Password",
+      "alternatives": [
+        {"name": "Bitwarden", "price": 0, "note": "Free, open source, highly rated"},
+        {"name": "Apple Keychain", "price": 0, "note": "Free for Apple users"}
+      ]
+    },
+    "lastpass": {
+      "name": "LastPass",
+      "alternatives": [
+        {"name": "Bitwarden", "price": 0, "note": "Free, better security reputation"},
+        {"name": "Apple/Google built-in", "price": 0, "note": "Free password managers"}
+      ]
+    }
+  },
+  "news_media": {
+    "new york times": {
+      "name": "NY Times",
+      "alternatives": [
+        {"name": "Library card", "price": 0, "note": "Many libraries offer free access"},
+        {"name": "Apple News+", "price": 12.99, "note": "Includes many publications"}
+      ]
+    },
+    "wall street journal": {
+      "name": "WSJ",
+      "alternatives": [
+        {"name": "Library access", "price": 0, "note": "Free through many libraries"},
+        {"name": "Bloomberg free", "price": 0, "note": "Good financial news coverage"}
+      ]
+    },
+    "washington post": {
+      "name": "Washington Post",
+      "alternatives": [
+        {"name": ".edu email", "price": 0, "note": "Free with student email"},
+        {"name": "Amazon Prime", "price": 0, "note": "Discounted rate for Prime members"}
+      ]
+    }
+  },
+  "cloud_storage": {
+    "icloud": {
+      "name": "iCloud+",
+      "alternatives": [
+        {"name": "Google Photos", "price": 0, "note": "Free backup, unlimited compressed"},
+        {"name": "External hard drive", "price": 50, "note": "One-time purchase"}
+      ]
+    },
+    "google one": {
+      "name": "Google One",
+      "alternatives": [
+        {"name": "Clean up Gmail", "price": 0, "note": "Delete old emails, free up space"},
+        {"name": "iCloud 50GB", "price": 0.99, "note": "Cheaper if you're on iOS"}
+      ]
+    }
+  }
+}

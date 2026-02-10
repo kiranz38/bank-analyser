@@ -97,6 +97,34 @@ interface AnalysisResult {
     subscription_count: number
     tagline: string
   } | null
+  alternatives?: Array<{
+    original: string
+    alternative: string
+    current_price: number
+    alternative_price: number
+    monthly_savings: number
+    yearly_savings: number
+    note: string
+    category: string
+  }>
+  price_changes?: Array<{
+    merchant: string
+    old_price: number
+    new_price: number
+    increase: number
+    percent_change: number
+    first_date: string
+    latest_date: string
+    yearly_impact: number
+  }>
+  duplicate_subscriptions?: Array<{
+    category: string
+    services: string[]
+    count: number
+    combined_monthly: number
+    combined_yearly: number
+    suggestion: string
+  }>
 }
 
 type ViewState = 'landing' | 'method-chooser' | 'upload' | 'waitlist' | 'results'
