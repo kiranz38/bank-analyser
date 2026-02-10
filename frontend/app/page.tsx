@@ -8,6 +8,8 @@ import LoadingOverlay from '@/components/LoadingOverlay'
 import ExamplePreview from '@/components/ExamplePreview'
 import MethodChooser from '@/components/MethodChooser'
 import WaitlistForm from '@/components/WaitlistForm'
+import PlaidLink from '@/components/PlaidLink'
+import { PlaidLinkResult } from '@/lib/plaid'
 import {
   trackCTAClicked,
   trackUploadStarted,
@@ -128,7 +130,7 @@ interface AnalysisResult {
   }>
 }
 
-type ViewState = 'landing' | 'method-chooser' | 'upload' | 'waitlist' | 'results'
+type ViewState = 'landing' | 'method-chooser' | 'upload' | 'waitlist' | 'plaid' | 'results'
 
 export default function Home() {
   const [results, setResults] = useState<AnalysisResult | null>(null)
@@ -156,11 +158,45 @@ export default function Home() {
   }
 
   const handleSelectBankConnect = () => {
-    // For now, always show waitlist since Plaid integration is not complete
-    setViewState('waitlist')
+    if (BANK_CONNECT_ENABLED) {
+      // Show Plaid Link when beta is enabled
+      setViewState('plaid')
+    } else {
+      // Show waitlist for users not in beta
+      setViewState('waitlist')
+    }
   }
 
   const handleBackToMethodChooser = () => {
+    setViewState('method-chooser')
+  }
+
+  const handlePlaidSuccess = (plaidResult: PlaidLinkResult) => {
+    if (plaidResult.success && plaidResult.result) {
+      // Track the analysis
+      const result = plaidResult.result as AnalysisResult
+      trackUploadCompleted({
+        fileCount: 1,
+        totalTransactions: plaidResult.transaction_count || 0
+      })
+      trackAnalysisGenerated({
+        monthlyLeak: result.monthly_leak,
+        annualSavings: result.annual_savings,
+        subscriptionCount: result.subscriptions?.length || 0
+      })
+
+      setResults(result)
+      setViewState('results')
+    }
+  }
+
+  const handlePlaidExit = () => {
+    // User cancelled Plaid - go back to method chooser
+    setViewState('method-chooser')
+  }
+
+  const handlePlaidError = (errorMessage: string) => {
+    setError(errorMessage)
     setViewState('method-chooser')
   }
 
@@ -338,6 +374,39 @@ export default function Home() {
               onClose={() => setViewState('landing')}
               onBack={handleBackToMethodChooser}
             />
+          </div>
+        )}
+
+        {/* Plaid Bank Connect */}
+        {viewState === 'plaid' && (
+          <div className="workspace">
+            {error && (
+              <div className="error">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                {error}
+              </div>
+            )}
+
+            <PlaidLink
+              onSuccess={handlePlaidSuccess}
+              onExit={handlePlaidExit}
+              onError={handlePlaidError}
+            />
+
+            <button
+              className="btn btn-text back-link"
+              onClick={handleBackToMethodChooser}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              Back to options
+            </button>
           </div>
         )}
 
