@@ -574,7 +574,7 @@ export default function ResultCards({ results }: ResultCardsProps) {
               </svg>
               Top Transactions
             </h2>
-            <span className="toggle-icon">{expandedSections.transactions ? '−' : '+'}</span>
+            <span className="toggle-icon">{expandedSections.transactions ? '▲' : '▼'}</span>
           </div>
           {expandedSections.transactions && (
             <div className="top-transactions-list">
@@ -614,7 +614,7 @@ export default function ResultCards({ results }: ResultCardsProps) {
               </svg>
               Price Increases ({results.price_changes.length})
             </h2>
-            <span className="toggle-icon">{expandedSections.prices ? '−' : '+'}</span>
+            <span className="toggle-icon">{expandedSections.prices ? '▲' : '▼'}</span>
           </div>
           {expandedSections.prices && (
             <div className="price-changes-list">
@@ -641,7 +641,7 @@ export default function ResultCards({ results }: ResultCardsProps) {
               </svg>
               Cheaper Alternatives ({results.alternatives.length})
             </h2>
-            <span className="toggle-icon">{expandedSections.alternatives ? '−' : '+'}</span>
+            <span className="toggle-icon">{expandedSections.alternatives ? '▲' : '▼'}</span>
           </div>
           {expandedSections.alternatives && (
             <div className="alternatives-list">
