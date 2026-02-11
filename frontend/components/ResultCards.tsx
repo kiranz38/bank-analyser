@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import ShareCard from './ShareCard'
 import FeedbackWidget from './FeedbackWidget'
 import {
@@ -20,6 +20,8 @@ interface Leak {
   monthly_cost: number
   yearly_cost: number
   explanation: string
+  date?: string
+  last_date?: string
 }
 
 interface TopSpending {
@@ -137,6 +139,7 @@ interface ResultCardsProps {
 const CATEGORY_COLORS: Record<string, string> = {
   'Subscriptions': '#8b5cf6',
   'Dining & Delivery': '#f97316',
+  'Food Delivery': '#fb923c',
   'Shopping': '#3b82f6',
   'Transport': '#10b981',
   'Groceries': '#22c55e',
@@ -145,12 +148,14 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Health & Fitness': '#14b8a6',
   'Travel': '#f59e0b',
   'Fees': '#ef4444',
+  'Fees & Charges': '#dc2626',
   'Transfers': '#64748b',
   'Other': '#94a3b8',
 }
 
 export default function ResultCards({ results }: ResultCardsProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
+  const [showSpendingModal, setShowSpendingModal] = useState(false)
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
@@ -294,8 +299,8 @@ export default function ResultCards({ results }: ResultCardsProps) {
                 </span>
               ))}
             </div>
-            <button className="expand-btn" onClick={() => toggleSection('spending')}>
-              {expandedSections.spending ? 'Hide Details' : 'View Details'}
+            <button className="expand-btn" onClick={() => setShowSpendingModal(true)}>
+              View Details
             </button>
           </div>
         )}
@@ -375,29 +380,6 @@ export default function ResultCards({ results }: ResultCardsProps) {
           </div>
         )}
       </div>
-
-      {/* Expanded Spending Details */}
-      {expandedSections.spending && results.category_summary && (
-        <div className="card expanded-section">
-          <h2>Spending Breakdown</h2>
-          <div className="category-bars">
-            {results.category_summary.filter(c => c.category !== 'Transfers' && c.category !== 'Income').slice(0, 8).map((cat, index) => (
-              <div key={index} className="category-bar-item">
-                <div className="category-bar-header">
-                  <span className="category-bar-name">
-                    <span className="category-dot" style={{ backgroundColor: CATEGORY_COLORS[cat.category] || '#94a3b8' }} />
-                    {cat.category}
-                  </span>
-                  <span className="category-bar-amount">{formatCurrency(cat.total)} ({cat.percent.toFixed(1)}%)</span>
-                </div>
-                <div className="category-bar-track">
-                  <div className="category-bar-fill" style={{ width: `${Math.max(cat.percent, 2)}%`, backgroundColor: CATEGORY_COLORS[cat.category] || '#94a3b8' }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Expanded Subscriptions Details */}
       {expandedSections.subscriptions && confirmedSubs.length > 0 && (
@@ -539,6 +521,9 @@ export default function ResultCards({ results }: ResultCardsProps) {
                       <div className="leak-info">
                         <div className="leak-merchant">{leak.merchant}</div>
                         <div className="leak-explanation">{leak.explanation}</div>
+                        {(leak.date || leak.last_date) && (
+                          <div className="leak-date">Last charged: {leak.date || leak.last_date}</div>
+                        )}
                       </div>
                       <div className="leak-amount">
                         <div className="leak-monthly">{formatCurrencyPrecise(Number(leak.monthly_cost) || 0)}/mo</div>
@@ -674,6 +659,105 @@ export default function ResultCards({ results }: ResultCardsProps) {
           subscriptionCount: results.subscriptions?.length || 0
         }}
       />
+
+      {/* Spending Details Modal */}
+      {showSpendingModal && (
+        <div className="modal-overlay" onClick={() => setShowSpendingModal(false)}>
+          <div className="modal-content spending-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Spending Analysis</h2>
+              <button className="modal-close" onClick={() => setShowSpendingModal(false)}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* Large Pie Chart */}
+              <div className="spending-chart-section">
+                <h3>Spending by Category</h3>
+                <div className="large-pie-container">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        dataKey="value"
+                        paddingAngle={2}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        labelLine={true}
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => formatCurrency(Number(value) || 0)} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Category Bar Chart */}
+              <div className="spending-chart-section">
+                <h3>Monthly Spending Breakdown</h3>
+                <div className="category-bar-chart">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={pieData.map(d => ({ name: d.name, amount: d.value, fill: d.color }))}
+                      layout="vertical"
+                      margin={{ left: 100, right: 30 }}
+                    >
+                      <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
+                      <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 12 }} />
+                      <Tooltip formatter={(value) => formatCurrency(Number(value) || 0)} />
+                      <Bar dataKey="amount" radius={[0, 4, 4, 0]}>
+                        {pieData.map((entry, index) => (
+                          <Cell key={`bar-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Category Details */}
+              {results.category_summary && results.category_summary.length > 0 && (
+                <div className="spending-details-section">
+                  <h3>Category Details</h3>
+                  <div className="category-details-grid">
+                    {results.category_summary
+                      .filter(c => c.category !== 'Transfers' && c.category !== 'Income')
+                      .slice(0, 8)
+                      .map((cat, index) => (
+                        <div key={index} className="category-detail-card" style={{ borderLeftColor: CATEGORY_COLORS[cat.category] || '#94a3b8' }}>
+                          <div className="category-detail-header">
+                            <span className="category-detail-name">{cat.category}</span>
+                            <span className="category-detail-percent">{cat.percent.toFixed(1)}%</span>
+                          </div>
+                          <div className="category-detail-amount">{formatCurrency(cat.total)}</div>
+                          <div className="category-detail-count">{cat.transaction_count} transactions</div>
+                          {cat.top_merchants && cat.top_merchants.length > 0 && (
+                            <div className="category-detail-merchants">
+                              {cat.top_merchants.slice(0, 3).map((m, i) => (
+                                <span key={i} className="merchant-tag">{m.name}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
