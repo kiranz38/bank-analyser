@@ -5,6 +5,7 @@ import json
 import logging
 from typing import Optional
 from anthropic import Anthropic
+from redactor import redact_transactions
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +26,11 @@ def get_claude_analysis(transactions: list[dict], heuristic_results: dict) -> Op
     try:
         client = Anthropic(api_key=api_key)
 
+        # Redact PII from transactions before any processing
+        redacted_txns = redact_transactions(transactions)
+
         # Prepare ANONYMIZED transaction summary for Claude
-        anonymized_summary = _prepare_anonymized_summary(transactions, heuristic_results)
+        anonymized_summary = _prepare_anonymized_summary(redacted_txns, heuristic_results)
 
         prompt = f"""Analyze this anonymized spending data and provide general financial insights.
 
