@@ -39,10 +39,9 @@ export default function SpendingPieChart({ categories }: SpendingPieChartProps) 
     return null
   }
 
-  // Filter out transfers and income, take top 6 categories
+  // Filter out transfers and income, show all spending categories
   const spendingCategories = categories
     .filter(c => c.category !== 'Transfers' && c.category !== 'Income')
-    .slice(0, 6)
 
   const totalSpending = spendingCategories.reduce((sum, c) => sum + c.total, 0)
 

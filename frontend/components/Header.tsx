@@ -9,17 +9,15 @@ export default function Header() {
   const [lastScrollY, setLastScrollY] = useState(0)
   const [isDarkMode, setIsDarkMode] = useState(false)
 
-  // Initialize dark mode from localStorage or system preference
+  // Initialize theme — default to light; only honour saved preference if explicitly 'dark'
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
-    if (savedTheme) {
-      setIsDarkMode(savedTheme === 'dark')
-      document.documentElement.classList.toggle('dark', savedTheme === 'dark')
-    } else {
-      // Check system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      setIsDarkMode(prefersDark)
-      document.documentElement.classList.toggle('dark', prefersDark)
+    const useDark = savedTheme === 'dark'
+    setIsDarkMode(useDark)
+    document.documentElement.classList.toggle('dark', useDark)
+    // Ensure first-time visitors get light mode persisted
+    if (!savedTheme) {
+      localStorage.setItem('theme', 'light')
     }
   }, [])
 
