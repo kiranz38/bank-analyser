@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
 import ShareCard from './ShareCard'
 import FeedbackWidget from './FeedbackWidget'
 import {
@@ -13,127 +13,10 @@ import {
   trackDuplicatesViewed,
   trackAlternativeClicked
 } from '@/lib/analytics'
-
-interface Leak {
-  category: string
-  merchant: string
-  monthly_cost: number
-  yearly_cost: number
-  explanation: string
-  date?: string
-  last_date?: string
-}
-
-interface TopSpending {
-  date: string
-  merchant: string
-  amount: number
-  category?: string
-}
-
-interface EasyWin {
-  title: string
-  estimated_yearly_savings: number
-  action: string
-}
-
-interface CategorySummary {
-  category: string
-  total: number
-  percent: number
-  transaction_count: number
-  top_merchants: Array<{ name: string; total: number }>
-}
-
-interface Subscription {
-  merchant: string
-  monthly_cost: number
-  annual_cost: number
-  confidence: number
-  last_date: string
-  occurrences: number
-  reason: string
-}
-
-interface MonthComparisonData {
-  previous_month: string
-  current_month: string
-  previous_total: number
-  current_total: number
-  total_change: number
-  total_change_percent: number
-  top_changes: Array<{
-    category: string
-    previous: number
-    current: number
-    change: number
-    change_percent: number
-  }>
-  spikes: Array<{
-    category: string
-    previous: number
-    current: number
-    change: number
-    change_percent: number
-  }>
-  months_analyzed: number
-}
-
-interface ShareSummary {
-  monthly_leak: number
-  annual_savings: number
-  top_categories: Array<{ category: string; monthly: number }>
-  subscription_count: number
-  tagline: string
-}
-
-interface Alternative {
-  original: string
-  alternative: string
-  current_price: number
-  alternative_price: number
-  monthly_savings: number
-  yearly_savings: number
-  note: string
-  category: string
-}
-
-interface PriceChange {
-  merchant: string
-  old_price: number
-  new_price: number
-  increase: number
-  percent_change: number
-  first_date: string
-  latest_date: string
-  yearly_impact: number
-}
-
-interface DuplicateSubscription {
-  category: string
-  services: string[]
-  count: number
-  combined_monthly: number
-  combined_yearly: number
-  suggestion: string
-}
+import type { AnalysisResult, Leak } from '@/lib/types'
 
 interface ResultCardsProps {
-  results: {
-    monthly_leak: number
-    annual_savings: number
-    top_leaks: Leak[]
-    top_spending: TopSpending[]
-    easy_wins: EasyWin[]
-    recovery_plan: string[]
-    category_summary?: CategorySummary[]
-    subscriptions?: Subscription[]
-    comparison?: MonthComparisonData | null
-    share_summary?: ShareSummary | null
-    alternatives?: Alternative[]
-    price_changes?: PriceChange[]
-    duplicate_subscriptions?: DuplicateSubscription[]
-  }
+  results: AnalysisResult
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -234,12 +117,6 @@ export default function ResultCards({ results }: ResultCardsProps) {
           color: CATEGORY_COLORS[ct.category] || '#94a3b8'
         }))
 
-  // Prepare comparison bar data
-  const comparisonData = results.comparison ? [
-    { name: results.comparison.previous_month.split('-')[1], amount: results.comparison.previous_total, fill: '#94a3b8' },
-    { name: results.comparison.current_month.split('-')[1], amount: results.comparison.current_total, fill: results.comparison.total_change > 0 ? '#f97316' : '#10b981' }
-  ] : []
-
   const confirmedSubs = (results.subscriptions || []).filter(s => s.confidence >= 0.6)
 
   return (
@@ -282,7 +159,7 @@ export default function ResultCards({ results }: ResultCardsProps) {
               </svg>
               Spending
             </h3>
-            <div className="mini-pie-container">
+            <div className="mini-pie-container" id="pdf-chart-capture">
               <ResponsiveContainer width="100%" height={120}>
                 <PieChart>
                   <Pie data={pieData} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" paddingAngle={2}>
@@ -326,36 +203,6 @@ export default function ResultCards({ results }: ResultCardsProps) {
             <button className="expand-btn" onClick={() => setShowSubscriptionsModal(true)}>
               View Details
             </button>
-          </div>
-        )}
-
-        {/* Month Comparison */}
-        {results.comparison && (
-          <div className="card overview-card">
-            <h3 className="overview-title">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="20" x2="18" y2="10" />
-                <line x1="12" y1="20" x2="12" y2="4" />
-                <line x1="6" y1="20" x2="6" y2="14" />
-              </svg>
-              vs Last Month
-            </h3>
-            <div className="mini-bar-container">
-              <ResponsiveContainer width="100%" height={80}>
-                <BarChart data={comparisonData} barGap={4}>
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value) || 0)} />
-                  <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={40}>
-                    {comparisonData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className={`change-badge ${results.comparison.total_change > 0 ? 'up' : 'down'}`}>
-              {results.comparison.total_change > 0 ? '+' : ''}{formatCurrency(results.comparison.total_change)}
-            </div>
           </div>
         )}
 
@@ -661,14 +508,14 @@ export default function ResultCards({ results }: ResultCardsProps) {
                 <div className="spending-chart-panel">
                   <h3>By Category</h3>
                   <div className="chart-container-compact">
-                    <ResponsiveContainer width="100%" height={220}>
+                    <ResponsiveContainer width="100%" height={170}>
                       <PieChart>
                         <Pie
                           data={pieData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={45}
-                          outerRadius={75}
+                          innerRadius={35}
+                          outerRadius={60}
                           dataKey="value"
                           paddingAngle={2}
                         >
@@ -695,7 +542,7 @@ export default function ResultCards({ results }: ResultCardsProps) {
                 <div className="spending-chart-panel">
                   <h3>Spending Breakdown</h3>
                   <div className="chart-container-compact">
-                    <ResponsiveContainer width="100%" height={220}>
+                    <ResponsiveContainer width="100%" height={170}>
                       <BarChart
                         data={pieData.slice(0, 6).map(d => ({ name: d.name.length > 12 ? d.name.slice(0, 12) + '...' : d.name, amount: d.value, fill: d.color }))}
                         layout="vertical"

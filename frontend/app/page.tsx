@@ -11,9 +11,12 @@ import WaitlistForm from '@/components/WaitlistForm'
 import PlaidLink from '@/components/PlaidLink'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import ErrorMessage from '@/components/ErrorMessage'
+import ExportPdfButton from '@/components/ExportPdfButton'
 import { PlaidLinkResult } from '@/lib/plaid'
 import { saveToSession, loadFromSession, clearSession } from '@/lib/sessionCache'
 import { sampleDataToCSV } from '@/lib/sampleData'
+import { DEMO_RESULTS } from '@/lib/demoResults'
+import { AnalysisResult } from '@/lib/types'
 import {
   trackCTAClicked,
   trackUploadStarted,
@@ -27,105 +30,6 @@ import {
 
 // Feature flags
 const BANK_CONNECT_ENABLED = process.env.NEXT_PUBLIC_BANK_CONNECT_BETA === 'true'
-
-interface AnalysisResult {
-  monthly_leak: number
-  annual_savings: number
-  top_leaks: Array<{
-    category: string
-    merchant: string
-    monthly_cost: number
-    yearly_cost: number
-    explanation: string
-  }>
-  top_spending: Array<{
-    date: string
-    merchant: string
-    amount: number
-    category?: string
-  }>
-  easy_wins: Array<{
-    title: string
-    estimated_yearly_savings: number
-    action: string
-  }>
-  recovery_plan: string[]
-  disclaimer: string
-  category_summary?: Array<{
-    category: string
-    total: number
-    percent: number
-    transaction_count: number
-    top_merchants: Array<{ name: string; total: number }>
-  }>
-  subscriptions?: Array<{
-    merchant: string
-    monthly_cost: number
-    annual_cost: number
-    confidence: number
-    last_date: string
-    occurrences: number
-    reason: string
-  }>
-  comparison?: {
-    previous_month: string
-    current_month: string
-    previous_total: number
-    current_total: number
-    total_change: number
-    total_change_percent: number
-    top_changes: Array<{
-      category: string
-      previous: number
-      current: number
-      change: number
-      change_percent: number
-    }>
-    spikes: Array<{
-      category: string
-      previous: number
-      current: number
-      change: number
-      change_percent: number
-    }>
-    months_analyzed: number
-  } | null
-  share_summary?: {
-    monthly_leak: number
-    annual_savings: number
-    top_categories: Array<{ category: string; monthly: number }>
-    subscription_count: number
-    tagline: string
-  } | null
-  alternatives?: Array<{
-    original: string
-    alternative: string
-    current_price: number
-    alternative_price: number
-    monthly_savings: number
-    yearly_savings: number
-    note: string
-    category: string
-  }>
-  price_changes?: Array<{
-    merchant: string
-    old_price: number
-    new_price: number
-    increase: number
-    percent_change: number
-    first_date: string
-    latest_date: string
-    yearly_impact: number
-  }>
-  duplicate_subscriptions?: Array<{
-    category: string
-    services: string[]
-    count: number
-    combined_monthly: number
-    combined_yearly: number
-    suggestion: string
-  }>
-}
 
 type ViewState = 'landing' | 'method-chooser' | 'upload' | 'waitlist' | 'plaid' | 'results'
 
@@ -161,45 +65,25 @@ export default function Home() {
     setViewState('method-chooser')
   }
 
-  const handleSampleRun = async () => {
+  const handleSampleRun = () => {
     trackSampleRunStarted()
     setIsSampleRun(true)
     setLoading(true)
     setError(null)
     setResults(null)
 
-    try {
-      const csvText = sampleDataToCSV()
-      const formData = new FormData()
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      formData.append('text', csvText)
-
-      const response = await fetch(`${apiUrl}/analyze`, {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Sample analysis failed')
-      }
-
-      const result = await response.json()
-
+    // Demo mode: short animated delay then show hardcoded results
+    setTimeout(() => {
       trackAnalysisGenerated({
-        monthlyLeak: result.monthly_leak,
-        annualSavings: result.annual_savings,
-        subscriptionCount: result.subscriptions?.length || 0
+        monthlyLeak: DEMO_RESULTS.monthly_leak,
+        annualSavings: DEMO_RESULTS.annual_savings,
+        subscriptionCount: DEMO_RESULTS.subscriptions?.length || 0
       })
 
-      setResults(result)
+      setResults(DEMO_RESULTS as AnalysisResult)
       setViewState('results')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      setIsSampleRun(false)
-    } finally {
       setLoading(false)
-    }
+    }, 2500)
   }
 
   const handleSelectUpload = () => {
@@ -330,7 +214,7 @@ export default function Home() {
 
   return (
     <>
-      <LoadingOverlay isLoading={loading} />
+      <LoadingOverlay isLoading={loading} isDemo={isSampleRun} />
 
       <main className="container">
         {/* Hero Section - Always visible on landing */}
@@ -385,7 +269,7 @@ export default function Home() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
-                Try with sample data
+                Try Demo
               </button>
 
               {/* Trust Strip */}
@@ -516,7 +400,7 @@ export default function Home() {
                   <path d="M12 16v-4" />
                   <path d="M12 8h.01" />
                 </svg>
-                <span>Sample data &mdash; these results are from a fictional dataset, not your real transactions.</span>
+                <span>Demo mode &mdash; these results are from a fictional dataset, not your real transactions.</span>
               </div>
             )}
             <ErrorBoundary>
@@ -526,6 +410,7 @@ export default function Home() {
               For informational purposes only. Not financial advice.
             </p>
             <div className="results-actions">
+              <ExportPdfButton results={results} chartContainerId="pdf-chart-capture" />
               <button
                 className="btn btn-primary"
                 onClick={handleReset}

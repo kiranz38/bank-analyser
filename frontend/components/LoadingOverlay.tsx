@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 
 interface LoadingOverlayProps {
   isLoading: boolean
+  isDemo?: boolean
 }
 
 const steps = [
@@ -15,7 +16,7 @@ const steps = [
   { id: 6, text: 'Finalizing analysis...' },
 ]
 
-export default function LoadingOverlay({ isLoading }: LoadingOverlayProps) {
+export default function LoadingOverlay({ isLoading, isDemo }: LoadingOverlayProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [extraProgress, setExtraProgress] = useState(0)
 
@@ -26,7 +27,10 @@ export default function LoadingOverlay({ isLoading }: LoadingOverlayProps) {
       return
     }
 
-    // Progress through steps (slower pace - 1.5 seconds per step)
+    const stepDelay = isDemo ? 300 : 1500
+    const extraDelay = isDemo ? 150 : 800
+
+    // Progress through steps
     const interval = setInterval(() => {
       setCurrentStep((prev) => {
         if (prev < steps.length - 1) {
@@ -34,39 +38,42 @@ export default function LoadingOverlay({ isLoading }: LoadingOverlayProps) {
         }
         return prev
       })
-    }, 1500)
+    }, stepDelay)
 
-    // Extra slow progress for the final step (adds 1% every 500ms up to 95%)
+    // Extra progress for the final stretch
     const extraInterval = setInterval(() => {
       setExtraProgress((prev) => {
-        if (prev < 10) return prev + 1
+        if (prev < (isDemo ? 15 : 10)) return prev + 1
         return prev
       })
-    }, 800)
+    }, extraDelay)
 
     return () => {
       clearInterval(interval)
       clearInterval(extraInterval)
     }
-  }, [isLoading])
+  }, [isLoading, isDemo])
 
   if (!isLoading) return null
 
-  // Progress: steps contribute up to 85%, extra progress adds up to 10% more (max 95%)
+  // Progress: steps contribute up to 85%, extra progress fills the rest
   const basePercent = Math.round((currentStep / (steps.length - 1)) * 85)
-  const progressPercent = Math.min(95, basePercent + extraProgress)
+  const maxPercent = isDemo ? 100 : 95
+  const progressPercent = Math.min(maxPercent, basePercent + extraProgress)
 
   return (
     <div className="loading-overlay">
       <div className="loading-card">
         <div className="loading-spinner" />
-        <h3 className="loading-title">Analyzing Your Spending</h3>
+        <h3 className="loading-title">{isDemo ? 'Loading Demo' : 'Analyzing Your Spending'}</h3>
         <p className="loading-subtitle">
-          Grab a coffee while we crunch the numbers for you...
+          {isDemo ? 'Preparing your demo analysis...' : 'Grab a coffee while we crunch the numbers for you...'}
         </p>
-        <p className="loading-time-hint">
-          This typically takes 30 seconds to a minute.
-        </p>
+        {!isDemo && (
+          <p className="loading-time-hint">
+            This typically takes 30 seconds to a minute.
+          </p>
+        )}
         <div className="progress-container">
           <div className="progress-bar">
             <div
