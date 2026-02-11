@@ -156,6 +156,8 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function ResultCards({ results }: ResultCardsProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
   const [showSpendingModal, setShowSpendingModal] = useState(false)
+  const [showSubscriptionsModal, setShowSubscriptionsModal] = useState(false)
+  const [showQuickWinsModal, setShowQuickWinsModal] = useState(false)
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
@@ -321,8 +323,8 @@ export default function ResultCards({ results }: ResultCardsProps) {
             <div className="overview-amount">
               {formatCurrencyPrecise(confirmedSubs.reduce((s, sub) => s + sub.monthly_cost, 0))}/mo
             </div>
-            <button className="expand-btn" onClick={() => toggleSection('subscriptions')}>
-              {expandedSections.subscriptions ? 'Hide Details' : 'View Details'}
+            <button className="expand-btn" onClick={() => setShowSubscriptionsModal(true)}>
+              View Details
             </button>
           </div>
         )}
@@ -374,50 +376,12 @@ export default function ResultCards({ results }: ResultCardsProps) {
             <div className="overview-amount success">
               Save {formatCurrency(results.easy_wins.reduce((s, w) => s + w.estimated_yearly_savings, 0))}/yr
             </div>
-            <button className="expand-btn" onClick={() => toggleSection('wins')}>
-              {expandedSections.wins ? 'Hide Details' : 'View Details'}
+            <button className="expand-btn" onClick={() => setShowQuickWinsModal(true)}>
+              View Details
             </button>
           </div>
         )}
       </div>
-
-      {/* Expanded Subscriptions Details */}
-      {expandedSections.subscriptions && confirmedSubs.length > 0 && (
-        <div className="card expanded-section">
-          <h2>Detected Subscriptions</h2>
-          <ul className="subscription-list">
-            {confirmedSubs.map((sub, index) => (
-              <li key={index} className="subscription-item">
-                <div className="subscription-info">
-                  <span className="subscription-merchant">{sub.merchant}</span>
-                  <span className="subscription-reason">{sub.reason}</span>
-                </div>
-                <div className="subscription-cost">
-                  <div className="subscription-monthly">{formatCurrencyPrecise(sub.monthly_cost)}/mo</div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Expanded Quick Wins */}
-      {expandedSections.wins && results.easy_wins.length > 0 && (
-        <div className="card expanded-section">
-          <h2>Easy Wins</h2>
-          <div className="easy-wins-list">
-            {results.easy_wins.map((win, index) => (
-              <div key={index} className="easy-win">
-                <div className="easy-win-header">
-                  <span className="easy-win-title">{win.title}</span>
-                  <span className="easy-win-savings">Save {formatCurrency(win.estimated_yearly_savings)}/yr</span>
-                </div>
-                <div className="easy-win-action">{win.action}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Three Column Row: Easy Wins, Spending Leaks, Recovery Plan */}
       <div className="three-column-row">
@@ -440,7 +404,7 @@ export default function ResultCards({ results }: ResultCardsProps) {
                 </div>
               ))}
               {results.easy_wins.length > 4 && (
-                <button className="view-more-btn" onClick={() => toggleSection('wins')}>
+                <button className="view-more-btn" onClick={() => setShowQuickWinsModal(true)}>
                   +{results.easy_wins.length - 4} more
                 </button>
               )}
@@ -779,6 +743,110 @@ export default function ResultCards({ results }: ResultCardsProps) {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Subscriptions Modal */}
+      {showSubscriptionsModal && confirmedSubs.length > 0 && (
+        <div className="modal-overlay" onClick={() => setShowSubscriptionsModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+                Detected Subscriptions
+              </h2>
+              <button className="modal-close" onClick={() => setShowSubscriptionsModal(false)}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-summary">
+                <div className="modal-stat">
+                  <span className="modal-stat-value">{confirmedSubs.length}</span>
+                  <span className="modal-stat-label">Subscriptions Found</span>
+                </div>
+                <div className="modal-stat">
+                  <span className="modal-stat-value">{formatCurrencyPrecise(confirmedSubs.reduce((s, sub) => s + sub.monthly_cost, 0))}</span>
+                  <span className="modal-stat-label">Monthly Total</span>
+                </div>
+                <div className="modal-stat">
+                  <span className="modal-stat-value">{formatCurrency(confirmedSubs.reduce((s, sub) => s + sub.annual_cost, 0))}</span>
+                  <span className="modal-stat-label">Annual Total</span>
+                </div>
+              </div>
+              <div className="subscription-list-modal">
+                {confirmedSubs.map((sub, index) => (
+                  <div key={index} className="subscription-modal-item">
+                    <div className="subscription-modal-info">
+                      <div className="subscription-modal-merchant">{sub.merchant}</div>
+                      <div className="subscription-modal-reason">{sub.reason}</div>
+                      <div className="subscription-modal-date">Last charged: {sub.last_date}</div>
+                    </div>
+                    <div className="subscription-modal-cost">
+                      <div className="subscription-modal-monthly">{formatCurrencyPrecise(sub.monthly_cost)}/mo</div>
+                      <div className="subscription-modal-annual">{formatCurrency(sub.annual_cost)}/yr</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Wins Modal */}
+      {showQuickWinsModal && results.easy_wins.length > 0 && (
+        <div className="modal-overlay" onClick={() => setShowQuickWinsModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+                Quick Wins - Easy Savings
+              </h2>
+              <button className="modal-close" onClick={() => setShowQuickWinsModal(false)}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-summary success-theme">
+                <div className="modal-stat">
+                  <span className="modal-stat-value">{results.easy_wins.length}</span>
+                  <span className="modal-stat-label">Quick Actions</span>
+                </div>
+                <div className="modal-stat">
+                  <span className="modal-stat-value success">{formatCurrency(results.easy_wins.reduce((s, w) => s + w.estimated_yearly_savings, 0))}</span>
+                  <span className="modal-stat-label">Potential Yearly Savings</span>
+                </div>
+              </div>
+              <div className="quick-wins-list-modal">
+                {results.easy_wins.map((win, index) => (
+                  <div key={index} className="quick-win-modal-item">
+                    <div className="quick-win-modal-number">{index + 1}</div>
+                    <div className="quick-win-modal-content">
+                      <div className="quick-win-modal-title">{win.title}</div>
+                      <div className="quick-win-modal-action">{win.action}</div>
+                    </div>
+                    <div className="quick-win-modal-savings">
+                      <span className="savings-amount">Save {formatCurrency(win.estimated_yearly_savings)}</span>
+                      <span className="savings-period">/year</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
