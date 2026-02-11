@@ -7166,3 +7166,87 @@ h3 {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== COLORED HEADER SECTIONS ===== */
+
+/* Top Transactions - Blue header */
+.card.card-transactions {
+  border-top: 3px solid #3b82f6;
+  overflow: hidden;
+}
+
+.card.card-transactions .section-header-row {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, transparent 100%);
+  margin: -1.25rem -1.25rem 1rem -1.25rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.card.card-transactions h2 {
+  color: #3b82f6;
+}
+
+/* Recovery Plan - Purple header */
+.card.card-recovery {
+  border-top: 3px solid #8b5cf6;
+  overflow: hidden;
+}
+
+.card-recovery-header {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, transparent 100%);
+  margin: -1.25rem -1.25rem 1rem -1.25rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-recovery-header h2 {
+  color: #8b5cf6;
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.card-recovery-header svg {
+  color: #8b5cf6;
+}
+
+/* Feedback Widget - Teal header */
+.feedback-widget {
+  border-top: 3px solid #14b8a6 !important;
+  overflow: hidden;
+}
+
+.feedback-header {
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, transparent 100%);
+  margin: -1.5rem -1.5rem 1.25rem -1.5rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.feedback-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #14b8a6;
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.feedback-header-title svg {
+  stroke: #14b8a6;
+}
+
+/* Dark mode for colored headers */
+.dark .card.card-transactions .section-header-row {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, transparent 100%);
+}
+
+.dark .card.card-recovery .card-recovery-header {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, transparent 100%);
+}
+
+.dark .feedback-header {
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, transparent 100%);
+}
