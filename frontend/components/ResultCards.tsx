@@ -675,54 +675,71 @@ export default function ResultCards({ results }: ResultCardsProps) {
             </div>
 
             <div className="modal-body">
-              {/* Large Pie Chart */}
-              <div className="spending-chart-section">
-                <h3>Spending by Category</h3>
-                <div className="large-pie-container">
-                  <ResponsiveContainer width="100%" height={280}>
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        dataKey="value"
-                        paddingAngle={2}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        labelLine={true}
-                      >
-                        {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => formatCurrency(Number(value) || 0)} />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
+              {/* Month indicator */}
+              {results.comparison && (
+                <div className="spending-month-label">
+                  Analyzing: {results.comparison.current_month}
+                  {results.comparison.months_analyzed > 1 && ` (${results.comparison.months_analyzed} months)`}
                 </div>
-              </div>
+              )}
 
-              {/* Category Bar Chart */}
-              <div className="spending-chart-section">
-                <h3>Monthly Spending Breakdown</h3>
-                <div className="category-bar-chart">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart
-                      data={pieData.map(d => ({ name: d.name, amount: d.value, fill: d.color }))}
-                      layout="vertical"
-                      margin={{ left: 100, right: 30 }}
-                    >
-                      <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
-                      <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 12 }} />
-                      <Tooltip formatter={(value) => formatCurrency(Number(value) || 0)} />
-                      <Bar dataKey="amount" radius={[0, 4, 4, 0]}>
-                        {pieData.map((entry, index) => (
-                          <Cell key={`bar-${index}`} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+              {/* Charts Row - Side by Side */}
+              <div className="spending-charts-row">
+                {/* Pie Chart */}
+                <div className="spending-chart-panel">
+                  <h3>By Category</h3>
+                  <div className="chart-container-compact">
+                    <ResponsiveContainer width="100%" height={220}>
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={45}
+                          outerRadius={75}
+                          dataKey="value"
+                          paddingAngle={2}
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => formatCurrency(Number(value) || 0)} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="pie-legend-compact">
+                      {pieData.slice(0, 6).map((cat, i) => (
+                        <div key={i} className="pie-legend-item">
+                          <span className="pie-legend-dot" style={{ backgroundColor: cat.color }} />
+                          <span className="pie-legend-name">{cat.name}</span>
+                          <span className="pie-legend-value">{formatCurrency(cat.value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bar Chart */}
+                <div className="spending-chart-panel">
+                  <h3>Spending Breakdown</h3>
+                  <div className="chart-container-compact">
+                    <ResponsiveContainer width="100%" height={220}>
+                      <BarChart
+                        data={pieData.slice(0, 6).map(d => ({ name: d.name.length > 12 ? d.name.slice(0, 12) + '...' : d.name, amount: d.value, fill: d.color }))}
+                        layout="vertical"
+                        margin={{ left: 80, right: 20, top: 10, bottom: 10 }}
+                      >
+                        <XAxis type="number" tickFormatter={(value) => `$${(value/1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
+                        <YAxis type="category" dataKey="name" width={75} tick={{ fontSize: 11 }} />
+                        <Tooltip formatter={(value) => formatCurrency(Number(value) || 0)} />
+                        <Bar dataKey="amount" radius={[0, 4, 4, 0]} barSize={20}>
+                          {pieData.slice(0, 6).map((entry, index) => (
+                            <Cell key={`bar-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
 
