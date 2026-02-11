@@ -31,12 +31,47 @@ export default function TermsPage() {
         </section>
 
         <section>
+          <h2>Voluntary Upload</h2>
+          <p>
+            All data uploads are entirely voluntary. You choose what to submit. You may use the
+            &ldquo;Try with sample data&rdquo; feature to see how the tool works without uploading any personal data.
+          </p>
+        </section>
+
+        <section>
+          <h2>Temporary Processing</h2>
+          <p>
+            All uploaded data is processed in server memory only. Files are not saved to disk, databases,
+            or cloud storage. Once analysis is complete and results are delivered, all transaction data is
+            immediately discarded from memory. Buffers are cleared.
+          </p>
+        </section>
+
+        <section>
+          <h2>AI-Enhanced Analysis</h2>
+          <p>
+            This service may use Anthropic&apos;s Claude API for enhanced spending insights. When AI analysis
+            is used, only anonymized, redacted, aggregated data is sent &mdash; never raw transaction
+            details with identifiable information. Per Anthropic&apos;s API terms, data sent through the API
+            is <strong>not used for model training</strong>.
+          </p>
+        </section>
+
+        <section>
           <h2>Not Financial Advice</h2>
           <p>
             <strong>Important:</strong> This tool is for informational and educational purposes only.
             The analysis, insights, and suggestions provided do not constitute financial, investment,
             tax, or legal advice. You should consult with qualified professionals before making any
-            financial decisions.
+            financial decisions. You are solely responsible for any actions you take based on the
+            information provided by this tool.
+          </p>
+        </section>
+
+        <section>
+          <h2>No Data Resale</h2>
+          <p>
+            We do not sell, rent, or share your data with any third party for marketing or commercial purposes.
           </p>
         </section>
 
@@ -56,6 +91,8 @@ export default function TermsPage() {
             While we strive to provide accurate analysis, we cannot guarantee the completeness or
             accuracy of results. Our categorization algorithms use heuristics and may occasionally
             misclassify transactions. Always verify important findings with your actual bank records.
+            The informational output is provided as-is and you are responsible for any decisions made
+            based on it.
           </p>
         </section>
 
@@ -72,7 +109,7 @@ export default function TermsPage() {
         <section>
           <h2>Service Availability</h2>
           <p>
-            We provide this service on an "as is" and "as available" basis. We do not guarantee
+            We provide this service on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo; basis. We do not guarantee
             uninterrupted access and may modify or discontinue the service at any time without notice.
           </p>
         </section>
@@ -98,12 +135,12 @@ export default function TermsPage() {
           <h2>Contact</h2>
           <p>
             For questions about these terms, contact us at{' '}
-            <a href="mailto:raleobob@gmail.com">raleobob@gmail.com</a>.
+            <a href="mailto:support@whereismymoneygo.com">support@whereismymoneygo.com</a>.
           </p>
         </section>
 
         <div className="legal-back">
-          <Link href="/">← Back to Analyzer</Link>
+          <Link href="/">&#8592; Back to Analyzer</Link>
         </div>
       </div>
     </main>

@@ -13,6 +13,9 @@ export default function Footer() {
               <span>Leaky Wallet</span>
             </div>
             <p className="footer-tagline">Free privacy-first bank statement analyzer.</p>
+            <p className="footer-disclaimer-text">
+              For informational purposes only. Not financial advice.
+            </p>
           </div>
 
           {/* Middle Column - Links */}
@@ -33,6 +36,9 @@ export default function Footer() {
               <Link href="/privacy">Privacy Policy</Link>
               <Link href="/terms">Terms of Use</Link>
             </nav>
+            <p className="footer-contact">
+              <a href="mailto:support@whereismymoneygo.com">support@whereismymoneygo.com</a>
+            </p>
             <p className="footer-copyright">&copy; {currentYear} whereismymoneygo.com</p>
           </div>
         </div>

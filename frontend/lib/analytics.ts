@@ -54,16 +54,28 @@ export function trackMethodBankConnectSelected(): void {
 }
 
 /**
- * Upload started
+ * Sample run started (no upload, uses bundled data)
+ */
+export function trackSampleRunStarted(): void {
+  trackEvent('sample_run_started')
+}
+
+/**
+ * Consent checkbox checked
+ */
+export function trackConsentChecked(): void {
+  trackEvent('consent_checked')
+}
+
+/**
+ * Upload started - no PII in payload
  */
 export function trackUploadStarted(params: {
-  filename: string
-  size: number
+  file_count: number
   type: 'file' | 'text'
 }): void {
   trackEvent('upload_started', {
-    filename: params.filename,
-    file_size: params.size,
+    file_count: params.file_count,
     upload_type: params.type
   })
 }

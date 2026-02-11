@@ -13,6 +13,7 @@ import ErrorBoundary from '@/components/ErrorBoundary'
 import ErrorMessage from '@/components/ErrorMessage'
 import { PlaidLinkResult } from '@/lib/plaid'
 import { saveToSession, loadFromSession, clearSession } from '@/lib/sessionCache'
+import { sampleDataToCSV } from '@/lib/sampleData'
 import {
   trackCTAClicked,
   trackUploadStarted,
@@ -20,19 +21,12 @@ import {
   trackAnalysisGenerated,
   trackResultsViewed,
   trackRecurringDetected,
+  trackSampleRunStarted,
+  trackConsentChecked,
 } from '@/lib/analytics'
 
 // Feature flags
 const BANK_CONNECT_ENABLED = process.env.NEXT_PUBLIC_BANK_CONNECT_BETA === 'true'
-
-// Hero copy variants for A/B testing
-const HERO_VARIANTS = {
-  A: 'Find where your money is going: subscriptions, fees, and silent overspending.',
-  B: 'See where your money goes and fix the leaks in minutes.',
-}
-
-// Use variant A by default - can be randomized for A/B testing later
-const ACTIVE_VARIANT = 'A'
 
 interface AnalysisResult {
   monthly_leak: number
@@ -140,6 +134,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [viewState, setViewState] = useState<ViewState>('landing')
+  const [isSampleRun, setIsSampleRun] = useState(false)
 
   // Load cached results from session storage on mount
   useEffect(() => {
@@ -164,6 +159,47 @@ export default function Home() {
   const handleCTAClick = () => {
     trackCTAClicked()
     setViewState('method-chooser')
+  }
+
+  const handleSampleRun = async () => {
+    trackSampleRunStarted()
+    setIsSampleRun(true)
+    setLoading(true)
+    setError(null)
+    setResults(null)
+
+    try {
+      const csvText = sampleDataToCSV()
+      const formData = new FormData()
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      formData.append('text', csvText)
+
+      const response = await fetch(`${apiUrl}/analyze`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Sample analysis failed')
+      }
+
+      const result = await response.json()
+
+      trackAnalysisGenerated({
+        monthlyLeak: result.monthly_leak,
+        annualSavings: result.annual_savings,
+        subscriptionCount: result.subscriptions?.length || 0
+      })
+
+      setResults(result)
+      setViewState('results')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+      setIsSampleRun(false)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSelectUpload = () => {
@@ -215,16 +251,13 @@ export default function Home() {
 
   const handleAnalyze = async (data: File[] | string) => {
     if (Array.isArray(data)) {
-      const totalSize = data.reduce((sum, f) => sum + f.size, 0)
       trackUploadStarted({
-        filename: data.map(f => f.name).join(', '),
-        size: totalSize,
+        file_count: data.length,
         type: 'file'
       })
     } else {
       trackUploadStarted({
-        filename: 'pasted-text',
-        size: data.length,
+        file_count: 1,
         type: 'text'
       })
     }
@@ -285,6 +318,7 @@ export default function Home() {
   const handleReset = () => {
     setResults(null)
     setError(null)
+    setIsSampleRun(false)
     clearSession() // Clear cached results
     setViewState('landing')
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -305,13 +339,9 @@ export default function Home() {
             <section className="hero hero-enhanced">
               <div className="hero-title">
                 <svg className="hero-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                  {/* Wallet body */}
                   <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
-                  {/* Wallet fold/flap */}
                   <path d="M3 7V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1" />
-                  {/* Card clasp */}
                   <rect x="15" y="10" width="6" height="4" rx="1" />
-                  {/* Leak drops */}
                   <circle cx="6" cy="21" r="1.2" fill="currentColor" fillOpacity="0.45" stroke="none" />
                   <circle cx="10" cy="22" r="1" fill="currentColor" fillOpacity="0.35" stroke="none" />
                   <circle cx="13.5" cy="21.5" r="0.8" fill="currentColor" fillOpacity="0.25" stroke="none" />
@@ -319,8 +349,16 @@ export default function Home() {
                 <h1>Leaky Wallet</h1>
               </div>
 
+              <h2 className="hero-headline">
+                Find hidden subscriptions and spending leaks in seconds.
+              </h2>
               <p className="hero-tagline">
-                {HERO_VARIANTS[ACTIVE_VARIANT]}
+                Upload your bank statement to instantly see where money quietly disappears.
+              </p>
+
+              {/* Micro trust line */}
+              <p className="hero-micro-trust">
+                No signup &bull; Files auto-deleted &bull; AI analysis
               </p>
 
               {/* Primary CTA */}
@@ -332,7 +370,22 @@ export default function Home() {
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
-                Find my money leaks
+                Find My Money Leaks
+              </button>
+              <p className="hero-cta-subtext">
+                Your file is processed temporarily and deleted immediately.
+              </p>
+
+              {/* Sample Run CTA */}
+              <button
+                className="btn btn-secondary btn-sample"
+                onClick={handleSampleRun}
+                disabled={loading}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                Try with sample data
               </button>
 
               {/* Trust Strip */}
@@ -347,7 +400,7 @@ export default function Home() {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  Data not stored
+                  Files auto-deleted
                 </span>
                 <span className="trust-item">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -361,7 +414,6 @@ export default function Home() {
                 Most people discover <strong>$200–$600/month</strong> in hidden spending.
               </p>
 
-              {/* Example Preview */}
               <ExamplePreview />
             </section>
           </div>
@@ -457,26 +509,41 @@ export default function Home() {
         {/* Results */}
         {viewState === 'results' && results && (
           <div className="workspace">
+            {isSampleRun && (
+              <div className="sample-data-banner">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </svg>
+                <span>Sample data &mdash; these results are from a fictional dataset, not your real transactions.</span>
+              </div>
+            )}
             <ErrorBoundary>
               <ResultCards results={results} />
             </ErrorBoundary>
+            <p className="results-disclaimer">
+              For informational purposes only. Not financial advice.
+            </p>
             <div className="results-actions">
               <button
                 className="btn btn-primary"
                 onClick={handleReset}
               >
-                Analyze Another Statement
+                {isSampleRun ? 'Analyze My Own Statement' : 'Analyze Another Statement'}
               </button>
-              <button
-                className="btn btn-text btn-clear-session"
-                onClick={handleReset}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </svg>
-                Clear my data
-              </button>
+              {!isSampleRun && (
+                <button
+                  className="btn btn-text btn-clear-session"
+                  onClick={handleReset}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                  Clear my data
+                </button>
+              )}
             </div>
           </div>
         )}
