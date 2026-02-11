@@ -1,8 +1,11 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+  --card: #ffffff;
   --card-bg: #ffffff;
   --card-border: #e2e8f0;
+  --border: #e2e8f0;
+  --secondary: #f1f5f9;
   --primary: #0ea5e9;
   --primary-hover: #0284c7;
   --primary-light: #e0f2fe;
@@ -24,8 +27,11 @@
 :root.dark {
   --background: #000000;
   --foreground: #eeeeee;
+  --card: #0a0a0a;
   --card-bg: #0a0a0a;
   --card-border: #1a1a1a;
+  --border: #333333;
+  --secondary: #111111;
   --primary: #3b82f6;
   --primary-hover: #60a5fa;
   --primary-light: #1e293b;
