@@ -29,6 +29,7 @@ interface ResultCardsProps {
   proPaymentStatus?: 'success' | 'cancelled' | null
   proSessionId?: string | null
   proCustomerEmail?: string | null
+  isDemo?: boolean
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -48,7 +49,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Other': '#94a3b8',
 }
 
-export default function ResultCards({ results, proPaymentStatus, proSessionId, proCustomerEmail }: ResultCardsProps) {
+export default function ResultCards({ results, proPaymentStatus, proSessionId, proCustomerEmail, isDemo }: ResultCardsProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
   const [showSpendingModal, setShowSpendingModal] = useState(false)
   const [showSubscriptionsModal, setShowSubscriptionsModal] = useState(false)
@@ -491,8 +492,8 @@ export default function ResultCards({ results, proPaymentStatus, proSessionId, p
         />
       )}
 
-      {/* Pro Report Upsell */}
-      <ProReportCard results={results} proPaymentStatus={proPaymentStatus} proSessionId={proSessionId} proCustomerEmail={proCustomerEmail} />
+      {/* Pro Report Upsell — only on real analysis, not demo/example */}
+      {!isDemo && <ProReportCard results={results} proPaymentStatus={proPaymentStatus} proSessionId={proSessionId} proCustomerEmail={proCustomerEmail} />}
 
       {/* Feedback Widget */}
       <FeedbackWidget

@@ -6,6 +6,6 @@ import type { AnalysisResult } from '@/lib/types'
 
 export default function ExampleResults() {
   return (
-    <ResultCards results={DEMO_RESULTS as AnalysisResult} />
+    <ResultCards results={DEMO_RESULTS as AnalysisResult} isDemo />
   )
 }

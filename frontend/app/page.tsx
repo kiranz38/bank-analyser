@@ -471,6 +471,7 @@ export default function Home() {
                 proPaymentStatus={proPaymentStatus}
                 proSessionId={proSessionId}
                 proCustomerEmail={proCustomerEmail}
+                isDemo={isSampleRun}
               />
             </ErrorBoundary>
             <p className="results-disclaimer">
