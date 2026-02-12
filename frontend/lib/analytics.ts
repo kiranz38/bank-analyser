@@ -306,22 +306,22 @@ export function trackProReportDownloaded(format: 'pdf' | 'csv'): void {
 }
 
 /**
- * Pro Report email captured (domain only for privacy)
+ * Pro Report legal checkboxes accepted
  */
-export function trackProEmailCaptured(emailDomain: string): void {
-  trackEvent('pro_email_captured', { email_domain: emailDomain })
+export function trackProLegalAccepted(): void {
+  trackEvent('pro_legal_accepted')
 }
 
 /**
- * Pro Report email capture skipped
+ * Pro Report PDF download button clicked
  */
-export function trackProEmailSkipped(): void {
-  trackEvent('pro_email_skipped')
+export function trackProPdfDownloadClicked(): void {
+  trackEvent('pro_pdf_download_clicked')
 }
 
 /**
- * Pro Report email capture form shown
+ * Pro Report auto-refund issued due to failure
  */
-export function trackProEmailFormViewed(): void {
-  trackEvent('pro_email_form_viewed')
+export function trackProRefundIssued(): void {
+  trackEvent('pro_refund_issued')
 }

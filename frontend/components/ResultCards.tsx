@@ -15,19 +15,18 @@ import {
   trackProUpsellViewed,
   trackProReportGenerated,
   trackProReportDownloaded,
-  trackProEmailCaptured,
-  trackProEmailSkipped,
-  trackProEmailFormViewed,
   trackProCheckoutStarted,
+  trackProLegalAccepted,
+  trackProPdfDownloadClicked,
+  trackProRefundIssued,
 } from '@/lib/analytics'
 import type { AnalysisResult, Leak } from '@/lib/types'
-// ProReportData type used by ProReportCard via dynamic import
 
 interface ResultCardsProps {
   results: AnalysisResult
   proPaymentStatus?: 'success' | 'cancelled' | null
+  proSessionId?: string | null
   proCustomerEmail?: string | null
-  onProPdfDownloaded?: () => void
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -47,7 +46,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Other': '#94a3b8',
 }
 
-export default function ResultCards({ results, proPaymentStatus, proCustomerEmail, onProPdfDownloaded }: ResultCardsProps) {
+export default function ResultCards({ results, proPaymentStatus, proSessionId, proCustomerEmail }: ResultCardsProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
   const [showSpendingModal, setShowSpendingModal] = useState(false)
   const [showSubscriptionsModal, setShowSubscriptionsModal] = useState(false)
@@ -483,7 +482,7 @@ export default function ResultCards({ results, proPaymentStatus, proCustomerEmai
       )}
 
       {/* Pro Report Upsell */}
-      <ProReportCard results={results} proPaymentStatus={proPaymentStatus} proCustomerEmail={proCustomerEmail} onProPdfDownloaded={onProPdfDownloaded} />
+      <ProReportCard results={results} proPaymentStatus={proPaymentStatus} proSessionId={proSessionId} proCustomerEmail={proCustomerEmail} />
 
       {/* Feedback Widget */}
       <FeedbackWidget
@@ -719,15 +718,33 @@ export default function ResultCards({ results, proPaymentStatus, proCustomerEmai
   )
 }
 
-function ProReportCard({ results, proPaymentStatus, proCustomerEmail, onProPdfDownloaded }: { results: AnalysisResult; proPaymentStatus?: 'success' | 'cancelled' | null; proCustomerEmail?: string | null; onProPdfDownloaded?: () => void }) {
+type ProCardState = 'upsell' | 'checkout' | 'generating' | 'success' | 'error'
+
+function ProReportCard({ results, proPaymentStatus, proSessionId, proCustomerEmail }: {
+  results: AnalysisResult
+  proPaymentStatus?: 'success' | 'cancelled' | null
+  proSessionId?: string | null
+  proCustomerEmail?: string | null
+}) {
+  const [cardState, setCardState] = useState<ProCardState>('upsell')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  const [showEmailForm, setShowEmailForm] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState<string | null>(null)
+
+  // Legal checkboxes
+  const [legalData, setLegalData] = useState(false)
+  const [legalNoRefund, setLegalNoRefund] = useState(false)
+
+  // Success state
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
+  const [emailStatus, setEmailStatus] = useState<'sent' | 'failed' | 'pending' | null>(null)
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null)
+
   const [upsellTracked, setUpsellTracked] = useState(false)
-  const [pdfGenerated, setPdfGenerated] = useState(false)
+  const [paymentHandled, setPaymentHandled] = useState(false)
+
+  const bothLegalChecked = legalData && legalNoRefund
 
   // Track upsell card view once
   useEffect(() => {
@@ -737,132 +754,83 @@ function ProReportCard({ results, proPaymentStatus, proCustomerEmail, onProPdfDo
     }
   }, [upsellTracked])
 
-  // Auto-generate PDF after successful payment redirect
+  // Handle payment redirect result
   useEffect(() => {
-    if (proPaymentStatus !== 'success' || pdfGenerated) return
-    setPdfGenerated(true)
+    if (paymentHandled) return
 
-    const generateAfterPayment = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const { generateProReport } = await import('@/lib/proReportGenerator')
-        const { generateProPdf } = await import('@/lib/generateProPdf')
-        const proReport = generateProReport(results)
-        trackProReportGenerated()
-        const pdfBlob = await generateProPdf(proReport)
-        trackProReportDownloaded('pdf')
-        setSuccess(true)
-        onProPdfDownloaded?.()
-
-        // Send PDF via email if customer email is available
-        if (proCustomerEmail) {
-          try {
-            const formData = new FormData()
-            formData.append('email', proCustomerEmail)
-            formData.append('pdf', pdfBlob, 'leaky-wallet-pro-report.pdf')
-            await fetch('/api/send-pro-report', { method: 'POST', body: formData })
-          } catch (emailErr) {
-            // Don't show error for email — PDF was already downloaded
-            console.warn('Email send failed (PDF was downloaded):', emailErr)
-          }
-        }
-      } catch (err) {
-        console.error('Pro PDF generation failed after payment:', err)
-        const msg = err instanceof Error ? err.message : String(err)
-        setError(`Report generation failed: ${msg}. Please contact support.`)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    generateAfterPayment()
-  }, [proPaymentStatus, pdfGenerated, results, proCustomerEmail, onProPdfDownloaded])
-
-  useEffect(() => {
-    if (!success) return
-    const timer = setTimeout(() => setSuccess(false), 8000)
-    return () => clearTimeout(timer)
-  }, [success])
-
-  // Show cancelled message
-  useEffect(() => {
     if (proPaymentStatus === 'cancelled') {
-      setError('Payment was cancelled. You can try again whenever you\'re ready.')
-      const timer = setTimeout(() => setError(null), 6000)
+      setErrorMsg('Payment was cancelled. You can try again whenever you\'re ready.')
+      const timer = setTimeout(() => setErrorMsg(null), 6000)
+      setPaymentHandled(true)
       return () => clearTimeout(timer)
     }
-  }, [proPaymentStatus])
+
+    if (proPaymentStatus === 'success' && proSessionId) {
+      setPaymentHandled(true)
+      generateAndDeliver(proSessionId, proCustomerEmail || '')
+    }
+  }, [proPaymentStatus, proSessionId, proCustomerEmail, paymentHandled])
 
   const validateEmail = (value: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(value)
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
   }
 
-  const handleGetReport = () => {
-    setShowEmailForm(true)
-    setError(null)
-    setSuccess(false)
-    trackProEmailFormViewed()
-  }
+  const generateAndDeliver = async (sessionId: string, customerEmail: string) => {
+    setCardState('generating')
+    setErrorMsg(null)
 
-  const handleCheckout = async (capturedEmail?: string) => {
-    setLoading(true)
-    setError(null)
     try {
-      // Track email capture or skip
-      if (capturedEmail) {
-        const domain = capturedEmail.split('@')[1] || 'unknown'
-        trackProEmailCaptured(domain)
-      } else {
-        trackProEmailSkipped()
-      }
+      // Generate PDF client-side
+      const { generateProReport } = await import('@/lib/proReportGenerator')
+      const { generateProPdf } = await import('@/lib/generateProPdf')
+      const proReport = generateProReport(results)
+      trackProReportGenerated()
+      const blob = await generateProPdf(proReport)
+      setPdfBlob(blob)
 
-      // DEV MODE: skip Stripe and generate PDF directly
-      if (process.env.NODE_ENV === 'development') {
-        const { generateProReport } = await import('@/lib/proReportGenerator')
-        const { generateProPdf } = await import('@/lib/generateProPdf')
-        const proReport = generateProReport(results)
-        trackProReportGenerated()
-        await generateProPdf(proReport)
-        trackProReportDownloaded('pdf')
-        setSuccess(true)
-        setShowEmailForm(false)
-        setLoading(false)
-        return
-      }
+      // Upload to server for storage + email delivery
+      const formData = new FormData()
+      formData.append('sessionId', sessionId)
+      formData.append('email', customerEmail)
+      formData.append('pdf', blob, 'leaky-wallet-pro-report.pdf')
 
-      trackProCheckoutStarted()
-
-      const res = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: capturedEmail || undefined }),
-      })
-
+      const res = await fetch('/api/deliver-report', { method: 'POST', body: formData })
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to start checkout')
+        throw new Error(data.error || 'Failed to deliver report')
       }
 
-      // Redirect to Stripe Checkout
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        throw new Error('No checkout URL returned')
-      }
+      setDownloadUrl(data.downloadUrl || null)
+      setEmailStatus(data.emailStatus || null)
+      setCardState('success')
     } catch (err) {
-      console.error('Stripe checkout failed:', err)
+      console.error('Pro Report generation/delivery failed:', err)
       const msg = err instanceof Error ? err.message : String(err)
-      setError(`Checkout failed: ${msg}`)
-      setLoading(false)
+
+      // Attempt auto-refund
+      try {
+        const refundRes = await fetch('/api/refund', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, reason: 'pdf_generation_failed' }),
+        })
+        if (refundRes.ok) {
+          trackProRefundIssued()
+          setErrorMsg(`Report generation failed: ${msg}. A full refund has been issued to your card.`)
+        } else {
+          setErrorMsg(`Report generation failed: ${msg}. Please contact support for a refund.`)
+        }
+      } catch {
+        setErrorMsg(`Report generation failed: ${msg}. Please contact support for a refund.`)
+      }
+      setCardState('error')
     }
   }
 
-  const handleSubmitEmail = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleStartCheckout = () => {
     setEmailError(null)
+    setErrorMsg(null)
 
     if (!email.trim()) {
       setEmailError('Please enter your email address')
@@ -872,14 +840,223 @@ function ProReportCard({ results, proPaymentStatus, proCustomerEmail, onProPdfDo
       setEmailError('Please enter a valid email address')
       return
     }
+    if (!bothLegalChecked) return
 
-    await handleCheckout(email.trim())
+    trackProLegalAccepted()
+    setCardState('checkout')
   }
 
-  const handleSkipEmail = async () => {
-    await handleCheckout()
+  const handlePay = async () => {
+    setLoading(true)
+    setErrorMsg(null)
+
+    try {
+      const legalAcceptedAt = new Date().toISOString()
+
+      // DEV MODE: skip Stripe and generate PDF directly
+      if (process.env.NODE_ENV === 'development') {
+        await generateAndDeliver('dev-session-' + Date.now(), email.trim())
+        setLoading(false)
+        return
+      }
+
+      trackProCheckoutStarted()
+
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          legalAcceptedAt,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to start checkout')
+      }
+
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error('No checkout URL returned')
+      }
+    } catch (err) {
+      console.error('Checkout failed:', err)
+      const msg = err instanceof Error ? err.message : String(err)
+      setErrorMsg(`Checkout failed: ${msg}`)
+      setCardState('upsell')
+      setLoading(false)
+    }
   }
 
+  const handleDownload = () => {
+    trackProPdfDownloadClicked()
+    trackProReportDownloaded('pdf')
+
+    if (pdfBlob) {
+      // Download from local blob
+      const url = URL.createObjectURL(pdfBlob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'leaky-wallet-pro-report.pdf'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } else if (downloadUrl) {
+      // Fallback: download from server
+      window.open(downloadUrl, '_blank')
+    }
+  }
+
+  // ── GENERATING STATE ──
+  if (cardState === 'generating') {
+    return (
+      <div className="card pro-upsell-card pro-generating">
+        <div className="pro-upsell-badge">PRO</div>
+        <div className="pro-generating-content">
+          <svg className="spin" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+          <h2 className="pro-upsell-title">Generating your report...</h2>
+          <p className="pro-upsell-subtitle">Analyzing your spending data and building your personalized PDF.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // ── SUCCESS STATE ──
+  if (cardState === 'success') {
+    return (
+      <div className="card pro-upsell-card pro-success-card">
+        <div className="pro-upsell-badge">PRO</div>
+        <div className="pro-success-content">
+          <div className="pro-success-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          </div>
+          <h2 className="pro-upsell-title">Your report is ready.</h2>
+          <button className="btn btn-pro pro-download-btn" onClick={handleDownload}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Download PDF Report
+          </button>
+          {emailStatus === 'sent' && proCustomerEmail && (
+            <p className="pro-email-sent-msg">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+              We&apos;ve also sent this to {proCustomerEmail}.
+            </p>
+          )}
+          {emailStatus === 'failed' && (
+            <p className="pro-email-failed-msg">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              Email delivery failed — but you can still download above.
+            </p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── ERROR STATE ──
+  if (cardState === 'error') {
+    return (
+      <div className="card pro-upsell-card pro-error-card">
+        <div className="pro-upsell-badge">PRO</div>
+        <div className="pro-error-content">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
+          <h2 className="pro-upsell-title">Something went wrong</h2>
+          {errorMsg && <p className="pro-error-detail">{errorMsg}</p>}
+          {pdfBlob && (
+            <button className="btn btn-pro" onClick={handleDownload}>
+              Download PDF Report
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── CHECKOUT STATE (legal checkboxes confirmed, ready to pay) ──
+  if (cardState === 'checkout') {
+    return (
+      <div className="card pro-upsell-card">
+        <div className="pro-upsell-badge">PRO</div>
+        <h2 className="pro-upsell-title">Confirm &amp; Pay</h2>
+        <p className="pro-upsell-subtitle">
+          Your report will be sent to <strong>{email}</strong>
+        </p>
+
+        <div className="pro-checkout-summary">
+          <div className="pro-checkout-line">
+            <span>Pro Financial Report (PDF)</span>
+            <span>$1.99</span>
+          </div>
+          <div className="pro-checkout-line pro-checkout-total">
+            <span>Total</span>
+            <span>$1.99</span>
+          </div>
+        </div>
+
+        <button className="btn btn-pro" onClick={handlePay} disabled={loading}>
+          {loading ? (
+            <>
+              <svg className="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+              </svg>
+              Redirecting to Stripe...
+            </>
+          ) : (
+            <>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
+              </svg>
+              Pay $1.99 — Secure Checkout
+            </>
+          )}
+        </button>
+
+        <p className="pro-email-privacy">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          Secure payment via Stripe. We never see your card details.
+        </p>
+
+        <button
+          className="pro-email-skip"
+          onClick={() => { setCardState('upsell'); setLoading(false) }}
+          disabled={loading}
+        >
+          Go back
+        </button>
+
+        {errorMsg && <p className="pro-error-inline">{errorMsg}</p>}
+      </div>
+    )
+  }
+
+  // ── UPSELL STATE (default) ──
   return (
     <div className="card pro-upsell-card">
       <div className="pro-upsell-badge">PRO</div>
@@ -892,6 +1069,24 @@ function ProReportCard({ results, proPaymentStatus, proCustomerEmail, onProPdfDo
       <p className="pro-upsell-subtitle">
         Send the full detailed report straight to your inbox.
       </p>
+
+      {/* Blurred preview teaser */}
+      <div className="pro-blurred-preview">
+        <div className="pro-preview-row">
+          <span className="pro-preview-label">Health Score</span>
+          <span className="pro-preview-value blurred">72 / 100</span>
+        </div>
+        <div className="pro-preview-row">
+          <span className="pro-preview-label">Savings Projection (12 mo)</span>
+          <span className="pro-preview-value blurred">$2,847</span>
+        </div>
+        <div className="pro-preview-row">
+          <span className="pro-preview-label">Priority Actions</span>
+          <span className="pro-preview-value blurred">8 items</span>
+        </div>
+        <span className="pro-preview-unlock">Unlock with Pro Report</span>
+      </div>
+
       <div className="pro-features-grid">
         <div className="pro-feature">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -939,79 +1134,61 @@ function ProReportCard({ results, proPaymentStatus, proCustomerEmail, onProPdfDo
         </div>
       </div>
 
-      {!showEmailForm ? (
-        <>
-          <button className="btn btn-pro" onClick={handleGetReport} disabled={loading}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-              <polyline points="22,6 12,13 2,6" />
-            </svg>
-            Get report via email — $1.99
-          </button>
-          <p className="pro-early-access">Early access price — helping us build v1</p>
-        </>
-      ) : (
-        <div className="pro-email-capture">
-          <div className="pro-email-header">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-              <polyline points="22,6 12,13 2,6" />
-            </svg>
-            <span>Enter your email for the report &amp; receipt</span>
-          </div>
-          <form className="pro-email-form" onSubmit={handleSubmitEmail}>
-            <div className="pro-email-input-row">
-              <input
-                type="email"
-                className="pro-email-input"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setEmailError(null) }}
-                disabled={loading}
-                autoFocus
-              />
-              <button type="submit" className="btn btn-pro pro-email-submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <svg className="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
-                    Redirecting...
-                  </>
-                ) : (
-                  'Pay & Download — $1.99'
-                )}
-              </button>
-            </div>
-            {emailError && <p className="pro-email-error">{emailError}</p>}
-            <p className="pro-email-privacy">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              Secure payment via Stripe. Your email is used for the receipt only.
-            </p>
-          </form>
-          <button
-            className="pro-email-skip"
-            onClick={handleSkipEmail}
-            disabled={loading}
-          >
-            Skip email — pay without receipt
-          </button>
+      {/* Email input */}
+      <div className="pro-email-capture">
+        <div className="pro-email-input-row">
+          <input
+            type="email"
+            className="pro-email-input"
+            placeholder="your@email.com — we'll send the report here"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setEmailError(null) }}
+          />
         </div>
-      )}
+        {emailError && <p className="pro-email-error">{emailError}</p>}
+      </div>
 
-      {success && (
-        <p className="pdf-success-msg" style={{ color: 'var(--success, #10b981)', fontSize: '0.8rem', margin: '0.5rem 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-            <polyline points="22 4 12 14.01 9 11.01" />
-          </svg>
-          Payment successful — Pro Report downloaded!{proCustomerEmail ? ' A copy was sent to your email.' : ''}
-        </p>
-      )}
-      {error && <p style={{ color: 'var(--danger)', fontSize: '0.8rem', margin: '0.5rem 0 0', textAlign: 'center' }}>{error}</p>}
+      {/* Legal checkboxes */}
+      <div className="pro-legal-checkboxes">
+        <label className="pro-legal-label">
+          <input
+            type="checkbox"
+            checked={legalData}
+            onChange={(e) => setLegalData(e.target.checked)}
+          />
+          <span>I understand my data is processed only for this report and not stored.</span>
+        </label>
+        <label className="pro-legal-label">
+          <input
+            type="checkbox"
+            checked={legalNoRefund}
+            onChange={(e) => setLegalNoRefund(e.target.checked)}
+          />
+          <span>I agree this is a one-time digital purchase delivered instantly via email.</span>
+        </label>
+      </div>
+
+      <button
+        className="btn btn-pro"
+        onClick={handleStartCheckout}
+        disabled={!bothLegalChecked || !email.trim()}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+          <polyline points="22,6 12,13 2,6" />
+        </svg>
+        Get report via email — $1.99
+      </button>
+      <p className="pro-early-access">Early access price — helping us build v1</p>
+      <p className="pro-email-privacy">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+        Secure payment via Stripe. We never see your card details.
+      </p>
+
+      {errorMsg && <p className="pro-error-inline">{errorMsg}</p>}
     </div>
   )
 }

@@ -1,18 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { createPayment } from '@/lib/paymentStore'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-01-28.clover',
 })
 
-const PRICE_CENTS = parseInt(process.env.PRO_REPORT_PRICE_CENTS || '499', 10)
+const PRICE_CENTS = parseInt(process.env.PRO_REPORT_PRICE_CENTS || '199', 10)
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email } = body as { email?: string }
+    const { email, legalAcceptedAt } = body as {
+      email?: string
+      legalAcceptedAt?: string
+    }
 
-    // Build the origin from the request
+    if (!legalAcceptedAt) {
+      return NextResponse.json(
+        { error: 'Legal acknowledgement required before checkout' },
+        { status: 400 }
+      )
+    }
+
     const origin = request.headers.get('origin') || 'http://localhost:3000'
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
@@ -34,16 +44,21 @@ export async function POST(request: NextRequest) {
       ],
       success_url: `${origin}?pro_payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}?pro_payment=cancelled`,
+      metadata: {
+        legal_accepted_at: legalAcceptedAt,
+      },
     }
 
-    // Pre-fill email if provided
     if (email && typeof email === 'string') {
       sessionParams.customer_email = email
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams)
 
-    return NextResponse.json({ url: session.url })
+    // Create payment record
+    createPayment(session.id, email || '', legalAcceptedAt)
+
+    return NextResponse.json({ url: session.url, sessionId: session.id })
   } catch (error) {
     console.error('[Stripe] Checkout session error:', error)
     const message =

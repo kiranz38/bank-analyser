@@ -41,6 +41,7 @@ export default function Home() {
   const [viewState, setViewState] = useState<ViewState>('landing')
   const [isSampleRun, setIsSampleRun] = useState(false)
   const [proPaymentStatus, setProPaymentStatus] = useState<'success' | 'cancelled' | null>(null)
+  const [proSessionId, setProSessionId] = useState<string | null>(null)
   const [proCustomerEmail, setProCustomerEmail] = useState<string | null>(null)
 
   // Load cached results from session storage on mount
@@ -75,7 +76,8 @@ export default function Home() {
         .then(res => res.json())
         .then(data => {
           if (data.paid) {
-            trackProCheckoutCompleted(data.amount_total ? data.amount_total / 100 : 4.99)
+            trackProCheckoutCompleted(data.amount_total ? data.amount_total / 100 : 1.99)
+            setProSessionId(sessionId)
             if (data.customer_email) {
               setProCustomerEmail(data.customer_email)
             }
@@ -465,8 +467,8 @@ export default function Home() {
               <ResultCards
                 results={results}
                 proPaymentStatus={proPaymentStatus}
+                proSessionId={proSessionId}
                 proCustomerEmail={proCustomerEmail}
-                onProPdfDownloaded={() => { setProPaymentStatus(null); setProCustomerEmail(null) }}
               />
             </ErrorBoundary>
             <p className="results-disclaimer">
