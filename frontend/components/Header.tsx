@@ -57,7 +57,7 @@ export default function Header() {
   return (
     <header className={`site-header ${isVisible ? 'header-visible' : 'header-hidden'}`}>
       <div className="header-container">
-        <Link href="/" className="header-brand">
+        <a href="/" className="header-brand" onClick={() => { sessionStorage.removeItem('leaky_wallet_results') }}>
           <svg className="header-logo-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
             {/* Wallet body */}
             <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
@@ -71,7 +71,7 @@ export default function Header() {
             <circle cx="13.5" cy="21.5" r="0.8" fill="currentColor" fillOpacity="0.25" stroke="none" />
           </svg>
           <span className="header-brand-text">Leaky Wallet</span>
-        </Link>
+        </a>
 
         {/* Desktop Navigation */}
         <nav className="header-nav desktop-nav">

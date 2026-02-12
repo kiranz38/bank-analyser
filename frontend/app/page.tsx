@@ -306,21 +306,22 @@ export default function Home() {
         {/* Method Chooser */}
         {viewState === 'method-chooser' && (
           <div className="workspace">
+            <nav className="breadcrumb">
+              <button className="breadcrumb-link" onClick={() => setViewState('landing')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                Home
+              </button>
+              <span className="breadcrumb-sep">/</span>
+              <span className="breadcrumb-current">Choose Method</span>
+            </nav>
             <MethodChooser
               onSelectUpload={handleSelectUpload}
               onSelectBankConnect={handleSelectBankConnect}
               bankConnectEnabled={BANK_CONNECT_ENABLED}
             />
-            <button
-              className="btn btn-text back-link"
-              onClick={() => setViewState('landing')}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="19" y1="12" x2="5" y2="12" />
-                <polyline points="12 19 5 12 12 5" />
-              </svg>
-              Back
-            </button>
           </div>
         )}
 
@@ -337,6 +338,19 @@ export default function Home() {
         {/* Plaid Bank Connect */}
         {viewState === 'plaid' && (
           <div className="workspace">
+            <nav className="breadcrumb">
+              <button className="breadcrumb-link" onClick={() => setViewState('landing')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                Home
+              </button>
+              <span className="breadcrumb-sep">/</span>
+              <button className="breadcrumb-link" onClick={handleBackToMethodChooser}>Choose Method</button>
+              <span className="breadcrumb-sep">/</span>
+              <span className="breadcrumb-current">Bank Connect</span>
+            </nav>
             {error && (
               <ErrorMessage
                 message={error}
@@ -349,23 +363,25 @@ export default function Home() {
               onExit={handlePlaidExit}
               onError={handlePlaidError}
             />
-
-            <button
-              className="btn btn-text back-link"
-              onClick={handleBackToMethodChooser}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="19" y1="12" x2="5" y2="12" />
-                <polyline points="12 19 5 12 12 5" />
-              </svg>
-              Back to options
-            </button>
           </div>
         )}
 
         {/* Upload Form */}
         {viewState === 'upload' && (
           <div className="workspace">
+            <nav className="breadcrumb">
+              <button className="breadcrumb-link" onClick={() => setViewState('landing')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                Home
+              </button>
+              <span className="breadcrumb-sep">/</span>
+              <button className="breadcrumb-link" onClick={handleBackToMethodChooser}>Choose Method</button>
+              <span className="breadcrumb-sep">/</span>
+              <span className="breadcrumb-current">Upload</span>
+            </nav>
             {error && (
               <ErrorMessage
                 message={error}
@@ -376,23 +392,23 @@ export default function Home() {
 
             <UploadForm onAnalyze={handleAnalyze} loading={loading} />
             <ExamplePreview />
-
-            <button
-              className="btn btn-text back-link"
-              onClick={handleBackToMethodChooser}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="19" y1="12" x2="5" y2="12" />
-                <polyline points="12 19 5 12 12 5" />
-              </svg>
-              Back to options
-            </button>
           </div>
         )}
 
         {/* Results */}
         {viewState === 'results' && results && (
           <div className="workspace">
+            <nav className="breadcrumb">
+              <button className="breadcrumb-link" onClick={handleReset}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                Home
+              </button>
+              <span className="breadcrumb-sep">/</span>
+              <span className="breadcrumb-current">{isSampleRun ? 'Demo Results' : 'Analysis Results'}</span>
+            </nav>
             {isSampleRun && (
               <div className="sample-data-banner">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
