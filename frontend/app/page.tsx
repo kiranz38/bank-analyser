@@ -26,6 +26,7 @@ import {
   trackRecurringDetected,
   trackSampleRunStarted,
   trackConsentChecked,
+  trackProCheckoutCompleted,
 } from '@/lib/analytics'
 
 // Feature flags
@@ -39,6 +40,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [viewState, setViewState] = useState<ViewState>('landing')
   const [isSampleRun, setIsSampleRun] = useState(false)
+  const [proPaymentStatus, setProPaymentStatus] = useState<'success' | 'cancelled' | null>(null)
+  const [proCustomerEmail, setProCustomerEmail] = useState<string | null>(null)
 
   // Load cached results from session storage on mount
   useEffect(() => {
@@ -46,6 +49,45 @@ export default function Home() {
     if (cached) {
       setResults(cached)
       setViewState('results')
+    }
+  }, [])
+
+  // Handle Stripe payment redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const proPayment = params.get('pro_payment')
+    const sessionId = params.get('session_id')
+
+    if (!proPayment) return
+
+    // Clean URL params immediately
+    const cleanUrl = window.location.pathname
+    window.history.replaceState({}, '', cleanUrl)
+
+    if (proPayment === 'cancelled') {
+      setProPaymentStatus('cancelled')
+      return
+    }
+
+    if (proPayment === 'success' && sessionId) {
+      // Verify payment with backend
+      fetch(`/api/verify-payment?session_id=${encodeURIComponent(sessionId)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.paid) {
+            trackProCheckoutCompleted(data.amount_total ? data.amount_total / 100 : 4.99)
+            if (data.customer_email) {
+              setProCustomerEmail(data.customer_email)
+            }
+            setProPaymentStatus('success')
+          } else {
+            setProPaymentStatus('cancelled')
+          }
+        })
+        .catch(err => {
+          console.error('Payment verification failed:', err)
+          setProPaymentStatus('cancelled')
+        })
     }
   }, [])
 
@@ -420,7 +462,12 @@ export default function Home() {
               </div>
             )}
             <ErrorBoundary>
-              <ResultCards results={results} />
+              <ResultCards
+                results={results}
+                proPaymentStatus={proPaymentStatus}
+                proCustomerEmail={proCustomerEmail}
+                onProPdfDownloaded={() => { setProPaymentStatus(null); setProCustomerEmail(null) }}
+              />
             </ErrorBoundary>
             <p className="results-disclaimer">
               For informational purposes only. Not financial advice.

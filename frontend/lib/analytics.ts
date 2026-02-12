@@ -258,3 +258,70 @@ export function trackPageView(pagePath: string, pageTitle: string): void {
     })
   }
 }
+
+// ============================================
+// Pro Report Events
+// ============================================
+
+/**
+ * Pro Report upsell card shown
+ */
+export function trackProUpsellViewed(): void {
+  trackEvent('pro_upsell_viewed')
+}
+
+/**
+ * Pro Report preview modal opened
+ */
+export function trackProPreviewOpened(): void {
+  trackEvent('pro_preview_opened')
+}
+
+/**
+ * Stripe checkout initiated for Pro Report
+ */
+export function trackProCheckoutStarted(): void {
+  trackEvent('pro_checkout_started')
+}
+
+/**
+ * Pro Report payment completed
+ */
+export function trackProCheckoutCompleted(amount: number): void {
+  trackEvent('pro_checkout_completed', { amount })
+}
+
+/**
+ * Pro Report data generated
+ */
+export function trackProReportGenerated(): void {
+  trackEvent('pro_report_generated')
+}
+
+/**
+ * Pro Report file downloaded
+ */
+export function trackProReportDownloaded(format: 'pdf' | 'csv'): void {
+  trackEvent('pro_report_downloaded', { format })
+}
+
+/**
+ * Pro Report email captured (domain only for privacy)
+ */
+export function trackProEmailCaptured(emailDomain: string): void {
+  trackEvent('pro_email_captured', { email_domain: emailDomain })
+}
+
+/**
+ * Pro Report email capture skipped
+ */
+export function trackProEmailSkipped(): void {
+  trackEvent('pro_email_skipped')
+}
+
+/**
+ * Pro Report email capture form shown
+ */
+export function trackProEmailFormViewed(): void {
+  trackEvent('pro_email_form_viewed')
+}

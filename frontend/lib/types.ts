@@ -118,3 +118,5 @@ export interface AnalysisResult {
   price_changes?: PriceChange[]
   duplicate_subscriptions?: DuplicateSubscription[]
 }
+
+export type { ProReportData } from './proReportTypes'

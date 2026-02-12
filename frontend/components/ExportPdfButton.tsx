@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { AnalysisResult } from '@/lib/types'
 
 interface ExportPdfButtonProps {
@@ -11,13 +11,23 @@ interface ExportPdfButtonProps {
 export default function ExportPdfButton({ results, chartContainerId }: ExportPdfButtonProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+
+  // Auto-hide success message after 5 seconds
+  useEffect(() => {
+    if (!success) return
+    const timer = setTimeout(() => setSuccess(false), 5000)
+    return () => clearTimeout(timer)
+  }, [success])
 
   const handleExport = async () => {
     setLoading(true)
     setError(null)
+    setSuccess(false)
     try {
       const { generatePdf } = await import('@/lib/generatePdf')
       await generatePdf(results, chartContainerId)
+      setSuccess(true)
     } catch (err) {
       console.error('PDF generation failed:', err)
       const msg = err instanceof Error ? err.message : String(err)
@@ -52,6 +62,15 @@ export default function ExportPdfButton({ results, chartContainerId }: ExportPdf
           </>
         )}
       </button>
+      {success && (
+        <p className="pdf-success-msg" style={{ color: 'var(--success, #10b981)', fontSize: '0.8rem', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          PDF generated successfully
+        </p>
+      )}
       {error && <p style={{ color: 'var(--danger)', fontSize: '0.8rem', margin: 0 }}>{error}</p>}
     </>
   )

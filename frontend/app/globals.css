@@ -6850,6 +6850,10 @@ h3 {
   border: 1px solid var(--border);
 }
 
+.modal-drag-handle {
+  display: none;
+}
+
 .spending-modal {
   background: linear-gradient(180deg, var(--card) 0%, var(--background) 100%);
 }
@@ -7250,24 +7254,52 @@ h3 {
   }
 
   .modal-content {
-    max-height: 92vh;
+    max-height: 85vh;
     border-radius: 14px 14px 0 0;
     margin-top: auto;
+    padding-top: 0;
+  }
+
+  .modal-drag-handle {
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: var(--muted-light);
+    border-radius: 2px;
+    margin: 8px auto 0;
+    flex-shrink: 0;
   }
 
   .modal-header {
-    padding: 0.75rem 1rem;
+    padding: 0.625rem 0.75rem;
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 2;
+    flex-shrink: 0;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
   }
 
   .modal-header h2 {
-    font-size: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    margin-right: 0.5rem;
+  }
+
+  .modal-close {
+    min-width: 36px;
+    min-height: 36px;
+    flex-shrink: 0;
   }
 
   .modal-body {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem;
+    overflow-y: auto;
+  }
+
+  .modal-summary {
+    padding: 0.625rem;
+    gap: 0.5rem;
   }
 
   .modal-summary {
@@ -7351,28 +7383,34 @@ h3 {
   /* Spending modal compact */
   .spending-charts-row {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 
   .spending-chart-panel {
-    padding: 0.5rem;
+    padding: 0.375rem;
   }
 
   .spending-chart-panel h3 {
     font-size: 0.8rem;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.125rem;
+  }
+
+  .chart-container-compact {
+    max-height: 140px;
   }
 
   .pie-legend-compact {
     grid-template-columns: 1fr;
+    gap: 0.125rem;
   }
 
   .category-details-grid {
     grid-template-columns: 1fr;
+    gap: 0.5rem;
   }
 
   .category-detail-card {
-    padding: 0.625rem;
+    padding: 0.5rem;
   }
 
   .spending-details-section h3 {
@@ -7727,16 +7765,21 @@ h3 {
 
 /* Upload layout - side by side with trust box */
 .upload-layout {
-  display: grid;
-  grid-template-columns: 1fr 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 1.25rem;
-  align-items: start;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-@media (max-width: 768px) {
-  .upload-layout {
-    grid-template-columns: 1fr;
-  }
+.upload-layout .upload-card {
+  width: 100%;
+}
+
+.upload-layout .trust-box {
+  width: 100%;
+  position: static;
 }
 
 /* Clear limits line */
@@ -7913,5 +7956,274 @@ h3 {
 
   .trust-box {
     position: static;
+  }
+}
+
+/* ============================================
+   Pro Report Upsell Card
+   ============================================ */
+
+.pro-upsell-card {
+  position: relative;
+  border: 2px solid var(--primary);
+  background: linear-gradient(135deg, var(--card) 0%, var(--primary-light) 100%);
+  padding: 2rem;
+  text-align: center;
+  overflow: hidden;
+}
+
+.pro-upsell-badge {
+  position: absolute;
+  top: 12px;
+  right: -28px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 4px 32px;
+  transform: rotate(45deg);
+}
+
+.pro-upsell-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 0.25rem;
+}
+
+.pro-upsell-subtitle {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 1.25rem;
+}
+
+.pro-features-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem 1.5rem;
+  text-align: left;
+  max-width: 520px;
+  margin: 0 auto 1.5rem;
+}
+
+.pro-feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--foreground);
+}
+
+.pro-feature svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+.pro-upsell-health {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--secondary);
+  border-radius: 8px;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pro-health-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.pro-health-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--muted-light);
+  filter: blur(4px);
+  user-select: none;
+}
+
+.pro-health-unlock {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn-pro {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.btn-pro:hover {
+  background: var(--primary-hover);
+}
+
+.btn-pro:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.pro-early-access {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0.5rem 0 0;
+  font-style: italic;
+}
+
+/* PDF success message */
+.pdf-success-msg {
+  animation: fadeInOut 5s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Pro Email Capture */
+.pro-email-capture {
+  margin-top: 0.25rem;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pro-email-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 0.75rem;
+}
+
+.pro-email-header svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.pro-email-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pro-email-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pro-email-input {
+  flex: 1;
+  padding: 0.625rem 0.75rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--card);
+  color: var(--foreground);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.pro-email-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.pro-email-input::placeholder {
+  color: var(--muted-light);
+}
+
+.pro-email-submit {
+  white-space: nowrap;
+  padding: 0.625rem 1rem;
+  font-size: 0.85rem;
+}
+
+.pro-email-error {
+  color: var(--danger);
+  font-size: 0.8rem;
+  margin: 0;
+  text-align: left;
+}
+
+.pro-email-privacy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.pro-email-privacy svg {
+  flex-shrink: 0;
+  color: var(--muted-light);
+}
+
+.pro-email-skip {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 0.5rem;
+  padding: 0.25rem;
+  transition: color 0.2s;
+}
+
+.pro-email-skip:hover {
+  color: var(--foreground);
+}
+
+.pro-email-skip:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 640px) {
+  .pro-features-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .pro-upsell-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .pro-upsell-health {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .pro-email-input-row {
+    flex-direction: column;
+  }
+
+  .pro-email-submit {
+    width: 100%;
+    justify-content: center;
   }
 }

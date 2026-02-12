@@ -1,0 +1,237 @@
+import type { ProReportData } from './proReportTypes'
+
+/**
+ * Hardcoded demo Pro Report matching DEMO_RESULTS from demoResults.ts.
+ * Used in demo mode — no computation needed.
+ */
+export const DEMO_PRO_REPORT: ProReportData = {
+  generated_at: '2024-12-20T10:00:00.000Z',
+  period: { start: '2024-01-01', end: '2024-12-20' },
+
+  executive_summary: {
+    headline: "You're leaking $487/mo — here's how to fix it",
+    paragraph:
+      'Our analysis of your spending found $487.42 in monthly leaks across 8 active subscriptions and recurring charges, totaling $5,849 per year. Your biggest spending category is Groceries at 28.4% of total spend. Your financial health score of 52/100 suggests significant room for improvement — the action plan below prioritizes the highest-impact changes.',
+    health_score: 52,
+    health_label: 'Fair',
+  },
+
+  monthly_trends: [
+    { month: '2024-01', total_spend: 2180.50, by_category: { Groceries: 580.20, 'Dining & Delivery': 410.30, Subscriptions: 232.92, 'Utilities & Bills': 329.99, Transport: 188.90, Shopping: 195.00, Entertainment: 58.19, Fees: 32.50, 'Health & Fitness': 152.50 } },
+    { month: '2024-02', total_spend: 2050.80, by_category: { Groceries: 545.60, 'Dining & Delivery': 380.50, Subscriptions: 232.92, 'Utilities & Bills': 329.99, Transport: 178.60, Shopping: 145.00, Entertainment: 55.19, Fees: 32.50, 'Health & Fitness': 150.50 } },
+    { month: '2024-03', total_spend: 2220.30, by_category: { Groceries: 610.40, 'Dining & Delivery': 420.10, Subscriptions: 232.92, 'Utilities & Bills': 329.99, Transport: 195.70, Shopping: 185.00, Entertainment: 63.19, Fees: 32.50, 'Health & Fitness': 150.50 } },
+    { month: '2024-04', total_spend: 2890.00, by_category: { Groceries: 595.30, 'Dining & Delivery': 395.20, Subscriptions: 232.92, 'Utilities & Bills': 329.99, Transport: 198.40, Shopping: 210.00, Entertainment: 62.19, Fees: 32.50, 'Health & Fitness': 148.50, Travel: 685.00 } },
+    { month: '2024-05', total_spend: 2150.60, by_category: { Groceries: 590.50, 'Dining & Delivery': 405.80, Subscriptions: 232.92, 'Utilities & Bills': 329.99, Transport: 185.20, Shopping: 165.00, Entertainment: 58.19, Fees: 32.50, 'Health & Fitness': 150.50 } },
+    { month: '2024-06', total_spend: 2280.40, by_category: { Groceries: 620.10, 'Dining & Delivery': 425.50, Subscriptions: 232.92, 'Utilities & Bills': 329.99, Transport: 192.70, Shopping: 240.00, Entertainment: 56.19, Fees: 32.50, 'Health & Fitness': 150.50 } },
+    { month: '2024-07', total_spend: 2310.20, by_category: { Groceries: 605.80, 'Dining & Delivery': 440.30, Subscriptions: 232.92, 'Utilities & Bills': 329.99, Transport: 200.00, Shopping: 260.00, Entertainment: 58.19, Fees: 32.50, 'Health & Fitness': 150.50 } },
+    { month: '2024-08', total_spend: 2190.80, by_category: { Groceries: 598.40, 'Dining & Delivery': 385.60, Subscriptions: 232.92, 'Utilities & Bills': 329.99, Transport: 195.70, Shopping: 210.00, Entertainment: 55.19, Fees: 32.50, 'Health & Fitness': 150.50 } },
+    { month: '2024-09', total_spend: 2760.50, by_category: { Groceries: 585.90, 'Dining & Delivery': 410.20, Subscriptions: 232.92, 'Utilities & Bills': 329.99, Transport: 188.30, Shopping: 190.00, Entertainment: 64.19, Fees: 32.50, 'Health & Fitness': 150.50, Travel: 576.00 } },
+    { month: '2024-10', total_spend: 2260.90, by_category: { Groceries: 610.20, 'Dining & Delivery': 415.40, Subscriptions: 232.92, 'Utilities & Bills': 329.99, Transport: 195.20, Shopping: 235.00, Entertainment: 59.19, Fees: 32.50, 'Health & Fitness': 150.50 } },
+    { month: '2024-11', total_spend: 2845.20, by_category: { Groceries: 615.80, 'Dining & Delivery': 385.60, Subscriptions: 232.92, 'Utilities & Bills': 279.99, Transport: 198.20, Shopping: 689.95, Entertainment: 60.19, Fees: 32.50, 'Health & Fitness': 150.50, Travel: 199.55 } },
+    { month: '2024-12', total_spend: 2620.40, by_category: { Groceries: 565.30, 'Dining & Delivery': 342.10, Subscriptions: 232.92, 'Utilities & Bills': 279.99, Transport: 208.60, Shopping: 423.94, Entertainment: 59.19, Fees: 32.50, 'Health & Fitness': 150.50, Travel: 325.36 } },
+  ],
+
+  subscription_insights: [
+    { merchant: 'HELLO FRESH MEAL KIT', monthly_cost: 59.99, annual_cost: 719.88, usage_estimate: 'High', roi_label: 'Review usage', recommendation: 'Track your usage of HELLO FRESH MEAL KIT for 2 weeks to decide if it\'s worth $59.99/mo.' },
+    { merchant: 'ADOBE CREATIVE CLOUD', monthly_cost: 54.99, annual_cost: 659.88, usage_estimate: 'High', roi_label: 'Review usage', recommendation: 'Track your usage of ADOBE CREATIVE CLOUD for 2 weeks to decide if it\'s worth $54.99/mo.' },
+    { merchant: 'ANYTIME FITNESS', monthly_cost: 49.99, annual_cost: 599.88, usage_estimate: 'High', roi_label: 'Review usage', recommendation: 'Track your usage of ANYTIME FITNESS for 2 weeks to decide if it\'s worth $49.99/mo.' },
+    { merchant: 'NETFLIX', monthly_cost: 22.99, annual_cost: 275.88, usage_estimate: 'High', roi_label: 'Good value', recommendation: 'NETFLIX appears well-used. Keep it, but watch for price increases.' },
+    { merchant: 'HEADSPACE APP', monthly_cost: 14.99, annual_cost: 179.88, usage_estimate: 'High', roi_label: 'Good value', recommendation: 'HEADSPACE APP appears well-used. Keep it, but watch for price increases.' },
+    { merchant: 'MICROSOFT 365', monthly_cost: 12.99, annual_cost: 155.88, usage_estimate: 'High', roi_label: 'Good value', recommendation: 'MICROSOFT 365 appears well-used. Keep it, but watch for price increases.' },
+    { merchant: 'SPOTIFY PREMIUM', monthly_cost: 11.99, annual_cost: 143.88, usage_estimate: 'High', roi_label: 'Good value', recommendation: 'SPOTIFY PREMIUM appears well-used. Keep it, but watch for price increases.' },
+    { merchant: 'ICLOUD STORAGE', monthly_cost: 3.99, annual_cost: 47.88, usage_estimate: 'High', roi_label: 'Good value', recommendation: 'ICLOUD STORAGE appears well-used. Keep it, but watch for price increases.' },
+  ],
+
+  savings_projection: {
+    month_3: 1032.48,
+    month_6: 3190.56,
+    month_12: 7431.12,
+    assumptions: [
+      'Savings based on implementing recommended actions in their suggested timeframes',
+      '"This week" actions assumed effective from month 1',
+      '"This month" actions assumed effective from month 2',
+      '"Next 3 months" actions assumed effective from month 4',
+    ],
+  },
+
+  action_plan: [
+    { priority: 1, title: 'Reduce delivery orders', description: 'Set a weekly delivery budget. Try meal prepping on Sundays to reduce takeout frequency.', estimated_monthly_savings: 65.68, estimated_yearly_savings: 788.10, difficulty: 'medium', timeframe: 'This month', category: 'food_delivery' },
+    { priority: 2, title: 'Switch from Adobe Creative Cloud to GIMP + Inkscape', description: 'Free open source alternatives', estimated_monthly_savings: 54.99, estimated_yearly_savings: 659.88, difficulty: 'easy', timeframe: 'This month', category: 'software' },
+    { priority: 3, title: 'Audit gym membership usage', description: 'Track gym visits for 2 weeks - if less than 8 visits per month, cancel and use free alternatives.', estimated_monthly_savings: 49.99, estimated_yearly_savings: 599.88, difficulty: 'medium', timeframe: 'Next 3 months', category: 'fitness' },
+    { priority: 4, title: 'Switch from Adobe Creative Cloud to Canva Pro', description: 'Good for most design needs', estimated_monthly_savings: 42.00, estimated_yearly_savings: 504.00, difficulty: 'medium', timeframe: 'This month', category: 'software' },
+    { priority: 5, title: 'Consolidate streaming services', description: 'Keep only 1-2 streaming services you actually watch. Rotate subscriptions monthly instead of paying for all.', estimated_monthly_savings: 23.00, estimated_yearly_savings: 275.88, difficulty: 'easy', timeframe: 'This week', category: 'streaming' },
+    { priority: 6, title: 'Switch from Netflix to Tubi', description: 'Free with ads, good movie selection', estimated_monthly_savings: 22.99, estimated_yearly_savings: 275.88, difficulty: 'easy', timeframe: 'This month', category: 'streaming' },
+    { priority: 7, title: 'Audit Adobe Creative Cloud usage', description: "Consider Canva Pro ($12.99/mo) or free alternatives like GIMP + Inkscape if you don't use the full suite.", estimated_monthly_savings: 54.99, estimated_yearly_savings: 659.88, difficulty: 'medium', timeframe: 'Next 3 months', category: 'software' },
+    { priority: 8, title: 'Switch from Microsoft 365 to Google Workspace', description: 'Free personal tier', estimated_monthly_savings: 12.99, estimated_yearly_savings: 155.88, difficulty: 'easy', timeframe: 'This month', category: 'software' },
+    { priority: 9, title: 'Switch to fee-free banking', description: 'Open account with an online bank or credit union to eliminate ATM and account fees.', estimated_monthly_savings: 12.50, estimated_yearly_savings: 150.00, difficulty: 'easy', timeframe: 'This week', category: 'fees' },
+    { priority: 10, title: 'Switch from Spotify to Spotify Free', description: 'Free tier with ads', estimated_monthly_savings: 11.99, estimated_yearly_savings: 143.88, difficulty: 'easy', timeframe: 'This month', category: 'streaming' },
+    { priority: 11, title: 'Switch from Uber Eats to Restaurant pickup', description: 'Save 20-30% on fees', estimated_monthly_savings: 131.35, estimated_yearly_savings: 1576.20, difficulty: 'easy', timeframe: 'This month', category: 'food_delivery' },
+  ],
+
+  behavioral_insights: {
+    peak_spending_day: 'Wednesday',
+    avg_daily_spend: 69.60,
+    avg_weekly_spend: 401.16,
+    impulse_spend_estimate: 0,
+    top_impulse_merchants: [],
+    spending_velocity: 'Your spending has been decreasing recently — great momentum',
+  },
+
+  category_deep_dives: [
+    {
+      category: 'Groceries',
+      total: 7124.52,
+      percent: 28.4,
+      monthly_average: 593.71,
+      trend: 'stable',
+      trend_percent: 0,
+      top_merchants: [
+        { name: 'WOOLWORTHS', total: 3280.40, count: 32 },
+        { name: 'COLES', total: 2510.12, count: 32 },
+        { name: 'ALDI', total: 586.80, count: 32 },
+      ],
+      insight: 'Groceries is your largest spending category at 28.4% of total spend ($594/mo average).',
+      recommendation: 'Groceries is a significant portion of your budget. Look for ways to reduce by 10-15%.',
+    },
+    {
+      category: 'Dining & Delivery',
+      total: 4812.60,
+      percent: 19.2,
+      monthly_average: 401.05,
+      trend: 'decreasing',
+      trend_percent: -11.3,
+      top_merchants: [
+        { name: 'UBER EATS', total: 1576.20, count: 44 },
+        { name: 'STARBUCKS', total: 1025.40, count: 44 },
+        { name: 'DOORDASH', total: 540.00, count: 44 },
+      ],
+      insight: 'High frequency: 132 transactions in Dining & Delivery, averaging $36 each.',
+      recommendation: 'Good progress — Dining & Delivery spending is trending down. Keep it up.',
+    },
+    {
+      category: 'Subscriptions',
+      total: 2741.04,
+      percent: 10.9,
+      monthly_average: 228.42,
+      trend: 'stable',
+      trend_percent: 0,
+      top_merchants: [
+        { name: 'HELLO FRESH', total: 719.88, count: 32 },
+        { name: 'ADOBE', total: 659.88, count: 32 },
+        { name: 'ANYTIME FITNESS', total: 599.88, count: 32 },
+      ],
+      insight: 'Subscriptions accounts for 10.9% of your spending at $228/mo.',
+      recommendation: 'Subscriptions spending looks reasonable. Review quarterly to catch any drift.',
+    },
+    {
+      category: 'Utilities & Bills',
+      total: 3959.88,
+      percent: 15.8,
+      monthly_average: 329.99,
+      trend: 'stable',
+      trend_percent: 0,
+      top_merchants: [
+        { name: 'AGL ELECTRICITY', total: 1905.00, count: 16 },
+        { name: 'TELSTRA INTERNET', total: 959.88, count: 16 },
+        { name: 'OPTUS MOBILE', total: 660.00, count: 16 },
+      ],
+      insight: 'Utilities & Bills accounts for 15.8% of your spending at $330/mo.',
+      recommendation: 'Utilities & Bills spending looks reasonable. Review quarterly to catch any drift.',
+    },
+    {
+      category: 'Transport',
+      total: 2266.80,
+      percent: 9.0,
+      monthly_average: 188.90,
+      trend: 'increasing',
+      trend_percent: 5.2,
+      top_merchants: [
+        { name: 'SHELL PETROL', total: 856.80, count: 28 },
+        { name: 'UBER TRIP', total: 974.40, count: 28 },
+        { name: 'OPAL CARD', total: 600.00, count: 28 },
+      ],
+      insight: 'Transport accounts for 9.0% of your spending at $189/mo.',
+      recommendation: 'Transport spending looks reasonable. Review quarterly to catch any drift.',
+    },
+    {
+      category: 'Shopping',
+      total: 2489.40,
+      percent: 9.9,
+      monthly_average: 207.45,
+      trend: 'decreasing',
+      trend_percent: -38.6,
+      top_merchants: [
+        { name: 'AMAZON', total: 1109.40, count: 12 },
+        { name: 'APPLE STORE', total: 798.00, count: 12 },
+        { name: 'IKEA', total: 756.00, count: 12 },
+      ],
+      insight: 'Shopping accounts for 9.9% of your spending at $207/mo.',
+      recommendation: 'Good progress — Shopping spending is trending down. Keep it up.',
+    },
+    {
+      category: 'Entertainment',
+      total: 719.88,
+      percent: 2.9,
+      monthly_average: 59.99,
+      trend: 'stable',
+      trend_percent: 0,
+      top_merchants: [
+        { name: 'STEAM', total: 359.88, count: 8 },
+        { name: 'EVENT CINEMAS', total: 168.00, count: 8 },
+        { name: 'TICKETMASTER', total: 380.00, count: 8 },
+      ],
+      insight: 'Entertainment accounts for 2.9% of your spending at $60/mo.',
+      recommendation: 'Entertainment spending looks reasonable. Review quarterly to catch any drift.',
+    },
+    {
+      category: 'Fees',
+      total: 390.00,
+      percent: 1.6,
+      monthly_average: 32.50,
+      trend: 'stable',
+      trend_percent: 0,
+      top_merchants: [
+        { name: 'MONTHLY ACCOUNT FEE', total: 120.00, count: 11 },
+        { name: 'ATM WITHDRAWAL FEE', total: 30.00, count: 11 },
+        { name: 'OVERDRAFT FEE', total: 60.00, count: 11 },
+      ],
+      insight: 'Fees accounts for 1.6% of your spending at $33/mo.',
+      recommendation: 'Fees spending looks reasonable. Review quarterly to catch any drift.',
+    },
+    {
+      category: 'Health & Fitness',
+      total: 559.00,
+      percent: 2.2,
+      monthly_average: 46.58,
+      trend: 'stable',
+      trend_percent: 0,
+      top_merchants: [
+        { name: 'BUPA HEALTH INSURANCE', total: 559.50, count: 5 },
+        { name: 'PRICELINE PHARMACY', total: 195.00, count: 5 },
+        { name: 'DR SMITH MEDICAL', total: 340.00, count: 5 },
+      ],
+      insight: 'Health & Fitness accounts for 2.2% of your spending at $47/mo.',
+      recommendation: 'Health & Fitness spending looks reasonable. Review quarterly to catch any drift.',
+    },
+  ],
+
+  evidence: {
+    subscription_transactions: [
+      { merchant: 'HELLO FRESH MEAL KIT', dates: ['2024-01-12', '2024-02-12', '2024-03-12', '2024-04-12', '2024-05-12', '2024-06-12', '2024-07-12', '2024-08-12', '2024-09-12', '2024-10-12', '2024-11-12', '2024-12-12'], amounts: [59.99, 59.99, 59.99, 59.99, 59.99, 59.99, 59.99, 59.99, 59.99, 59.99, 59.99, 59.99] },
+      { merchant: 'ADOBE CREATIVE CLOUD', dates: ['2024-01-07', '2024-02-07', '2024-03-07', '2024-04-07', '2024-05-07', '2024-06-07', '2024-07-07', '2024-08-07', '2024-09-07', '2024-10-07', '2024-11-07', '2024-12-07'], amounts: [54.99, 54.99, 54.99, 54.99, 54.99, 54.99, 54.99, 54.99, 54.99, 54.99, 54.99, 54.99] },
+      { merchant: 'ANYTIME FITNESS', dates: ['2024-01-05', '2024-02-05', '2024-03-05', '2024-04-05', '2024-05-05', '2024-06-05', '2024-07-05', '2024-08-05', '2024-09-05', '2024-10-05', '2024-11-05', '2024-12-05'], amounts: [49.99, 49.99, 49.99, 49.99, 49.99, 49.99, 49.99, 49.99, 49.99, 49.99, 49.99, 49.99] },
+      { merchant: 'NETFLIX', dates: ['2024-01-03', '2024-02-03', '2024-03-03', '2024-04-03', '2024-05-03', '2024-06-03', '2024-07-03', '2024-08-03', '2024-09-03', '2024-10-03', '2024-11-03', '2024-12-03'], amounts: [22.99, 22.99, 22.99, 22.99, 22.99, 22.99, 22.99, 22.99, 22.99, 22.99, 22.99, 22.99] },
+      { merchant: 'HEADSPACE APP', dates: ['2024-01-18', '2024-02-18', '2024-03-18', '2024-04-18', '2024-05-18', '2024-06-18', '2024-07-18', '2024-08-18', '2024-09-18', '2024-10-18', '2024-11-18', '2024-12-18'], amounts: [14.99, 14.99, 14.99, 14.99, 14.99, 14.99, 14.99, 14.99, 14.99, 14.99, 14.99, 14.99] },
+      { merchant: 'MICROSOFT 365', dates: ['2024-01-15', '2024-02-15', '2024-03-15', '2024-04-15', '2024-05-15', '2024-06-15', '2024-07-15', '2024-08-15', '2024-09-15', '2024-10-15', '2024-11-15', '2024-12-15'], amounts: [12.99, 12.99, 12.99, 12.99, 12.99, 12.99, 12.99, 12.99, 12.99, 12.99, 12.99, 12.99] },
+      { merchant: 'SPOTIFY PREMIUM', dates: ['2024-01-03', '2024-02-03', '2024-03-03', '2024-04-03', '2024-05-03', '2024-06-03', '2024-07-03', '2024-08-03', '2024-09-03', '2024-10-03', '2024-11-03', '2024-12-03'], amounts: [11.99, 11.99, 11.99, 11.99, 11.99, 11.99, 11.99, 11.99, 11.99, 11.99, 11.99, 11.99] },
+      { merchant: 'ICLOUD STORAGE', dates: ['2024-01-10', '2024-02-10', '2024-03-10', '2024-04-10', '2024-05-10', '2024-06-10', '2024-07-10', '2024-08-10', '2024-09-10', '2024-10-10', '2024-11-10', '2024-12-10'], amounts: [3.99, 3.99, 3.99, 3.99, 3.99, 3.99, 3.99, 3.99, 3.99, 3.99, 3.99, 3.99] },
+    ],
+    top_50_transactions: [
+      { date: '2024-04-03', merchant: 'AIRBNB BOOKING', amount: 620.00, category: 'Travel' },
+      { date: '2024-04-02', merchant: 'QANTAS AIRWAYS', amount: 485.00, category: 'Travel' },
+      { date: '2024-11-15', merchant: 'APPLE STORE', amount: 399.00, category: 'Shopping' },
+      { date: '2024-09-11', merchant: 'BOOKING.COM HOTEL', amount: 340.00, category: 'Travel' },
+      { date: '2024-09-10', merchant: 'JETSTAR FLIGHT', amount: 289.00, category: 'Travel' },
+    ],
+  },
+}
