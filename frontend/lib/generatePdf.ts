@@ -1,7 +1,5 @@
 import type { AnalysisResult } from './types'
-
-// All heavy imports are dynamically loaded in generatePdf()
-type jsPDFType = import('jspdf').jsPDF
+import type { jsPDF as jsPDFType } from 'jspdf'
 
 const BRAND_COLOR = [14, 165, 233] as const   // #0ea5e9
 const DANGER_COLOR = [239, 68, 68] as const    // #ef4444
@@ -81,14 +79,18 @@ export async function generatePdf(
   chartContainerId: string
 ): Promise<void> {
   // Dynamic imports — zero impact on initial bundle
-  const [{ default: jsPDF }, html2canvasModule, autoTableModule] = await Promise.all([
-    import('jspdf'),
-    import('html2canvas'),
-    import('jspdf-autotable'),
-  ])
-  const html2canvas = html2canvasModule.default
-  // jspdf-autotable attaches itself to jsPDF via side-effect import
-  void autoTableModule
+  const jspdfModule = await import('jspdf')
+  const autoTableModule = await import('jspdf-autotable')
+  const html2canvasModule = await import('html2canvas')
+
+  const jsPDF = jspdfModule.jsPDF || jspdfModule.default
+  const autoTable = autoTableModule.autoTable || autoTableModule.default
+  const html2canvas = html2canvasModule.default || html2canvasModule
+
+  // v5 requires explicit plugin registration
+  if (typeof autoTableModule.applyPlugin === 'function') {
+    autoTableModule.applyPlugin(jsPDF)
+  }
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
@@ -174,7 +176,7 @@ export async function generatePdf(
         String(c.transaction_count),
       ])
 
-    ;(doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Category', 'Amount', '%', 'Transactions']],
       body: catRows,
@@ -201,7 +203,7 @@ export async function generatePdf(
       s.reason,
     ])
 
-    ;(doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Merchant', 'Monthly', 'Annual', 'Last Date', 'Reason']],
       body: subRows,
@@ -229,7 +231,7 @@ export async function generatePdf(
       fmt(w.estimated_yearly_savings) + '/yr',
     ])
 
-    ;(doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['#', 'Action', 'Est. Yearly Savings']],
       body: winRows,
@@ -259,7 +261,7 @@ export async function generatePdf(
       a.note,
     ])
 
-    ;(doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Current', 'Alternative', 'Savings/mo', 'Note']],
       body: altRows,
@@ -287,7 +289,7 @@ export async function generatePdf(
       fmt(p.yearly_impact) + '/yr',
     ])
 
-    ;(doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Merchant', 'Old → New', 'Increase', 'Yearly Impact']],
       body: priceRows,

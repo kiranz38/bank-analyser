@@ -2,6 +2,22 @@
 const nextConfig = {
   reactStrictMode: true,
 
+  // Fix Windows dev server CSS/chunk 404s after repeated HMR
+  experimental: {
+    webpackBuildWorker: false,
+  },
+
+  webpack: (config, { dev }) => {
+    if (dev) {
+      // Disable aggressive chunk splitting in dev to prevent stale manifests
+      config.optimization = {
+        ...config.optimization,
+        runtimeChunk: false,
+      }
+    }
+    return config
+  },
+
   // Security headers
   async headers() {
     return [
