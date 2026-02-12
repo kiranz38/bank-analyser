@@ -325,3 +325,17 @@ export function trackProPdfDownloadClicked(): void {
 export function trackProRefundIssued(): void {
   trackEvent('pro_refund_issued')
 }
+
+/**
+ * User clicked "Get report" button on Pro card (moved to checkout state)
+ */
+export function trackProBuyClicked(): void {
+  trackEvent('pro_buy_clicked')
+}
+
+/**
+ * User clicked "Pay" on the checkout confirmation (proceeded to Stripe)
+ */
+export function trackProPayClicked(): void {
+  trackEvent('pro_pay_clicked')
+}

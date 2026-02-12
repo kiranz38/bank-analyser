@@ -93,16 +93,18 @@ export default function Home() {
     }
   }, [])
 
-  // Save results to session storage when they change
+  // Save results to session storage when they change (skip demo data)
   useEffect(() => {
     if (results) {
-      saveToSession(results)
+      if (!isSampleRun) {
+        saveToSession(results)
+      }
       trackResultsViewed()
       if (results.subscriptions) {
         trackRecurringDetected(results.subscriptions.length)
       }
     }
-  }, [results])
+  }, [results, isSampleRun])
 
   const handleCTAClick = () => {
     trackCTAClicked()

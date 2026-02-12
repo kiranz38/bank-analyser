@@ -8307,8 +8307,7 @@ h3 {
 
 /* Pro Checkout Summary */
 .pro-checkout-summary {
-  max-width: 320px;
-  margin: 1.25rem auto;
+  margin: 0 0 1rem;
   background: var(--secondary);
   border-radius: 10px;
   padding: 1rem 1.25rem;
@@ -8407,6 +8406,179 @@ h3 {
   font-size: 0.8rem;
   margin: 0.5rem 0 0;
   text-align: center;
+}
+
+/* Pro Modal Overlay */
+.pro-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: proModalFadeIn 0.2s ease;
+}
+
+@keyframes proModalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.pro-modal {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 16px;
+  padding: 1.75rem;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: proModalSlideUp 0.25s ease;
+}
+
+@keyframes proModalSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pro-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.pro-modal-header h3 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.pro-modal-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pro-modal-close:hover {
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.pro-modal-email {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 1rem;
+}
+
+.pro-modal-generating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.pro-modal-generating h3 {
+  font-size: 1.125rem;
+  margin: 0;
+}
+
+.pro-modal-generating p {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin: 0;
+  max-width: 280px;
+}
+
+.pro-progress-bar {
+  width: 100%;
+  max-width: 280px;
+  height: 6px;
+  background: var(--secondary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.pro-progress-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.pro-progress-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.pro-progress-percent {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0;
+}
+
+.pro-modal-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  animation: proModalSuccessPop 0.3s ease;
+}
+
+.pro-modal-success h3 {
+  font-size: 1.25rem;
+  color: var(--success);
+  margin: 0;
+}
+
+.pro-modal-success p {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+@keyframes proModalSuccessPop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Pro Card Result (success/error shown at card bottom) */
+.pro-card-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 0 0.5rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--card-border);
+}
+
+.pro-card-result-success {
+  border-top-color: var(--success);
+}
+
+.pro-card-result-error {
+  border-top-color: var(--danger);
+}
+
+@media (max-width: 640px) {
+  .pro-modal {
+    max-width: 100%;
+    margin: 0 0.5rem;
+    padding: 1.25rem;
+  }
 }
 
 @media (max-width: 640px) {

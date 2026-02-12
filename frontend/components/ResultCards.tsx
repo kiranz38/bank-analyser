@@ -19,6 +19,8 @@ import {
   trackProLegalAccepted,
   trackProPdfDownloadClicked,
   trackProRefundIssued,
+  trackProBuyClicked,
+  trackProPayClicked,
 } from '@/lib/analytics'
 import type { AnalysisResult, Leak } from '@/lib/types'
 
@@ -732,6 +734,11 @@ function ProReportCard({ results, proPaymentStatus, proSessionId, proCustomerEma
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState<string | null>(null)
 
+  // Generation progress
+  const [progress, setProgress] = useState(0)
+  const [progressLabel, setProgressLabel] = useState('')
+  const [modalSuccess, setModalSuccess] = useState(false)
+
   // Legal checkboxes
   const [legalData, setLegalData] = useState(false)
   const [legalNoRefund, setLegalNoRefund] = useState(false)
@@ -778,6 +785,8 @@ function ProReportCard({ results, proPaymentStatus, proSessionId, proCustomerEma
   const generateAndDeliver = async (sessionId: string, customerEmail: string) => {
     setCardState('generating')
     setErrorMsg(null)
+    setProgress(0)
+    setProgressLabel('Loading modules...')
 
     // Step 1: Generate PDF client-side with validation gate
     let blob: Blob
@@ -789,15 +798,23 @@ function ProReportCard({ results, proPaymentStatus, proSessionId, proCustomerEma
       const { trackEvent } = await import('@/lib/analytics')
 
       // 1a. Generate report with warning tracking
+      setProgress(15)
+      setProgressLabel('Analyzing spending data...')
       const { report: rawReport, warnings } = generateProReportWithWarnings(results)
 
       // 1b. Validate against Zod schema + invariants
+      setProgress(30)
+      setProgressLabel('Validating report data...')
       const validation = validateReportData(rawReport)
 
       // 1c. Run Claude QA (feature-flagged, non-blocking on failure)
+      setProgress(40)
+      setProgressLabel('Running quality checks...')
       const qaResult = await runReportQa(validation.safeData, validation)
 
       // 1d. Apply QA omissions to produce final report
+      setProgress(60)
+      setProgressLabel('Finalizing insights...')
       const { report: finalReport, omittedSections, isSafeMode } = applyQaResult(
         validation.safeData, qaResult, validation.failedSections
       )
@@ -834,6 +851,8 @@ function ProReportCard({ results, proPaymentStatus, proSessionId, proCustomerEma
       trackProReportGenerated()
 
       // 1f. Generate PDF with quality metadata
+      setProgress(70)
+      setProgressLabel('Building your PDF...')
       blob = await generateProPdf(finalReport, {
         omittedSections,
         isSafeMode,
@@ -867,6 +886,8 @@ function ProReportCard({ results, proPaymentStatus, proSessionId, proCustomerEma
 
     // Step 2: Upload to server for storage + email delivery
     // If this fails, the PDF is still available for download — no refund needed
+    setProgress(85)
+    setProgressLabel('Sending to your email...')
     try {
       const formData = new FormData()
       formData.append('sessionId', sessionId)
@@ -876,21 +897,32 @@ function ProReportCard({ results, proPaymentStatus, proSessionId, proCustomerEma
       const res = await fetch('/api/deliver-report', { method: 'POST', body: formData })
       const data = await res.json()
 
+      setProgress(100)
+      setProgressLabel('Done!')
+
       if (!res.ok) {
         console.warn('Deliver-report returned error:', data.error)
-        // Still show success — PDF is available for download
         setEmailStatus('failed')
-        setCardState('success')
-        return
+      } else {
+        setDownloadUrl(data.downloadUrl || null)
+        setEmailStatus(data.emailStatus || null)
       }
 
-      setDownloadUrl(data.downloadUrl || null)
-      setEmailStatus(data.emailStatus || null)
+      // Show success in modal briefly, then move to card
+      setModalSuccess(true)
+      await new Promise(r => setTimeout(r, 2000))
+      setModalSuccess(false)
       setCardState('success')
     } catch (deliveryErr) {
       // Network/server error on delivery — PDF still ready, just email failed
       console.warn('Deliver-report fetch failed (PDF still available):', deliveryErr)
+      setProgress(100)
+      setProgressLabel('Done!')
       setEmailStatus('failed')
+
+      setModalSuccess(true)
+      await new Promise(r => setTimeout(r, 2000))
+      setModalSuccess(false)
       setCardState('success')
     }
   }
@@ -910,12 +942,14 @@ function ProReportCard({ results, proPaymentStatus, proSessionId, proCustomerEma
     if (!bothLegalChecked) return
 
     trackProLegalAccepted()
+    trackProBuyClicked()
     setCardState('checkout')
   }
 
   const handlePay = async () => {
     setLoading(true)
     setErrorMsg(null)
+    trackProPayClicked()
 
     try {
       const legalAcceptedAt = new Date().toISOString()
@@ -978,285 +1012,301 @@ function ProReportCard({ results, proPaymentStatus, proSessionId, proCustomerEma
     }
   }
 
-  // ── GENERATING STATE ──
-  if (cardState === 'generating') {
-    return (
-      <div className="card pro-upsell-card pro-generating">
-        <div className="pro-upsell-badge">PRO</div>
-        <div className="pro-generating-content">
-          <svg className="spin" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2">
-            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-          </svg>
-          <h2 className="pro-upsell-title">Generating your report...</h2>
-          <p className="pro-upsell-subtitle">Analyzing your spending data and building your personalized PDF.</p>
-        </div>
-      </div>
-    )
-  }
+  // ── ALWAYS RENDER UPSELL CARD ──
+  const showModal = cardState === 'checkout' || cardState === 'generating' || modalSuccess
+  const showResult = cardState === 'success' || cardState === 'error'
 
-  // ── SUCCESS STATE ──
-  if (cardState === 'success') {
-    return (
-      <div className="card pro-upsell-card pro-success-card">
-        <div className="pro-upsell-badge">PRO</div>
-        <div className="pro-success-content">
-          <div className="pro-success-icon">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
+  return (
+    <>
+      {/* ── Checkout / Generating Modal ── */}
+      {showModal && (
+        <div className="pro-modal-overlay" onClick={cardState === 'checkout' && !loading ? () => { setCardState('upsell'); setLoading(false) } : undefined}>
+          <div className="pro-modal" onClick={(e) => e.stopPropagation()}>
+            {modalSuccess ? (
+              <div className="pro-modal-success">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+                <h3>Your report is ready!</h3>
+                {emailStatus === 'sent' && (proCustomerEmail || email) && (
+                  <p>Sent to {proCustomerEmail || email}</p>
+                )}
+                {emailStatus === 'failed' && (
+                  <p>Download available below</p>
+                )}
+              </div>
+            ) : cardState === 'generating' ? (
+              <div className="pro-modal-generating">
+                <svg className="spin" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+                <h3>Generating your report...</h3>
+                <div className="pro-progress-bar">
+                  <div className="pro-progress-fill" style={{ width: `${progress}%` }} />
+                </div>
+                <p className="pro-progress-label">{progressLabel}</p>
+                <p className="pro-progress-percent">{progress}%</p>
+              </div>
+            ) : (
+              <>
+                <div className="pro-modal-header">
+                  <h3>Confirm &amp; Pay</h3>
+                  <button
+                    className="pro-modal-close"
+                    onClick={() => { setCardState('upsell'); setLoading(false) }}
+                    disabled={loading}
+                    aria-label="Close"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+
+                <p className="pro-modal-email">
+                  Report will be sent to <strong>{email}</strong>
+                </p>
+
+                <div className="pro-checkout-summary">
+                  <div className="pro-checkout-line">
+                    <span>Pro Financial Report (PDF)</span>
+                    <span>$1.99</span>
+                  </div>
+                  <div className="pro-checkout-line pro-checkout-total">
+                    <span>Total</span>
+                    <span>$1.99</span>
+                  </div>
+                </div>
+
+                <button className="btn btn-pro" onClick={handlePay} disabled={loading} style={{ width: '100%' }}>
+                  {loading ? (
+                    <>
+                      <svg className="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                      </svg>
+                      Redirecting to Stripe...
+                    </>
+                  ) : (
+                    <>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                        <line x1="1" y1="10" x2="23" y2="10" />
+                      </svg>
+                      Pay $1.99 — Secure Checkout
+                    </>
+                  )}
+                </button>
+
+                <p className="pro-email-privacy" style={{ marginTop: '0.75rem' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  Secure payment via Stripe. We never see your card details.
+                </p>
+
+                {errorMsg && <p className="pro-error-inline">{errorMsg}</p>}
+              </>
+            )}
           </div>
-          <h2 className="pro-upsell-title">Your report is ready.</h2>
-          <button className="btn btn-pro pro-download-btn" onClick={handleDownload}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
+        </div>
+      )}
+
+      <div className="card pro-upsell-card">
+        <div className="pro-upsell-badge">PRO</div>
+
+        {/* ── Upsell content (always present, dimmed when result showing) ── */}
+        <div style={showResult ? { opacity: 0.3, pointerEvents: 'none' } : undefined}>
+          <h2 className="pro-upsell-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            Download PDF Report
-          </button>
-          {emailStatus === 'sent' && (proCustomerEmail || email) && (
-            <p className="pro-email-sent-msg">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            Get Your Full Report via Email
+          </h2>
+          <p className="pro-upsell-subtitle">
+            Send the full detailed report straight to your inbox.
+          </p>
+
+          {/* Blurred preview teaser */}
+          <div className="pro-blurred-preview">
+            <div className="pro-preview-row">
+              <span className="pro-preview-label">Health Score</span>
+              <span className="pro-preview-value blurred">72 / 100</span>
+            </div>
+            <div className="pro-preview-row">
+              <span className="pro-preview-label">Savings Projection (12 mo)</span>
+              <span className="pro-preview-value blurred">$2,847</span>
+            </div>
+            <div className="pro-preview-row">
+              <span className="pro-preview-label">Priority Actions</span>
+              <span className="pro-preview-value blurred">8 items</span>
+            </div>
+            <span className="pro-preview-unlock">Unlock with Pro Report</span>
+          </div>
+
+          <div className="pro-features-grid">
+            <div className="pro-feature">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                 <polyline points="22,6 12,13 2,6" />
               </svg>
-              We&apos;ve also sent this to {proCustomerEmail || email}.
-            </p>
-          )}
-          {emailStatus === 'failed' && (
-            <p className="pro-email-failed-msg">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
+              <span>Send full report to your email</span>
+            </div>
+            <div className="pro-feature">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
               </svg>
-              Email delivery may be delayed — your download is available now.
-            </p>
-          )}
-        </div>
-      </div>
-    )
-  }
+              <span>Downloadable PDF summary</span>
+            </div>
+            <div className="pro-feature">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              <span>Deeper spending insights</span>
+            </div>
+            <div className="pro-feature">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+              <span>Recurring charges detection</span>
+            </div>
+            <div className="pro-feature">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                <polyline points="17 6 23 6 23 12" />
+              </svg>
+              <span>Personalised saving suggestions</span>
+            </div>
+            <div className="pro-feature">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="3" y1="9" x2="21" y2="9" />
+                <line x1="9" y1="21" x2="9" y2="9" />
+              </svg>
+              <span>Category deep dives with trends</span>
+            </div>
+          </div>
 
-  // ── ERROR STATE ──
-  if (cardState === 'error') {
-    return (
-      <div className="card pro-upsell-card pro-error-card">
-        <div className="pro-upsell-badge">PRO</div>
-        <div className="pro-error-content">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="15" y1="9" x2="9" y2="15" />
-            <line x1="9" y1="9" x2="15" y2="15" />
-          </svg>
-          <h2 className="pro-upsell-title">Something went wrong</h2>
-          {errorMsg && <p className="pro-error-detail">{errorMsg}</p>}
-          {pdfBlob && (
-            <button className="btn btn-pro" onClick={handleDownload}>
+          {/* Email input */}
+          <div className="pro-email-capture">
+            <div className="pro-email-input-row">
+              <input
+                type="email"
+                className="pro-email-input"
+                placeholder="your@email.com — we'll send the report here"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setEmailError(null) }}
+              />
+            </div>
+            {emailError && <p className="pro-email-error">{emailError}</p>}
+          </div>
+
+          {/* Legal checkboxes */}
+          <div className="pro-legal-checkboxes">
+            <label className="pro-legal-label">
+              <input
+                type="checkbox"
+                checked={legalData}
+                onChange={(e) => setLegalData(e.target.checked)}
+              />
+              <span>I understand my data is processed only for this report and not stored.</span>
+            </label>
+            <label className="pro-legal-label">
+              <input
+                type="checkbox"
+                checked={legalNoRefund}
+                onChange={(e) => setLegalNoRefund(e.target.checked)}
+              />
+              <span>I agree this is a one-time digital purchase delivered instantly via email.</span>
+            </label>
+          </div>
+
+          <button
+            className="btn btn-pro"
+            onClick={handleStartCheckout}
+            disabled={!bothLegalChecked || !email.trim()}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+            Get report via email — $1.99
+          </button>
+          <p className="pro-early-access">Early access price — helping us build v1</p>
+          <p className="pro-email-privacy">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            Secure payment via Stripe. We never see your card details.
+          </p>
+
+          {errorMsg && !showResult && <p className="pro-error-inline">{errorMsg}</p>}
+        </div>
+
+        {/* ── Success / Error result at card bottom ── */}
+        {cardState === 'success' && (
+          <div className="pro-card-result pro-card-result-success">
+            <div className="pro-success-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            </div>
+            <h2 className="pro-upsell-title">Your report is ready.</h2>
+            <button className="btn btn-pro pro-download-btn" onClick={handleDownload}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
               Download PDF Report
             </button>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // ── CHECKOUT STATE (legal checkboxes confirmed, ready to pay) ──
-  if (cardState === 'checkout') {
-    return (
-      <div className="card pro-upsell-card">
-        <div className="pro-upsell-badge">PRO</div>
-        <h2 className="pro-upsell-title">Confirm &amp; Pay</h2>
-        <p className="pro-upsell-subtitle">
-          Your report will be sent to <strong>{email}</strong>
-        </p>
-
-        <div className="pro-checkout-summary">
-          <div className="pro-checkout-line">
-            <span>Pro Financial Report (PDF)</span>
-            <span>$1.99</span>
+            {emailStatus === 'sent' && (proCustomerEmail || email) && (
+              <p className="pro-email-sent-msg">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                We&apos;ve also sent this to {proCustomerEmail || email}.
+              </p>
+            )}
+            {emailStatus === 'failed' && (
+              <p className="pro-email-failed-msg">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                Email delivery may be delayed — your download is available now.
+              </p>
+            )}
           </div>
-          <div className="pro-checkout-line pro-checkout-total">
-            <span>Total</span>
-            <span>$1.99</span>
+        )}
+        {cardState === 'error' && (
+          <div className="pro-card-result pro-card-result-error">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+            <h2 className="pro-upsell-title">Something went wrong</h2>
+            {errorMsg && <p className="pro-error-detail">{errorMsg}</p>}
+            {pdfBlob && (
+              <button className="btn btn-pro" onClick={handleDownload}>
+                Download PDF Report
+              </button>
+            )}
           </div>
-        </div>
-
-        <button className="btn btn-pro" onClick={handlePay} disabled={loading}>
-          {loading ? (
-            <>
-              <svg className="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-              </svg>
-              Redirecting to Stripe...
-            </>
-          ) : (
-            <>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                <line x1="1" y1="10" x2="23" y2="10" />
-              </svg>
-              Pay $1.99 — Secure Checkout
-            </>
-          )}
-        </button>
-
-        <p className="pro-email-privacy">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-          Secure payment via Stripe. We never see your card details.
-        </p>
-
-        <button
-          className="pro-email-skip"
-          onClick={() => { setCardState('upsell'); setLoading(false) }}
-          disabled={loading}
-        >
-          Go back
-        </button>
-
-        {errorMsg && <p className="pro-error-inline">{errorMsg}</p>}
+        )}
       </div>
-    )
-  }
-
-  // ── UPSELL STATE (default) ──
-  return (
-    <div className="card pro-upsell-card">
-      <div className="pro-upsell-badge">PRO</div>
-      <h2 className="pro-upsell-title">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-        Get Your Full Report via Email
-      </h2>
-      <p className="pro-upsell-subtitle">
-        Send the full detailed report straight to your inbox.
-      </p>
-
-      {/* Blurred preview teaser */}
-      <div className="pro-blurred-preview">
-        <div className="pro-preview-row">
-          <span className="pro-preview-label">Health Score</span>
-          <span className="pro-preview-value blurred">72 / 100</span>
-        </div>
-        <div className="pro-preview-row">
-          <span className="pro-preview-label">Savings Projection (12 mo)</span>
-          <span className="pro-preview-value blurred">$2,847</span>
-        </div>
-        <div className="pro-preview-row">
-          <span className="pro-preview-label">Priority Actions</span>
-          <span className="pro-preview-value blurred">8 items</span>
-        </div>
-        <span className="pro-preview-unlock">Unlock with Pro Report</span>
-      </div>
-
-      <div className="pro-features-grid">
-        <div className="pro-feature">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-            <polyline points="22,6 12,13 2,6" />
-          </svg>
-          <span>Send full report to your email</span>
-        </div>
-        <div className="pro-feature">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-          </svg>
-          <span>Downloadable PDF summary</span>
-        </div>
-        <div className="pro-feature">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-          </svg>
-          <span>Deeper spending insights</span>
-        </div>
-        <div className="pro-feature">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 6v6l4 2" />
-          </svg>
-          <span>Recurring charges detection</span>
-        </div>
-        <div className="pro-feature">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-            <polyline points="17 6 23 6 23 12" />
-          </svg>
-          <span>Personalised saving suggestions</span>
-        </div>
-        <div className="pro-feature">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-            <line x1="3" y1="9" x2="21" y2="9" />
-            <line x1="9" y1="21" x2="9" y2="9" />
-          </svg>
-          <span>Category deep dives with trends</span>
-        </div>
-      </div>
-
-      {/* Email input */}
-      <div className="pro-email-capture">
-        <div className="pro-email-input-row">
-          <input
-            type="email"
-            className="pro-email-input"
-            placeholder="your@email.com — we'll send the report here"
-            value={email}
-            onChange={(e) => { setEmail(e.target.value); setEmailError(null) }}
-          />
-        </div>
-        {emailError && <p className="pro-email-error">{emailError}</p>}
-      </div>
-
-      {/* Legal checkboxes */}
-      <div className="pro-legal-checkboxes">
-        <label className="pro-legal-label">
-          <input
-            type="checkbox"
-            checked={legalData}
-            onChange={(e) => setLegalData(e.target.checked)}
-          />
-          <span>I understand my data is processed only for this report and not stored.</span>
-        </label>
-        <label className="pro-legal-label">
-          <input
-            type="checkbox"
-            checked={legalNoRefund}
-            onChange={(e) => setLegalNoRefund(e.target.checked)}
-          />
-          <span>I agree this is a one-time digital purchase delivered instantly via email.</span>
-        </label>
-      </div>
-
-      <button
-        className="btn btn-pro"
-        onClick={handleStartCheckout}
-        disabled={!bothLegalChecked || !email.trim()}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-          <polyline points="22,6 12,13 2,6" />
-        </svg>
-        Get report via email — $1.99
-      </button>
-      <p className="pro-early-access">Early access price — helping us build v1</p>
-      <p className="pro-email-privacy">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        </svg>
-        Secure payment via Stripe. We never see your card details.
-      </p>
-
-      {errorMsg && <p className="pro-error-inline">{errorMsg}</p>}
-    </div>
+    </>
   )
 }
 
