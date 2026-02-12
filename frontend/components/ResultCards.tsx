@@ -779,36 +779,19 @@ function ProReportCard({ results, proPaymentStatus, proSessionId, proCustomerEma
     setCardState('generating')
     setErrorMsg(null)
 
+    // Step 1: Generate PDF client-side
+    let blob: Blob
     try {
-      // Generate PDF client-side
       const { generateProReport } = await import('@/lib/proReportGenerator')
       const { generateProPdf } = await import('@/lib/generateProPdf')
       const proReport = generateProReport(results)
       trackProReportGenerated()
-      const blob = await generateProPdf(proReport)
+      blob = await generateProPdf(proReport)
       setPdfBlob(blob)
-
-      // Upload to server for storage + email delivery
-      const formData = new FormData()
-      formData.append('sessionId', sessionId)
-      formData.append('email', customerEmail)
-      formData.append('pdf', blob, 'leaky-wallet-pro-report.pdf')
-
-      const res = await fetch('/api/deliver-report', { method: 'POST', body: formData })
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to deliver report')
-      }
-
-      setDownloadUrl(data.downloadUrl || null)
-      setEmailStatus(data.emailStatus || null)
-      setCardState('success')
     } catch (err) {
-      console.error('Pro Report generation/delivery failed:', err)
+      // PDF generation itself failed — this is the only case we refund
+      console.error('Pro PDF generation failed:', err)
       const msg = err instanceof Error ? err.message : String(err)
-
-      // Attempt auto-refund
       try {
         const refundRes = await fetch('/api/refund', {
           method: 'POST',
@@ -825,6 +808,36 @@ function ProReportCard({ results, proPaymentStatus, proSessionId, proCustomerEma
         setErrorMsg(`Report generation failed: ${msg}. Please contact support for a refund.`)
       }
       setCardState('error')
+      return
+    }
+
+    // Step 2: Upload to server for storage + email delivery
+    // If this fails, the PDF is still available for download — no refund needed
+    try {
+      const formData = new FormData()
+      formData.append('sessionId', sessionId)
+      formData.append('email', customerEmail)
+      formData.append('pdf', blob, 'leaky-wallet-pro-report.pdf')
+
+      const res = await fetch('/api/deliver-report', { method: 'POST', body: formData })
+      const data = await res.json()
+
+      if (!res.ok) {
+        console.warn('Deliver-report returned error:', data.error)
+        // Still show success — PDF is available for download
+        setEmailStatus('failed')
+        setCardState('success')
+        return
+      }
+
+      setDownloadUrl(data.downloadUrl || null)
+      setEmailStatus(data.emailStatus || null)
+      setCardState('success')
+    } catch (deliveryErr) {
+      // Network/server error on delivery — PDF still ready, just email failed
+      console.warn('Deliver-report fetch failed (PDF still available):', deliveryErr)
+      setEmailStatus('failed')
+      setCardState('success')
     }
   }
 
