@@ -2,14 +2,14 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Pricing – Leaky Wallet is Free Forever',
-  description: 'Leaky Wallet is completely free to use. No hidden fees, no premium tier. Optional donations help keep the service running.',
+  title: 'Pricing – Free Analysis + $1.99 Pro Report | Leaky Wallet',
+  description: 'Leaky Wallet is free to use. Upload your bank statement and get instant insights. Upgrade to a Pro Report for $1.99 — a detailed PDF with health scores, savings projections, and action plans.',
   alternates: {
     canonical: 'https://whereismymoneygo.com/pricing',
   },
   openGraph: {
-    title: 'Pricing – Leaky Wallet is Free',
-    description: 'Free bank statement analyzer with no hidden fees. Support the project with an optional donation.',
+    title: 'Pricing – Free Analysis + Pro Report | Leaky Wallet',
+    description: 'Free bank statement analysis with optional $1.99 Pro Report — detailed PDF with health scores, savings projections, and personalized action plans.',
     type: 'website',
     url: 'https://whereismymoneygo.com/pricing',
   },
@@ -19,15 +19,15 @@ export default function PricingPage() {
   return (
     <main className="container pricing-page">
       <div className="pricing-content">
-        <h1>Simple Pricing: Free</h1>
+        <h1>Simple, Transparent Pricing</h1>
         <p className="pricing-intro">
-          Leaky Wallet is free to use, forever. No trials, no premium tiers, no hidden fees.
+          Analyze your bank statements for free. Want the full picture? Get a Pro Report for just $1.99.
         </p>
 
         {/* Pricing cards */}
         <div className="pricing-cards">
-          <div className="pricing-card pricing-card-main">
-            <div className="pricing-badge">Most Popular</div>
+          <div className="pricing-card">
+            <div className="pricing-badge">Free Forever</div>
             <h2>Free</h2>
             <div className="pricing-amount">
               <span className="price">$0</span>
@@ -62,12 +62,6 @@ export default function PricingPage() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
-                Personalized savings plan
-              </li>
-              <li>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
                 CSV and PDF support
               </li>
               <li>
@@ -87,6 +81,68 @@ export default function PricingPage() {
               Start Analyzing Free
             </Link>
           </div>
+
+          <div className="pricing-card pricing-card-pro">
+            <div className="pricing-badge pricing-badge-pro">Pro Report</div>
+            <h2>Pro</h2>
+            <div className="pricing-amount">
+              <span className="price pricing-price-pro">$1.99</span>
+              <span className="period">/ one-time</span>
+            </div>
+            <ul className="pricing-features">
+              <li>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Everything in Free
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Financial health score (0–100)
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                12-month savings projection
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Prioritized action plan
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Category deep dives with trends
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Downloadable PDF report
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Report delivered to your email
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Secure payment via Stripe
+              </li>
+            </ul>
+            <Link href="/" className="btn btn-pro btn-block">
+              Get Pro Report — $1.99
+            </Link>
+          </div>
         </div>
 
         {/* Why free */}
@@ -98,8 +154,9 @@ export default function PricingPage() {
             forgotten memberships add up quickly.
           </p>
           <p>
-            This tool should be accessible to everyone, regardless of their financial situation.
-            That's why it's free - no premium tier, no data selling, no catches.
+            The core analysis will always be free and accessible to everyone. The Pro Report
+            is an optional upgrade for those who want a deeper, professional-grade breakdown
+            — and it helps cover hosting costs to keep the free tier running.
           </p>
         </section>
 
@@ -139,19 +196,28 @@ export default function PricingPage() {
           <h2>Frequently Asked Questions</h2>
 
           <div className="faq-item">
-            <h3>Will there ever be a paid version?</h3>
+            <h3>What do I get with the free version?</h3>
             <p>
-              The core features will always be free. If we add advanced features in the future
-              (like automatic bank sync), those might have a small fee to cover costs, but
-              statement analysis will remain free.
+              Full spending analysis, subscription detection, category breakdowns,
+              month-over-month trends, and a personalized savings plan — all completely free,
+              no account required.
             </p>
           </div>
 
           <div className="faq-item">
-            <h3>How do you make money?</h3>
+            <h3>What&apos;s included in the Pro Report?</h3>
             <p>
-              Currently, this is a passion project supported by optional donations. We don't
-              sell your data or show ads.
+              A detailed PDF report with your financial health score, 12-month savings projection,
+              prioritized action plan, category deep dives with spending trends, and an executive
+              summary. It&apos;s delivered to your email and available for instant download.
+            </p>
+          </div>
+
+          <div className="faq-item">
+            <h3>Is the Pro Report a subscription?</h3>
+            <p>
+              No. It&apos;s a one-time payment of $1.99 per report. No recurring charges, no
+              auto-renewals. You pay once and get your report.
             </p>
           </div>
 
@@ -164,10 +230,18 @@ export default function PricingPage() {
           </div>
 
           <div className="faq-item">
+            <h3>How is payment handled?</h3>
+            <p>
+              Payments are processed securely through Stripe. We never see or store your card
+              details. If PDF generation fails after payment, you&apos;re automatically refunded.
+            </p>
+          </div>
+
+          <div className="faq-item">
             <h3>What about the Bank Connect feature?</h3>
             <p>
               Bank Connect (automatic Plaid integration) is coming soon for US and UK users.
-              This feature will also be free during the beta period.
+              This feature will also be free during the beta period.{' '}
               <Link href="/banks">Learn more about Bank Connect</Link>.
             </p>
           </div>

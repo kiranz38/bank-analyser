@@ -3558,7 +3558,7 @@ h3 {
 
 /* Pricing Page */
 .pricing-page {
-  max-width: 800px;
+  max-width: 900px;
 }
 
 .pricing-content h1 {
@@ -3576,6 +3576,7 @@ h3 {
 .pricing-cards {
   display: flex;
   justify-content: center;
+  gap: 1.5rem;
   margin-bottom: 3rem;
 }
 
@@ -3584,10 +3585,16 @@ h3 {
   max-width: 400px;
   width: 100%;
   background: var(--card-bg);
-  border: 2px solid var(--primary);
+  border: 2px solid var(--card-border);
   border-radius: var(--border-radius);
   padding: 2rem;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.pricing-card-pro {
+  border-color: var(--primary);
 }
 
 .pricing-badge {
@@ -3596,11 +3603,16 @@ h3 {
   left: 50%;
   transform: translateX(-50%);
   padding: 0.25rem 1rem;
-  background: var(--primary);
+  background: var(--muted);
   color: white;
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 20px;
+  white-space: nowrap;
+}
+
+.pricing-badge-pro {
+  background: var(--primary);
 }
 
 .pricing-card h2 {
@@ -3623,11 +3635,16 @@ h3 {
   color: var(--muted);
 }
 
+.pricing-price-pro {
+  color: var(--primary) !important;
+}
+
 .pricing-features {
   list-style: none;
   padding: 0;
   margin: 0 0 1.5rem;
   text-align: left;
+  flex: 1;
 }
 
 .pricing-features li {
@@ -3695,6 +3712,13 @@ h3 {
 
 .pricing-faq h2 {
   margin-bottom: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .pricing-cards {
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 /* Example Page */
