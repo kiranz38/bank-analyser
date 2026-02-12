@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
-const EMAIL_FROM = process.env.EMAIL_FROM || 'Leaky Wallet <onboarding@resend.dev>'
+import { sendReportEmail } from '@/lib/sendReportEmail'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,13 +15,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing PDF file' }, { status: 400 })
     }
 
-    // Convert File to Buffer for Resend attachment
+    // Convert File to Buffer for attachment
     const arrayBuffer = await pdfFile.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    const { data, error } = await resend.emails.send({
-      from: EMAIL_FROM,
-      to: email,
+    const result = await sendReportEmail({
+      toEmail: email,
       subject: 'Your Leaky Wallet Pro Report',
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -58,20 +54,21 @@ export async function POST(request: NextRequest) {
       ],
     })
 
-    if (error) {
-      console.error('[Resend] Email send error:', error)
+    if (!result.ok) {
       return NextResponse.json(
-        { error: 'Failed to send email' },
+        { error: 'Failed to send email', code: result.errorCode },
         { status: 500 }
       )
     }
 
-    console.log('[Resend] Pro Report sent successfully:', data?.id)
-    return NextResponse.json({ success: true, id: data?.id })
+    return NextResponse.json({
+      success: true,
+      id: result.resendMessageId,
+      usedFallback: result.usedFallback,
+    })
   } catch (error) {
-    console.error('[Resend] Error:', error)
-    const message =
-      error instanceof Error ? error.message : 'Failed to send email'
+    console.error('[SendProReport] Error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to send email'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
