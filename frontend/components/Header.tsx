@@ -97,7 +97,7 @@ export default function Header() {
               <line x1="10" y1="1" x2="10" y2="4" />
               <line x1="14" y1="1" x2="14" y2="4" />
             </svg>
-            Support
+            Buy me a coffee
           </a>
           {/* Dark Mode Toggle */}
           <button
@@ -185,7 +185,7 @@ export default function Header() {
               <line x1="10" y1="1" x2="10" y2="4" />
               <line x1="14" y1="1" x2="14" y2="4" />
             </svg>
-            Support
+            Buy me a coffee
           </a>
           {/* Dark Mode Toggle - Mobile */}
           <button
