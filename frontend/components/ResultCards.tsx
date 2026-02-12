@@ -53,6 +53,14 @@ export default function ResultCards({ results, proPaymentStatus, proSessionId, p
   const [showSpendingModal, setShowSpendingModal] = useState(false)
   const [showSubscriptionsModal, setShowSubscriptionsModal] = useState(false)
   const [showQuickWinsModal, setShowQuickWinsModal] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
@@ -560,14 +568,14 @@ export default function ResultCards({ results, proPaymentStatus, proSessionId, p
                   <div className="chart-container-compact">
                     <ResponsiveContainer width="100%" height={170}>
                       <BarChart
-                        data={pieData.slice(0, 6).map(d => ({ name: d.name.length > 12 ? d.name.slice(0, 12) + '...' : d.name, amount: d.value, fill: d.color }))}
+                        data={pieData.slice(0, 6).map(d => ({ name: d.name.length > (isMobile ? 10 : 12) ? d.name.slice(0, isMobile ? 10 : 12) + '...' : d.name, amount: d.value, fill: d.color }))}
                         layout="vertical"
-                        margin={{ left: 80, right: 20, top: 10, bottom: 10 }}
+                        margin={isMobile ? { left: 10, right: 10, top: 5, bottom: 5 } : { left: 10, right: 15, top: 10, bottom: 10 }}
                       >
-                        <XAxis type="number" tickFormatter={(value) => `$${(value/1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
-                        <YAxis type="category" dataKey="name" width={75} tick={{ fontSize: 11 }} />
+                        <XAxis type="number" tickFormatter={(value) => `$${(value/1000).toFixed(0)}k`} tick={{ fontSize: isMobile ? 9 : 10 }} />
+                        <YAxis type="category" dataKey="name" width={isMobile ? 60 : 75} tick={{ fontSize: isMobile ? 9 : 11 }} />
                         <Tooltip formatter={(value) => formatCurrency(Number(value) || 0)} />
-                        <Bar dataKey="amount" radius={[0, 4, 4, 0]} barSize={20}>
+                        <Bar dataKey="amount" radius={[0, 4, 4, 0]} barSize={isMobile ? 16 : 20}>
                           {pieData.slice(0, 6).map((entry, index) => (
                             <Cell key={`bar-${index}`} fill={entry.color} />
                           ))}
