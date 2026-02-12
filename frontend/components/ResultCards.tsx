@@ -779,14 +779,68 @@ function ProReportCard({ results, proPaymentStatus, proSessionId, proCustomerEma
     setCardState('generating')
     setErrorMsg(null)
 
-    // Step 1: Generate PDF client-side
+    // Step 1: Generate PDF client-side with validation gate
     let blob: Blob
     try {
-      const { generateProReport } = await import('@/lib/proReportGenerator')
+      const { generateProReportWithWarnings } = await import('@/lib/proReportGenerator')
+      const { validateReportData } = await import('@/lib/reportValidation')
       const { generateProPdf } = await import('@/lib/generateProPdf')
-      const proReport = generateProReport(results)
+      const { runReportQa, applyQaResult } = await import('@/lib/reportQaClaude')
+      const { trackEvent } = await import('@/lib/analytics')
+
+      // 1a. Generate report with warning tracking
+      const { report: rawReport, warnings } = generateProReportWithWarnings(results)
+
+      // 1b. Validate against Zod schema + invariants
+      const validation = validateReportData(rawReport)
+
+      // 1c. Run Claude QA (feature-flagged, non-blocking on failure)
+      const qaResult = await runReportQa(validation.safeData, validation)
+
+      // 1d. Apply QA omissions to produce final report
+      const { report: finalReport, omittedSections, isSafeMode } = applyQaResult(
+        validation.safeData, qaResult, validation.failedSections
+      )
+
+      // 1e. Structured log (no PII) + analytics
+      const reportMeta = {
+        event: 'pro_report_quality_gate',
+        valid: validation.valid,
+        qa_pass: qaResult.pass,
+        severity: qaResult.severity,
+        omitted_sections_count: omittedSections.length,
+        warnings_count: warnings.length,
+        safe_mode: isSafeMode,
+        section_counts: {
+          monthly_trends: finalReport.monthly_trends.length,
+          subscriptions: finalReport.subscription_insights.length,
+          actions: finalReport.action_plan.length,
+          categories: finalReport.category_deep_dives.length,
+        },
+      }
+      console.log('[ProReport]', JSON.stringify(reportMeta))
+
+      if (!validation.valid || !qaResult.pass || omittedSections.length > 0) {
+        trackEvent('pro_report_quality_gate', {
+          valid: validation.valid,
+          qa_pass: qaResult.pass,
+          severity: qaResult.severity,
+          omitted_sections_count: omittedSections.length,
+          warnings_count: warnings.length,
+          safe_mode: isSafeMode,
+        })
+      }
+
       trackProReportGenerated()
-      blob = await generateProPdf(proReport)
+
+      // 1f. Generate PDF with quality metadata
+      blob = await generateProPdf(finalReport, {
+        omittedSections,
+        isSafeMode,
+        warnings,
+        narrativeBullets: qaResult.narrativeBullets,
+        qaNote: qaResult.notesForUser,
+      })
       setPdfBlob(blob)
     } catch (err) {
       // PDF generation itself failed — this is the only case we refund

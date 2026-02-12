@@ -1,5 +1,22 @@
 import type { ProReportData } from './proReportTypes'
 import type { jsPDF as jsPDFType } from 'jspdf'
+import type { NumericWarning } from './numberSafe'
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PDF GENERATION OPTIONS — passed in from the quality gate
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+export interface PdfGenerationOptions {
+  /** Sections that failed validation or were flagged by QA */
+  omittedSections?: string[]
+  /** Whether the report is in "safe mode" (some sections omitted) */
+  isSafeMode?: boolean
+  /** Warnings from numeric safety helpers */
+  warnings?: ReadonlyArray<NumericWarning>
+  /** Narrative bullets from Claude QA (displayed if available) */
+  narrativeBullets?: string[]
+  /** User-facing note from QA */
+  qaNote?: string
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // DESIGN TOKENS — consistent spacing & colors throughout
@@ -29,14 +46,57 @@ const GAP_LG = 12     // large: between major sections
 const GAP_XL = 16     // extra-large: after cover elements
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// FORMATTERS
+// FORMATTERS — single entry points, never return NaN/$NaN
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function fmt(n: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n)
+  const v = Number.isFinite(n) ? n : 0
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 }
 
 function fmtD(n: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
+  const v = Number.isFinite(n) ? n : 0
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)
+}
+
+/** Safe cell value — returns "—" dash for NaN/undefined/empty */
+function cell(value: unknown, formatter?: (n: number) => string): string {
+  if (value === null || value === undefined) return '\u2014'
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) return '\u2014'
+    return formatter ? formatter(value) : String(value)
+  }
+  if (typeof value === 'string') {
+    if (value.trim() === '' || value.includes('NaN') || value.includes('undefined')) return '\u2014'
+    return value
+  }
+  return String(value)
+}
+
+/** Safe percentage display */
+function fmtPct(n: number): string {
+  if (!Number.isFinite(n)) return '0%'
+  return `${n > 0 ? '+' : ''}${n.toFixed(1)}%`
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// DATA QUALITY CHECKS — skip sections with no meaningful data
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function hasValidTrends(trends: ProReportData['monthly_trends']): boolean {
+  if (trends.length === 0) return false
+  // Check that at least one month has a valid name and non-zero spend
+  return trends.some(t =>
+    t.month && !t.month.includes('NaN') && isFinite(t.total_spend) && t.total_spend > 0
+  )
+}
+
+function hasBehavioralData(bi: ProReportData['behavioral_insights']): boolean {
+  // At least peak day or meaningful averages
+  const hasPeakDay = bi.peak_spending_day !== ''
+  const hasAvg = isFinite(bi.avg_daily_spend) && bi.avg_daily_spend > 0
+  const hasImpulse = isFinite(bi.impulse_spend_estimate) && bi.impulse_spend_estimate > 0
+  const hasVelocity = bi.spending_velocity !== ''
+  return hasPeakDay || hasAvg || hasImpulse || hasVelocity
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -169,7 +229,7 @@ function tableTheme(headerColor: [number, number, number] = BRAND) {
 // MAIN GENERATOR
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export async function generateProPdf(report: ProReportData): Promise<Blob> {
+export async function generateProPdf(report: ProReportData, options: PdfGenerationOptions = {}): Promise<Blob> {
   const jspdfModule = await import('jspdf')
   const autoTableModule = await import('jspdf-autotable')
 
@@ -206,8 +266,17 @@ export async function generateProPdf(report: ProReportData): Promise<Blob> {
   doc.setFontSize(9.5)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(...MUTED)
-  doc.text(`Analysis period: ${report.period.start} to ${report.period.end}`, MARGIN + 22, y + 4.5)
+  doc.text(`Analysis period: ${cell(report.period.start)} to ${cell(report.period.end)}`, MARGIN + 22, y + 4.5)
   y += GAP_XL + 2
+
+  // ── Safe Mode Banner (if sections were omitted) ──
+  if (options.isSafeMode || (options.omittedSections && options.omittedSections.length > 0)) {
+    y = infoBox(doc, 'Data Quality Notice',
+      'Some sections of this report were omitted or simplified due to data quality. ' +
+      'For best results, upload 3+ months of complete bank statements.',
+      y, WARNING)
+    y += GAP_XS
+  }
 
   // ── Health Score Card ──
   const hs = report.executive_summary.health_score
@@ -262,6 +331,15 @@ export async function generateProPdf(report: ProReportData): Promise<Blob> {
   y = bodyText(doc, report.executive_summary.paragraph, y)
   y += GAP_SM
 
+  // ── AI Narrative Bullets (from Claude QA, if available) ──
+  if (options.narrativeBullets && options.narrativeBullets.length > 0) {
+    y = subHeading(doc, 'Key Findings', y)
+    for (const b of options.narrativeBullets) {
+      y = bullet(doc, b, y)
+    }
+    y += GAP_SM
+  }
+
   // ── Key Metrics Table ──
   y = subHeading(doc, 'Key Metrics at a Glance', y)
 
@@ -271,31 +349,52 @@ export async function generateProPdf(report: ProReportData): Promise<Blob> {
   const easyActions = report.action_plan.filter(a => a.difficulty === 'easy').length
   const totalActionSavings = report.action_plan.reduce((s, a) => s + a.estimated_yearly_savings, 0)
 
-  const metricsData = [
-    ['Active Subscriptions', `${totalSubs} totaling ${fmtD(totalSubCost)}/mo (${fmt(totalSubCost * 12)}/yr)`],
-    ['Needs Review', `${reviewSubs} subscription${reviewSubs !== 1 ? 's' : ''} flagged for review or cancellation`],
-    ['Easy Wins', `${easyActions} quick action${easyActions !== 1 ? 's' : ''} you can take this week`],
-    ['Savings Potential', `${fmt(totalActionSavings)}/yr if all recommended actions are taken`],
-    ['Avg Daily Spend', `${fmtD(report.behavioral_insights.avg_daily_spend)} per day`],
-    ['Peak Spending Day', report.behavioral_insights.peak_spending_day],
-  ]
+  const metricsData: string[][] = []
+  if (totalSubs > 0) {
+    metricsData.push(['Active Subscriptions', `${totalSubs} totaling ${fmtD(totalSubCost)}/mo (${fmt(totalSubCost * 12)}/yr)`])
+  }
+  if (reviewSubs > 0) {
+    metricsData.push(['Needs Review', `${reviewSubs} subscription${reviewSubs !== 1 ? 's' : ''} flagged for review or cancellation`])
+  }
+  if (easyActions > 0) {
+    metricsData.push(['Easy Wins', `${easyActions} quick action${easyActions !== 1 ? 's' : ''} you can take this week`])
+  }
+  if (totalActionSavings > 0) {
+    metricsData.push(['Savings Potential', `${fmt(totalActionSavings)}/yr if all recommended actions are taken`])
+  }
+  if (report.behavioral_insights.avg_daily_spend > 0) {
+    metricsData.push(['Avg Daily Spend', `${fmtD(report.behavioral_insights.avg_daily_spend)} per day`])
+  }
+  if (report.behavioral_insights.peak_spending_day) {
+    metricsData.push(['Peak Spending Day', report.behavioral_insights.peak_spending_day])
+  }
+  // Fallback: if nothing meaningful, add total spend from categories
+  if (metricsData.length === 0) {
+    const totalCatSpend = report.category_deep_dives.reduce((s, c) => s + c.total, 0)
+    if (totalCatSpend > 0) {
+      metricsData.push(['Total Spending Analyzed', fmtD(totalCatSpend)])
+      metricsData.push(['Categories Tracked', `${report.category_deep_dives.length}`])
+    }
+  }
 
-  autoTable(doc, {
-    startY: y,
-    body: metricsData,
-    ...tableTheme(),
-    columnStyles: {
-      0: { cellWidth: 40, fontStyle: 'bold', textColor: DARK },
-      1: { cellWidth: 130, textColor: DARK },
-    },
-    didDrawPage: () => drawHeader(doc),
-  })
-  y = (doc as any).lastAutoTable.finalY + GAP_LG
+  if (metricsData.length > 0) {
+    autoTable(doc, {
+      startY: y,
+      body: metricsData,
+      ...tableTheme(),
+      columnStyles: {
+        0: { cellWidth: 40, fontStyle: 'bold', textColor: DARK },
+        1: { cellWidth: 130, textColor: DARK },
+      },
+      didDrawPage: () => drawHeader(doc),
+    })
+    y = (doc as any).lastAutoTable.finalY + GAP_LG
+  }
 
   // ──────────────────────────────────────────────────────────
-  // MONTHLY SPENDING TRENDS
+  // MONTHLY SPENDING TRENDS (skip if data is empty/NaN)
   // ──────────────────────────────────────────────────────────
-  if (report.monthly_trends.length > 0) {
+  if (hasValidTrends(report.monthly_trends)) {
     y = needsBreak(doc, y, 40)
     y = sectionTitle(doc, 'Monthly Spending Trends', y)
     y = bodyText(doc, 'Total monthly spend over the analysis period. Use this to identify seasonal patterns and track progress.', y)
@@ -335,12 +434,14 @@ export async function generateProPdf(report: ProReportData): Promise<Blob> {
       const first = report.monthly_trends[0].total_spend
       const last = report.monthly_trends[report.monthly_trends.length - 1].total_spend
       const diff = last - first
-      const pct = ((diff / first) * 100).toFixed(1)
-      const direction = diff > 0 ? 'increased' : 'decreased'
-      y = infoBox(doc, 'Trend Analysis',
-        `Your spending ${direction} by ${fmtD(Math.abs(diff))} (${Math.abs(Number(pct))}%) from the first to last month analyzed. ` +
-        (diff > 0 ? 'Consider setting monthly spending caps to reverse this trend.' : 'Great progress — maintain this trajectory.'),
-        y, diff > 0 ? WARNING : SUCCESS)
+      const pct = first > 0 ? ((diff / first) * 100).toFixed(1) : '0.0'
+      if (Number.isFinite(diff) && first > 0) {
+        const direction = diff > 0 ? 'increased' : 'decreased'
+        y = infoBox(doc, 'Trend Analysis',
+          `Your spending ${direction} by ${fmtD(Math.abs(diff))} (${Math.abs(Number(pct))}%) from the first to last month analyzed. ` +
+          (diff > 0 ? 'Consider setting monthly spending caps to reverse this trend.' : 'Great progress — maintain this trajectory.'),
+          y, diff > 0 ? WARNING : SUCCESS)
+      }
     }
     y += GAP_XS
   }
@@ -387,8 +488,10 @@ export async function generateProPdf(report: ProReportData): Promise<Blob> {
   }
 
   // ──────────────────────────────────────────────────────────
-  // PROJECTED SAVINGS
+  // PROJECTED SAVINGS (skip if no savings to project)
   // ──────────────────────────────────────────────────────────
+  const hasSavings = report.savings_projection.month_12 > 0
+  if (hasSavings) {
   y = needsBreak(doc, y, 55)
   y = sectionTitle(doc, 'Projected Savings Timeline', y)
   y = bodyText(doc, 'These projections assume you implement the recommended actions in their suggested timeframes. Actual savings depend on your individual circumstances.', y)
@@ -433,6 +536,7 @@ export async function generateProPdf(report: ProReportData): Promise<Blob> {
     y += 4
   }
   y += GAP_LG
+  } // end hasSavings
 
   // ──────────────────────────────────────────────────────────
   // PRIORITY ACTION PLAN
@@ -495,26 +599,37 @@ export async function generateProPdf(report: ProReportData): Promise<Blob> {
   }
 
   // ──────────────────────────────────────────────────────────
-  // BEHAVIORAL INSIGHTS
+  // BEHAVIORAL INSIGHTS (skip if no meaningful data)
   // ──────────────────────────────────────────────────────────
+  const bi = report.behavioral_insights
+  if (hasBehavioralData(bi)) {
   y = needsBreak(doc, y, 50)
   y = sectionTitle(doc, 'Behavioral Insights', y)
   y = bodyText(doc, 'Understanding your spending behavior is the first step to changing it. These patterns were detected from your transaction data.', y)
   y += GAP_XS
 
-  const bi = report.behavioral_insights
-  const biData: string[][] = [
-    ['Peak Spending Day', bi.peak_spending_day, 'The day you tend to spend the most'],
-    ['Avg Daily Spend', fmtD(bi.avg_daily_spend), `${fmtD(bi.avg_daily_spend * 365)} per year`],
-    ['Avg Weekly Spend', fmtD(bi.avg_weekly_spend), 'Track weekly to stay on budget'],
-    ['Impulse Spending', fmtD(bi.impulse_spend_estimate), 'Small frequent purchases that add up'],
-  ]
-
+  // Only add rows with actual data
+  const biData: string[][] = []
+  if (bi.peak_spending_day) {
+    biData.push(['Peak Spending Day', bi.peak_spending_day, 'The day you tend to spend the most'])
+  }
+  if (bi.avg_daily_spend > 0) {
+    biData.push(['Avg Daily Spend', fmtD(bi.avg_daily_spend), `${fmtD(bi.avg_daily_spend * 365)} per year`])
+  }
+  if (bi.avg_weekly_spend > 0) {
+    biData.push(['Avg Weekly Spend', fmtD(bi.avg_weekly_spend), 'Track weekly to stay on budget'])
+  }
+  if (bi.impulse_spend_estimate > 0) {
+    biData.push(['Impulse Spending', fmtD(bi.impulse_spend_estimate), 'Small frequent purchases that add up'])
+  }
   if (bi.top_impulse_merchants.length > 0) {
     biData.push(['Top Impulse Merchants', bi.top_impulse_merchants.join(', '), 'Where small purchases accumulate fastest'])
   }
-  biData.push(['Spending Pattern', bi.spending_velocity, ''])
+  if (bi.spending_velocity) {
+    biData.push(['Spending Pattern', bi.spending_velocity, ''])
+  }
 
+  if (biData.length > 0) {
   autoTable(doc, {
     startY: y,
     head: [['Metric', 'Value', 'What This Means']],
@@ -528,11 +643,16 @@ export async function generateProPdf(report: ProReportData): Promise<Blob> {
     didDrawPage: () => drawHeader(doc),
   })
   y = (doc as any).lastAutoTable.finalY + GAP_MD
+  }
 
-  y = infoBox(doc, 'Behavioral Tip',
-    `Your peak spending day is ${bi.peak_spending_day}. Try the "24-hour rule" \u2014 before any non-essential purchase over $25, wait 24 hours. ` +
-    `Set a daily spending alert of ${fmtD(bi.avg_daily_spend * 0.8)} (20% below your average) to build awareness.`,
-    y, BRAND)
+  // Only show tip if we have the data to make it meaningful
+  if (bi.peak_spending_day && bi.avg_daily_spend > 0) {
+    y = infoBox(doc, 'Behavioral Tip',
+      `Your peak spending day is ${bi.peak_spending_day}. Try the "24-hour rule" \u2014 before any non-essential purchase over $25, wait 24 hours. ` +
+      `Set a daily spending alert of ${fmtD(bi.avg_daily_spend * 0.8)} (20% below your average) to build awareness.`,
+      y, BRAND)
+  }
+  } // end hasBehavioralData
 
   // ──────────────────────────────────────────────────────────
   // CATEGORY DEEP DIVES
@@ -546,12 +666,13 @@ export async function generateProPdf(report: ProReportData): Promise<Blob> {
     // Summary table
     const catRows = report.category_deep_dives.map(cat => {
       const arrow = cat.trend === 'increasing' ? '\u2191' : cat.trend === 'decreasing' ? '\u2193' : '\u2192'
+      const tp = Number.isFinite(cat.trend_percent) ? cat.trend_percent : 0
       return [
-        cat.category,
+        cell(cat.category),
         fmtD(cat.total),
-        `${cat.percent}%`,
+        cell(cat.percent, n => `${n}%`),
         fmtD(cat.monthly_average) + '/mo',
-        `${arrow} ${cat.trend_percent > 0 ? '+' : ''}${cat.trend_percent.toFixed(1)}%`,
+        `${arrow} ${fmtPct(tp)}`,
       ]
     })
 
@@ -714,6 +835,64 @@ export async function generateProPdf(report: ProReportData): Promise<Blob> {
       didDrawPage: () => drawHeader(doc),
     })
     y = (doc as any).lastAutoTable.finalY + GAP_LG
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // DATA QUALITY PAGE (only if warnings or omitted sections)
+  // ──────────────────────────────────────────────────────────
+  const hasWarnings = options.warnings && options.warnings.length > 0
+  const hasOmissions = options.omittedSections && options.omittedSections.length > 0
+  if (hasWarnings || hasOmissions || options.isSafeMode) {
+    y = needsBreak(doc, y, 60)
+    y = sectionTitle(doc, 'Data Quality Summary', y)
+
+    if (options.isSafeMode) {
+      y = infoBox(doc, 'Safe Report Mode',
+        'This report was generated in safe mode because some data quality checks did not pass. ' +
+        'Sections with unreliable data have been omitted to ensure accuracy.',
+        y, WARNING)
+    }
+
+    if (hasOmissions) {
+      y = subHeading(doc, 'Sections Omitted', y)
+      const sectionLabels: Record<string, string> = {
+        subscription_insights: 'Subscription ROI Analysis',
+        savings_projection: 'Projected Savings Timeline',
+        action_plan: 'Priority Action Plan',
+        behavioral_insights: 'Behavioral Insights',
+        category_deep_dives: 'Category-by-Category Analysis',
+        monthly_trends: 'Monthly Spending Trends',
+        executive_summary: 'Executive Summary (replaced with defaults)',
+        evidence: 'Evidence Appendix',
+      }
+      for (const section of options.omittedSections!) {
+        const label = sectionLabels[section] || section
+        y = bullet(doc, `${label} — insufficient or inconsistent data`, y)
+      }
+      y += GAP_SM
+    }
+
+    if (hasWarnings) {
+      y = subHeading(doc, 'Data Issues Detected', y)
+      // Group warnings by field prefix (don't reveal raw values — they may contain PII)
+      const fieldGroups: Record<string, number> = {}
+      for (const w of options.warnings!) {
+        const group = w.field.split('.')[0] || 'general'
+        fieldGroups[group] = (fieldGroups[group] || 0) + 1
+      }
+      for (const group of Object.keys(fieldGroups)) {
+        const count = fieldGroups[group]
+        y = bullet(doc, `${count} data issue${count > 1 ? 's' : ''} in "${group}" fields (safe fallback values used)`, y)
+      }
+      y += GAP_SM
+    }
+
+    y = bodyText(doc, 'For best results, upload 3 or more months of complete bank statements in CSV or PDF format. Ensure all columns (date, description, amount) are present.', y)
+    if (options.qaNote) {
+      y += GAP_XS
+      y = bodyText(doc, `Quality check note: ${options.qaNote}`, y)
+    }
+    y += GAP_LG
   }
 
   // ──────────────────────────────────────────────────────────
