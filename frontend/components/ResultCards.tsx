@@ -4,14 +4,13 @@ import { useEffect, useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
 import ShareCard from './ShareCard'
 import FeedbackWidget from './FeedbackWidget'
+import AffiliateAlternatives from './AffiliateAlternatives'
 import {
   trackCategoryViewed,
   trackShareCardGenerated,
   trackShareClicked,
-  trackAlternativesViewed,
   trackPriceChangesViewed,
   trackDuplicatesViewed,
-  trackAlternativeClicked,
   trackProUpsellViewed,
   trackProReportGenerated,
   trackProReportDownloaded,
@@ -30,6 +29,7 @@ interface ResultCardsProps {
   proSessionId?: string | null
   proCustomerEmail?: string | null
   isDemo?: boolean
+  isPro?: boolean
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -49,7 +49,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Other': '#94a3b8',
 }
 
-export default function ResultCards({ results, proPaymentStatus, proSessionId, proCustomerEmail, isDemo }: ResultCardsProps) {
+export default function ResultCards({ results, proPaymentStatus, proSessionId, proCustomerEmail, isDemo, isPro }: ResultCardsProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
   const [showSpendingModal, setShowSpendingModal] = useState(false)
   const [showSubscriptionsModal, setShowSubscriptionsModal] = useState(false)
@@ -68,14 +68,12 @@ export default function ResultCards({ results, proPaymentStatus, proSessionId, p
   }
 
   useEffect(() => {
+    if (isDemo) return
     if (results.category_summary && results.category_summary.length > 0) {
       trackCategoryViewed(results.category_summary.map(c => c.category))
     }
     if (results.share_summary) {
       trackShareCardGenerated(results.share_summary.annual_savings)
-    }
-    if (results.alternatives && results.alternatives.length > 0) {
-      trackAlternativesViewed(results.alternatives.length)
     }
     if (results.price_changes && results.price_changes.length > 0) {
       const totalImpact = results.price_changes.reduce((sum, pc) => sum + pc.yearly_impact, 0)
@@ -85,7 +83,7 @@ export default function ResultCards({ results, proPaymentStatus, proSessionId, p
       const totalMonthly = results.duplicate_subscriptions.reduce((sum, d) => sum + d.combined_monthly, 0)
       trackDuplicatesViewed({ categoryCount: results.duplicate_subscriptions.length, totalMonthly })
     }
-  }, [results])
+  }, [results, isDemo])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -456,39 +454,14 @@ export default function ResultCards({ results, proPaymentStatus, proSessionId, p
 
       {/* Alternatives */}
       {results.alternatives && results.alternatives.length > 0 && (
-        <div className="card">
-          <div className="section-header-row" onClick={() => toggleSection('alternatives')}>
-            <h2>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
-                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                <polyline points="16 6 12 2 8 6" />
-                <line x1="12" y1="2" x2="12" y2="15" />
-              </svg>
-              Cheaper Alternatives ({results.alternatives.length})
-            </h2>
-            <span className="toggle-icon">{expandedSections.alternatives ? '▲' : '▼'}</span>
-          </div>
-          {expandedSections.alternatives && (
-            <div className="alternatives-list">
-              {results.alternatives.map((alt, index) => (
-                <div key={index} className="alternative-option" onClick={() => trackAlternativeClicked({ original: alt.original, alternative: alt.alternative, potentialSavings: alt.yearly_savings })}>
-                  <div className="alternative-info">
-                    <span className="alternative-name">{alt.original} → {alt.alternative}</span>
-                    <span className="alternative-note">{alt.note}</span>
-                  </div>
-                  <span className="alternative-save">Save {formatCurrency(alt.yearly_savings)}/yr</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <AffiliateAlternatives alternatives={results.alternatives} isPro={isPro ?? false} isDemo={isDemo ?? false} />
       )}
 
       {/* Share Card */}
       {results.share_summary && (
         <ShareCard
           shareSummary={results.share_summary}
-          onShare={(platform) => trackShareClicked(platform)}
+          onShare={(platform) => !isDemo && trackShareClicked(platform)}
         />
       )}
 

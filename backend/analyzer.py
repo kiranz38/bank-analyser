@@ -18,14 +18,49 @@ except (FileNotFoundError, json.JSONDecodeError):
     pass
 
 
+def _merchant_matches(service_key: str, service_name: str, merchant: str) -> bool:
+    """Check if a merchant name matches a service from alternatives.json.
+
+    Handles bank statement formats like:
+    - "NETFLIX.COM NETFLIX.COM CA" → matches "netflix"
+    - "APPLE.COM/BILL" → matches "apple music" (partial)
+    - "GOOGLE *YOUTUBE" → matches "youtube premium" (partial)
+    - "SPOTIFY USA" → matches "spotify"
+    """
+    merchant_upper = merchant.upper()
+    key_upper = service_key.upper()
+    name_upper = service_name.upper()
+
+    # Direct substring match (existing logic)
+    if key_upper in merchant_upper or name_upper in merchant_upper:
+        return True
+
+    # Strip common suffixes from merchant for cleaner matching
+    merchant_clean = merchant_upper
+    for suffix in ['.COM', '.NET', '.IO', '/BILL', '*', '.']:
+        merchant_clean = merchant_clean.replace(suffix, ' ')
+    merchant_clean = ' '.join(merchant_clean.split())  # normalize whitespace
+
+    # Check if any word from the service key appears in the cleaned merchant
+    key_words = key_upper.split()
+    if key_words and any(word in merchant_clean for word in key_words if len(word) >= 4):
+        return True
+
+    # Check if any word from the cleaned merchant matches the service key
+    merchant_words = merchant_clean.split()
+    if any(word in key_upper or word in name_upper for word in merchant_words if len(word) >= 4):
+        return True
+
+    return False
+
+
 def find_alternatives(merchant: str, monthly_cost: float) -> list[dict]:
     """Find cheaper alternatives for a given merchant."""
-    merchant_upper = merchant.upper()
     alternatives_found = []
 
     for category, services in ALTERNATIVES_DATA.items():
         for service_key, service_data in services.items():
-            if service_key.upper() in merchant_upper or service_data["name"].upper() in merchant_upper:
+            if _merchant_matches(service_key, service_data["name"], merchant):
                 for alt in service_data["alternatives"]:
                     savings = monthly_cost - alt["price"]
                     if savings > 0:

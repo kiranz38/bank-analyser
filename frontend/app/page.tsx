@@ -25,6 +25,7 @@ import {
   trackResultsViewed,
   trackRecurringDetected,
   trackSampleRunStarted,
+  trackDemoResultsViewed,
   trackConsentChecked,
   trackProCheckoutCompleted,
 } from '@/lib/analytics'
@@ -98,10 +99,10 @@ export default function Home() {
     if (results) {
       if (!isSampleRun) {
         saveToSession(results)
-      }
-      trackResultsViewed()
-      if (results.subscriptions) {
-        trackRecurringDetected(results.subscriptions.length)
+        trackResultsViewed()
+        if (results.subscriptions) {
+          trackRecurringDetected(results.subscriptions.length)
+        }
       }
     }
   }, [results, isSampleRun])
@@ -120,12 +121,7 @@ export default function Home() {
 
     // Demo mode: short animated delay then show hardcoded results
     setTimeout(() => {
-      trackAnalysisGenerated({
-        monthlyLeak: DEMO_RESULTS.monthly_leak,
-        annualSavings: DEMO_RESULTS.annual_savings,
-        subscriptionCount: DEMO_RESULTS.subscriptions?.length || 0
-      })
-
+      trackDemoResultsViewed()
       setResults(DEMO_RESULTS as AnalysisResult)
       setViewState('results')
       setLoading(false)
@@ -472,6 +468,7 @@ export default function Home() {
                 proSessionId={proSessionId}
                 proCustomerEmail={proCustomerEmail}
                 isDemo={isSampleRun}
+                isPro={false}
               />
             </ErrorBoundary>
             <p className="results-disclaimer">

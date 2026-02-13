@@ -116,6 +116,20 @@ export function trackResultsViewed(): void {
 }
 
 /**
+ * Demo results viewed (Try Demo path)
+ */
+export function trackDemoResultsViewed(): void {
+  trackEvent('demo_results_viewed')
+}
+
+/**
+ * Example page results viewed
+ */
+export function trackExampleResultsViewed(): void {
+  trackEvent('example_results_viewed')
+}
+
+/**
  * Recurring charges detected
  */
 export function trackRecurringDetected(count: number): void {
@@ -338,4 +352,47 @@ export function trackProBuyClicked(): void {
  */
 export function trackProPayClicked(): void {
   trackEvent('pro_pay_clicked')
+}
+
+// ============================================
+// Affiliate Events
+// ============================================
+
+/**
+ * Affiliate alternatives section expanded / visible
+ */
+export function trackAffiliateLinkImpression(params: {
+  count: number
+  isPro: boolean
+  affiliateCount: number
+}): void {
+  trackEvent('affiliate_link_impression', {
+    count: params.count,
+    is_pro: params.isPro,
+    affiliate_count: params.affiliateCount,
+  })
+}
+
+/**
+ * User clicked an affiliate CTA link
+ */
+export function trackAffiliateLinkClick(params: {
+  providerId: string
+  network: string
+  isPro: boolean
+  placement: string
+}): void {
+  trackEvent('affiliate_link_click', {
+    provider_id: params.providerId,
+    network: params.network,
+    is_pro: params.isPro,
+    placement: params.placement,
+  })
+}
+
+/**
+ * Affiliate gating modal shown (free user tried to access locked content)
+ */
+export function trackAffiliateModalShown(): void {
+  trackEvent('affiliate_modal_shown')
 }
