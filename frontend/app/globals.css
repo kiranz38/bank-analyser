@@ -4775,14 +4775,11 @@ h3 {
   .price-change-item {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.75rem;
+    gap: 0.25rem;
   }
 
-  .price-change-amounts {
-    text-align: left;
+  .price-change-right {
     width: 100%;
-    padding-top: 0.5rem;
-    border-top: 1px dashed var(--card-border);
   }
 
   .duplicate-header {
@@ -5726,7 +5723,7 @@ h3 {
 .price-changes-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0;
   margin-top: 0.75rem;
 }
 
@@ -5734,7 +5731,7 @@ h3 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0;
+  padding: 0.75rem 0;
   border-bottom: 1px solid var(--card-border);
 }
 
@@ -5742,14 +5739,40 @@ h3 {
   border-bottom: none;
 }
 
+.price-change-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.price-change-right {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
 .price-change-merchant {
-  font-weight: 500;
+  font-weight: 600;
   color: var(--foreground);
+}
+
+.price-change-prices {
+  font-size: 0.8125rem;
+  color: var(--muted);
 }
 
 .price-change-delta {
   font-weight: 600;
   color: var(--warning);
+  white-space: nowrap;
+}
+
+.price-change-percent {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 /* Alternatives List */

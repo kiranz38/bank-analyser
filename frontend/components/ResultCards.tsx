@@ -443,8 +443,16 @@ export default function ResultCards({ results, proPaymentStatus, proSessionId, p
             <div className="price-changes-list">
               {results.price_changes.map((change, index) => (
                 <div key={index} className="price-change-item">
-                  <span className="price-change-merchant">{change.merchant}</span>
-                  <span className="price-change-delta">+{formatCurrencyPrecise(change.increase)}/mo</span>
+                  <div className="price-change-left">
+                    <span className="price-change-merchant">{change.merchant}</span>
+                    <span className="price-change-prices">
+                      {formatCurrencyPrecise(change.old_price)} → {formatCurrencyPrecise(change.new_price)}/mo
+                    </span>
+                  </div>
+                  <div className="price-change-right">
+                    <span className="price-change-delta">+{formatCurrencyPrecise(change.increase)}/mo</span>
+                    <span className="price-change-percent">({change.percent_change > 0 ? '+' : ''}{change.percent_change.toFixed(0)}%)</span>
+                  </div>
                 </div>
               ))}
             </div>
