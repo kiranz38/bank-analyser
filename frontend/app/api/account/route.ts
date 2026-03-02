@@ -50,6 +50,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    if (!user.passwordHash) {
+      return NextResponse.json({ error: 'Account uses Google sign-in. Password cannot be changed here.' }, { status: 400 })
+    }
+
     const passwordMatch = await bcrypt.compare(currentPassword, user.passwordHash)
     if (!passwordMatch) {
       return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 })
