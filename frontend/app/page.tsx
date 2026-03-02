@@ -17,6 +17,7 @@ import { saveToSession, loadFromSession, clearSession } from '@/lib/sessionCache
 import { sampleDataToCSV } from '@/lib/sampleData'
 import { DEMO_RESULTS } from '@/lib/demoResults'
 import { AnalysisResult } from '@/lib/types'
+import { useSession } from 'next-auth/react'
 import {
   trackCTAClicked,
   trackUploadStarted,
@@ -36,6 +37,7 @@ const BANK_CONNECT_ENABLED = process.env.NEXT_PUBLIC_BANK_CONNECT_BETA === 'true
 type ViewState = 'landing' | 'method-chooser' | 'upload' | 'waitlist' | 'plaid' | 'results'
 
 export default function Home() {
+  const { data: session } = useSession()
   const [results, setResults] = useState<AnalysisResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -44,6 +46,8 @@ export default function Home() {
   const [proPaymentStatus, setProPaymentStatus] = useState<'success' | 'cancelled' | null>(null)
   const [proSessionId, setProSessionId] = useState<string | null>(null)
   const [proCustomerEmail, setProCustomerEmail] = useState<string | null>(null)
+  const [analysisSaved, setAnalysisSaved] = useState(false)
+  const [savingAnalysis, setSavingAnalysis] = useState(false)
 
   // Load cached results from session storage on mount
   useEffect(() => {
@@ -252,6 +256,28 @@ export default function Home() {
 
   const handleDismissError = () => {
     setError(null)
+  }
+
+  const handleSaveAnalysis = async () => {
+    if (!results || analysisSaved || savingAnalysis) return
+    setSavingAnalysis(true)
+    try {
+      const res = await fetch('/api/analyses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `Analysis – ${new Date().toLocaleDateString('en-AU')}`,
+          results,
+        }),
+      })
+      if (res.ok) {
+        setAnalysisSaved(true)
+      }
+    } catch {
+      // Silently fail — non-critical
+    } finally {
+      setSavingAnalysis(false)
+    }
   }
 
   return (
@@ -495,6 +521,39 @@ export default function Home() {
                 </button>
               )}
             </div>
+
+            {/* Save analysis prompt */}
+            {!isSampleRun && (
+              <div className="save-analysis-prompt">
+                {session?.user ? (
+                  analysisSaved ? (
+                    <p className="save-analysis-saved">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      Analysis saved to your dashboard
+                    </p>
+                  ) : (
+                    <button
+                      className="btn btn-secondary btn-save-analysis"
+                      onClick={handleSaveAnalysis}
+                      disabled={savingAnalysis}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                        <polyline points="17 21 17 13 7 13 7 21" />
+                        <polyline points="7 3 7 8 15 8" />
+                      </svg>
+                      {savingAnalysis ? 'Saving...' : 'Save to Dashboard'}
+                    </button>
+                  )
+                ) : (
+                  <p className="save-analysis-cta">
+                    <Link href="/signup" className="auth-link">Sign up</Link> to save your analyses and track spending over time.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
 

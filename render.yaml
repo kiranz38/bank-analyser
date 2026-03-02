@@ -13,3 +13,9 @@ services:
       - key: PYTHON_VERSION
         value: "3.11"
     healthCheckPath: /
+
+databases:
+  - name: leakywallet-db
+    plan: free
+    databaseName: leakywallet
+    user: leakywallet

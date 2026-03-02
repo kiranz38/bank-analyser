@@ -8951,3 +8951,473 @@ h3 {
     justify-content: center;
   }
 }
+
+/* ===================== Auth Pages ===================== */
+
+.auth-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  padding: 2rem 1rem;
+}
+
+.auth-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius);
+  padding: 2.5rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+
+.auth-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 0.25rem;
+}
+
+.auth-subtitle {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.auth-error {
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+  margin-bottom: 0.375rem;
+}
+
+.form-optional {
+  color: var(--muted-light);
+  font-weight: 400;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+
+.form-input::placeholder {
+  color: var(--muted-light);
+}
+
+.form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--card-border);
+}
+
+.auth-submit {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.auth-link {
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+.auth-message {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.auth-message-success {
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.auth-message-error {
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+/* ===================== Header Auth ===================== */
+
+.btn-sm {
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8rem;
+}
+
+.header-signup-btn {
+  border-radius: 8px;
+}
+
+.header-user-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--foreground);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.375rem 0.5rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.header-user-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root.dark .header-user-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.header-logout {
+  color: var(--muted) !important;
+  font-size: 0.8rem !important;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.header-logout:hover {
+  color: var(--danger) !important;
+}
+
+.header-signup-mobile {
+  color: var(--primary) !important;
+  font-weight: 600 !important;
+}
+
+/* ===================== Dashboard ===================== */
+
+.dashboard-page {
+  padding: 2rem 0;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.dashboard-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 0.25rem;
+}
+
+.dashboard-subtitle {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.dashboard-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4rem 0;
+  color: var(--muted);
+  gap: 1rem;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--card-border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.dashboard-empty {
+  text-align: center;
+  padding: 4rem 1rem;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius);
+}
+
+.dashboard-empty svg {
+  color: var(--muted-light);
+  margin-bottom: 1rem;
+}
+
+.dashboard-empty h2 {
+  font-size: 1.25rem;
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-empty p {
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.analyses-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.analysis-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius);
+  padding: 1.25rem 1.5rem;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.analysis-card:hover {
+  box-shadow: var(--shadow);
+  border-color: var(--primary);
+}
+
+.analysis-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.analysis-date {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.analysis-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.analysis-card-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.analysis-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.analysis-stat-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.analysis-stat-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.analysis-stat-danger {
+  color: var(--danger);
+}
+
+.analysis-stat-success {
+  color: var(--success);
+}
+
+/* ===================== Account ===================== */
+
+.account-page {
+  padding: 2rem 0;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.account-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 2rem;
+}
+
+.account-section {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.account-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 1rem;
+}
+
+.account-danger-zone {
+  border-color: var(--danger);
+}
+
+.account-danger-zone .account-section-title {
+  color: var(--danger);
+}
+
+.account-danger-text {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-danger:hover {
+  opacity: 0.9;
+}
+
+.delete-confirm {
+  margin-top: 0.5rem;
+}
+
+.delete-confirm p {
+  font-size: 0.875rem;
+  color: var(--danger);
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* ===================== Save Analysis Prompt ===================== */
+
+.save-analysis-prompt {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding: 1rem;
+}
+
+.save-analysis-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--success);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.btn-save-analysis {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.save-analysis-cta {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* ===================== Auth Responsive ===================== */
+
+@media (max-width: 768px) {
+  .auth-card {
+    padding: 1.75rem;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+  }
+
+  .analysis-card-stats {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .analysis-stat {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .delete-confirm-actions {
+    flex-direction: column;
+  }
+}

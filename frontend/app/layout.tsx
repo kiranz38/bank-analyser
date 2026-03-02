@@ -3,6 +3,7 @@ import Script from 'next/script'
 import './globals.css'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import Providers from '@/components/Providers'
 
 const GA_TRACKING_ID = 'G-BD8VF1JPDZ'
 
@@ -52,11 +53,13 @@ export default function RootLayout({
             gtag('config', 'AW-17939844094');
           `}
         </Script>
-        <Header />
-        <div className="site-content">
-          {children}
-        </div>
-        <Footer />
+        <Providers>
+          <Header />
+          <div className="site-content">
+            {children}
+          </div>
+          <Footer />
+        </Providers>
       </body>
     </html>
   )

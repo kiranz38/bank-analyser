@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSession, signOut } from 'next-auth/react'
 
 export default function Header() {
+  const { data: session, status } = useSession()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
@@ -54,6 +56,8 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [lastScrollY])
 
+  const isLoggedIn = status === 'authenticated' && session?.user
+
   return (
     <header className={`site-header ${isVisible ? 'header-visible' : 'header-hidden'}`}>
       <div className="header-container">
@@ -99,6 +103,40 @@ export default function Header() {
             </svg>
             Buy me a coffee
           </a>
+
+          {/* Auth section */}
+          {isLoggedIn ? (
+            <>
+              <Link href="/dashboard" className="header-link">
+                Dashboard
+              </Link>
+              <div className="header-user-menu">
+                <Link href="/account" className="header-user-btn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <span>{session.user.name || session.user.email?.split('@')[0]}</span>
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="header-link header-logout"
+                >
+                  Sign out
+                </button>
+              </div>
+            </>
+          ) : status !== 'loading' ? (
+            <>
+              <Link href="/login" className="header-link">
+                Sign in
+              </Link>
+              <Link href="/signup" className="btn btn-primary btn-sm header-signup-btn">
+                Sign up
+              </Link>
+            </>
+          ) : null}
+
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleDarkMode}
@@ -187,6 +225,53 @@ export default function Header() {
             </svg>
             Buy me a coffee
           </a>
+
+          {/* Auth section - Mobile */}
+          {isLoggedIn ? (
+            <>
+              <Link
+                href="/dashboard"
+                className="header-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/account"
+                className="header-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Account
+              </Link>
+              <button
+                onClick={() => {
+                  signOut({ callbackUrl: '/' })
+                  setMobileMenuOpen(false)
+                }}
+                className="header-link header-logout"
+              >
+                Sign out
+              </button>
+            </>
+          ) : status !== 'loading' ? (
+            <>
+              <Link
+                href="/login"
+                className="header-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/signup"
+                className="header-link header-signup-mobile"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign up
+              </Link>
+            </>
+          ) : null}
+
           {/* Dark Mode Toggle - Mobile */}
           <button
             onClick={() => {
