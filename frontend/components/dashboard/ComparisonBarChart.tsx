@@ -1,6 +1,9 @@
 'use client'
 
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { BarChart3, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react'
 
 interface MonthComparisonData {
   previous_month: string
@@ -31,9 +34,7 @@ interface ComparisonBarChartProps {
 }
 
 export default function ComparisonBarChart({ comparison }: ComparisonBarChartProps) {
-  if (!comparison) {
-    return null
-  }
+  if (!comparison) return null
 
   const formatMonth = (monthStr: string) => {
     const [year, month] = monthStr.split('-')
@@ -51,16 +52,8 @@ export default function ComparisonBarChart({ comparison }: ComparisonBarChartPro
   }
 
   const chartData = [
-    {
-      name: formatMonth(comparison.previous_month),
-      amount: comparison.previous_total,
-      fill: '#94a3b8'
-    },
-    {
-      name: formatMonth(comparison.current_month),
-      amount: comparison.current_total,
-      fill: comparison.total_change > 0 ? '#f97316' : '#10b981'
-    }
+    { name: formatMonth(comparison.previous_month), amount: comparison.previous_total, fill: '#94a3b8' },
+    { name: formatMonth(comparison.current_month), amount: comparison.current_total, fill: comparison.total_change > 0 ? '#f97316' : '#10b981' },
   ]
 
   const isSpendingUp = comparison.total_change > 0
@@ -69,9 +62,9 @@ export default function ComparisonBarChart({ comparison }: ComparisonBarChartPro
     if (active && payload && payload.length) {
       const data = payload[0].payload
       return (
-        <div className="bar-tooltip">
-          <p className="bar-tooltip-label">{data.name}</p>
-          <p className="bar-tooltip-value">{formatCurrency(data.amount)}</p>
+        <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-sm">
+          <p className="font-medium">{data.name}</p>
+          <p className="text-muted-foreground">{formatCurrency(data.amount)}</p>
         </div>
       )
     }
@@ -79,74 +72,51 @@ export default function ComparisonBarChart({ comparison }: ComparisonBarChartPro
   }
 
   return (
-    <div className="dashboard-card comparison-bar-card">
-      <h3 className="dashboard-card-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
-        Month Comparison
-      </h3>
-
-      <div className="bar-chart-container">
-        <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={chartData} barGap={8}>
-            <XAxis
-              dataKey="name"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: 'var(--muted)', fontSize: 12 }}
-            />
-            <YAxis
-              hide
-              domain={[0, 'auto']}
-            />
-            <Tooltip content={<CustomTooltip />} cursor={false} />
-            <Bar
-              dataKey="amount"
-              radius={[6, 6, 0, 0]}
-              maxBarSize={80}
-            >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div className={`comparison-change-badge ${isSpendingUp ? 'up' : 'down'}`}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          {isSpendingUp ? (
-            <polyline points="18 15 12 9 6 15" />
-          ) : (
-            <polyline points="6 9 12 15 18 9" />
-          )}
-        </svg>
-        <span>
-          {isSpendingUp ? '+' : ''}{formatCurrency(comparison.total_change)}
-          <span className="comparison-percent">
-            ({comparison.total_change_percent > 0 ? '+' : ''}{comparison.total_change_percent.toFixed(0)}%)
-          </span>
-        </span>
-      </div>
-
-      {comparison.spikes && comparison.spikes.length > 0 && (
-        <div className="comparison-spikes-compact">
-          <span className="spike-label">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-            </svg>
-            Spikes:
-          </span>
-          {comparison.spikes.slice(0, 2).map((spike, idx) => (
-            <span key={idx} className="spike-tag">
-              {spike.category} +{spike.change_percent.toFixed(0)}%
-            </span>
-          ))}
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <BarChart3 className="h-4 w-4" />
+          Month Comparison
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="h-[180px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} barGap={8}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+              <YAxis hide domain={[0, 'auto']} />
+              <Tooltip content={<CustomTooltip />} cursor={false} />
+              <Bar dataKey="amount" radius={[6, 6, 0, 0]} maxBarSize={80}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-      )}
-    </div>
+
+        <div className="flex justify-center">
+          <Badge variant={isSpendingUp ? 'destructive' : 'default'} className="gap-1">
+            {isSpendingUp ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {isSpendingUp ? '+' : ''}{formatCurrency(comparison.total_change)}
+            ({comparison.total_change_percent > 0 ? '+' : ''}{comparison.total_change_percent.toFixed(0)}%)
+          </Badge>
+        </div>
+
+        {comparison.spikes && comparison.spikes.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="h-3 w-3" />
+              Spikes:
+            </span>
+            {comparison.spikes.slice(0, 2).map((spike, idx) => (
+              <Badge key={idx} variant="outline" className="text-xs">
+                {spike.category} +{spike.change_percent.toFixed(0)}%
+              </Badge>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

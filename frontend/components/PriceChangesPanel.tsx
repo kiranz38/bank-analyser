@@ -1,5 +1,9 @@
 'use client'
 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { TrendingUp, ArrowRight, Info } from 'lucide-react'
+
 interface PriceChange {
   merchant: string
   old_price: number
@@ -41,60 +45,47 @@ export default function PriceChangesPanel({ priceChanges }: PriceChangesPanelPro
   const totalYearlyImpact = priceChanges.reduce((sum, pc) => sum + pc.yearly_impact, 0)
 
   return (
-    <div className="card price-changes-panel">
-      <h2>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
-          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-          <polyline points="17 6 23 6 23 12" />
-        </svg>
-        Price Increases Detected
-      </h2>
-
-      <div className="price-changes-header">
-        <p className="price-changes-intro">
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5" />
+          Price Increases Detected
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
           Some of your subscriptions have increased in price, costing you an extra{' '}
-          <strong className="warning-highlight">{formatCurrency(totalYearlyImpact)}/year</strong>
+          <span className="font-semibold text-amber-600 dark:text-amber-400">{formatCurrency(totalYearlyImpact)}/year</span>
         </p>
-      </div>
 
-      <div className="price-changes-list">
-        {priceChanges.map((change, index) => (
-          <div key={index} className="price-change-item">
-            <div className="price-change-info">
-              <span className="price-change-merchant">{change.merchant}</span>
-              <span className="price-change-dates">
-                {formatDate(change.first_date)} to {formatDate(change.latest_date)}
-              </span>
-            </div>
-            <div className="price-change-amounts">
-              <div className="price-change-comparison">
-                <span className="price-old">{formatCurrency(change.old_price)}</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-                <span className="price-new">{formatCurrency(change.new_price)}</span>
+        <div className="space-y-3">
+          {priceChanges.map((change, index) => (
+            <div key={index} className="flex items-center justify-between gap-4 rounded-lg border p-3">
+              <div className="min-w-0 space-y-0.5">
+                <p className="font-medium">{change.merchant}</p>
+                <p className="text-xs text-muted-foreground">
+                  {formatDate(change.first_date)} to {formatDate(change.latest_date)}
+                </p>
               </div>
-              <div className="price-change-impact">
-                <span className="price-increase-badge">
+              <div className="shrink-0 space-y-1 text-right">
+                <div className="flex items-center gap-1.5 text-sm">
+                  <span className="text-muted-foreground line-through">{formatCurrency(change.old_price)}</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="font-medium">{formatCurrency(change.new_price)}</span>
+                </div>
+                <Badge variant="destructive" className="text-xs">
                   +{formatCurrency(change.increase)}/mo (+{change.percent_change.toFixed(0)}%)
-                </span>
+                </Badge>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <div className="price-changes-tip">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="12" y1="16" x2="12" y2="12" />
-          <line x1="12" y1="8" x2="12.01" y2="8" />
-        </svg>
-        <span>
-          Contact customer support to negotiate lower rates or switch to a cheaper tier.
-        </span>
-      </div>
-    </div>
+        <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>Contact customer support to negotiate lower rates or switch to a cheaper tier.</span>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

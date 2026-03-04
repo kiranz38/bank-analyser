@@ -1,5 +1,9 @@
 'use client'
 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Copy, Tv, Music, Cloud, Heart, ShoppingCart, Info } from 'lucide-react'
+
 interface DuplicateSubscription {
   category: string
   services: string[]
@@ -11,6 +15,14 @@ interface DuplicateSubscription {
 
 interface DuplicateSubscriptionsPanelProps {
   duplicates: DuplicateSubscription[]
+}
+
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  'Streaming': <Tv className="h-4 w-4" />,
+  'Music': <Music className="h-4 w-4" />,
+  'Cloud': <Cloud className="h-4 w-4" />,
+  'Fitness': <Heart className="h-4 w-4" />,
+  'Food Delivery': <ShoppingCart className="h-4 w-4" />,
 }
 
 export default function DuplicateSubscriptionsPanel({ duplicates }: DuplicateSubscriptionsPanelProps) {
@@ -27,95 +39,47 @@ export default function DuplicateSubscriptionsPanel({ duplicates }: DuplicateSub
     }).format(amount)
   }
 
-  const getCategoryIcon = (category: string) => {
-    const icons: Record<string, JSX.Element> = {
-      'Streaming': (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
-          <polyline points="17 2 12 7 7 2" />
-        </svg>
-      ),
-      'Music': (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M9 18V5l12-2v13" />
-          <circle cx="6" cy="18" r="3" />
-          <circle cx="18" cy="16" r="3" />
-        </svg>
-      ),
-      'Cloud': (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
-        </svg>
-      ),
-      'Fitness': (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z" />
-          <line x1="16" y1="8" x2="2" y2="22" />
-          <line x1="17.5" y1="15" x2="9" y2="15" />
-        </svg>
-      ),
-      'Food Delivery': (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="9" cy="21" r="1" />
-          <circle cx="20" cy="21" r="1" />
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-        </svg>
-      ),
-    }
-    return icons[category] || (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-        <line x1="9" y1="9" x2="15" y2="15" />
-        <line x1="15" y1="9" x2="9" y2="15" />
-      </svg>
-    )
-  }
-
   return (
-    <div className="card duplicates-panel">
-      <h2>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
-          <rect x="8" y="8" width="12" height="12" rx="2" />
-          <path d="M4 16V6a2 2 0 0 1 2-2h10" />
-        </svg>
-        Overlapping Subscriptions
-      </h2>
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2">
+          <Copy className="h-5 w-5" />
+          Overlapping Subscriptions
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          You have multiple subscriptions in the same category. Consider consolidating to save money.
+        </p>
 
-      <p className="duplicates-intro">
-        You have multiple subscriptions in the same category. Consider consolidating to save money.
-      </p>
-
-      <div className="duplicates-list">
-        {duplicates.map((dup, index) => (
-          <div key={index} className="duplicate-item">
-            <div className="duplicate-header">
-              <div className="duplicate-category">
-                {getCategoryIcon(dup.category)}
-                <span>{dup.category}</span>
+        <div className="space-y-3">
+          {duplicates.map((dup, index) => (
+            <div key={index} className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {CATEGORY_ICONS[dup.category] || <Copy className="h-4 w-4" />}
+                  <span className="font-medium">{dup.category}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Badge variant="secondary">{dup.count} services</Badge>
+                  <span className="font-semibold">{formatCurrency(dup.combined_monthly)}/mo</span>
+                </div>
               </div>
-              <div className="duplicate-cost">
-                <span className="duplicate-count">{dup.count} services</span>
-                <span className="duplicate-amount">{formatCurrency(dup.combined_monthly)}/mo</span>
+
+              <div className="flex flex-wrap gap-1.5">
+                {dup.services.map((service, i) => (
+                  <Badge key={i} variant="outline">{service}</Badge>
+                ))}
+              </div>
+
+              <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>{dup.suggestion}</span>
               </div>
             </div>
-
-            <div className="duplicate-services">
-              {dup.services.map((service, i) => (
-                <span key={i} className="service-badge">{service}</span>
-              ))}
-            </div>
-
-            <div className="duplicate-suggestion">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4" />
-                <path d="M12 8h.01" />
-              </svg>
-              <span>{dup.suggestion}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

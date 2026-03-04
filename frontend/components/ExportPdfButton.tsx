@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Download, Loader2, CheckCircle } from 'lucide-react'
 import type { AnalysisResult } from '@/lib/types'
 
 interface ExportPdfButtonProps {
@@ -13,7 +15,6 @@ export default function ExportPdfButton({ results, chartContainerId }: ExportPdf
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  // Auto-hide success message after 5 seconds
   useEffect(() => {
     if (!success) return
     const timer = setTimeout(() => setSuccess(false), 5000)
@@ -39,39 +40,26 @@ export default function ExportPdfButton({ results, chartContainerId }: ExportPdf
 
   return (
     <>
-      <button
-        className="btn btn-secondary btn-export-pdf"
-        onClick={handleExport}
-        disabled={loading}
-      >
+      <Button variant="outline" onClick={handleExport} disabled={loading}>
         {loading ? (
           <>
-            <svg className="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-            </svg>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Generating...
           </>
         ) : (
           <>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
+            <Download className="mr-2 h-4 w-4" />
             Download PDF Report
           </>
         )}
-      </button>
+      </Button>
       {success && (
-        <p className="pdf-success-msg" style={{ color: 'var(--success, #10b981)', fontSize: '0.8rem', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-            <polyline points="22 4 12 14.01 9 11.01" />
-          </svg>
+        <p className="flex items-center gap-1 text-sm text-success">
+          <CheckCircle className="h-3.5 w-3.5" />
           PDF generated successfully
         </p>
       )}
-      {error && <p style={{ color: 'var(--danger)', fontSize: '0.8rem', margin: 0 }}>{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
     </>
   )
 }

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Check, Search } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Bank Statement Analyzer – Upload CSV or PDF to Find Hidden Subscriptions',
@@ -21,117 +23,97 @@ export const metadata: Metadata = {
   },
 }
 
+const discoveries = [
+  'Hidden subscriptions you forgot about',
+  'Monthly spending leaks draining your account',
+  'Unexpected bank fees and charges',
+  'Estimated yearly savings potential',
+  'Simple recovery steps to save money',
+]
+
+const faqs = [
+  { q: 'Is this bank statement analyzer free?', a: 'Yes — it\'s completely free to use with no signup.' },
+  { q: 'Do you store my bank data?', a: 'No. Your statement is processed in memory and never saved.' },
+  { q: 'What file formats are supported?', a: 'CSV and PDF bank statements.' },
+  { q: 'Is this financial advice?', a: 'No. This tool provides informational insights only.' },
+]
+
 export default function BankStatementAnalyzerPage() {
   return (
-    <main className="container seo-page">
-      <article className="seo-content">
-        <h1>Bank Statement Analyzer – Upload CSV or PDF to Find Hidden Subscriptions</h1>
+    <main className="mx-auto max-w-3xl px-4 py-12">
+      <article className="space-y-8">
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          Bank Statement Analyzer – Upload CSV or PDF to Find Hidden Subscriptions
+        </h1>
 
-        <p>
+        <p className="text-muted-foreground">
           A bank statement analyzer is a tool that scans your transaction history to uncover
           where your money is actually going. Instead of manually scrolling through hundreds
           of transactions, our analyzer automatically identifies patterns, recurring charges,
           and spending habits you may have overlooked.
         </p>
 
-        <p className="seo-motivator">
+        <p className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
           Most people discover hundreds of dollars per year in forgotten subscriptions and small recurring charges.
         </p>
 
-        <p>
+        <p className="text-muted-foreground">
           Many people unknowingly pay for subscriptions they forgot about, get hit with
           unexpected bank fees, or have small recurring charges that add up over time.
-          These "spending leaks" can cost you hundreds or even thousands of dollars per year
+          These &ldquo;spending leaks&rdquo; can cost you hundreds or even thousands of dollars per year
           without you realizing it.
         </p>
 
-        <p>
+        <p className="text-muted-foreground">
           Our bank statement analyzer is completely free and privacy-first. Your data is
           processed in memory and never stored on our servers. Simply upload your CSV or PDF
           bank statement and get instant insights into your spending.
         </p>
 
-        <div className="seo-outcomes">
-          <h2>What You'll Discover</h2>
-          <ul>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              Hidden subscriptions you forgot about
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              Monthly spending leaks draining your account
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              Unexpected bank fees and charges
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              Estimated yearly savings potential
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              Simple recovery steps to save money
-            </li>
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">What You&apos;ll Discover</h2>
+          <ul className="space-y-2">
+            {discoveries.map((item) => (
+              <li key={item} className="flex items-center gap-2 text-sm">
+                <Check className="h-4 w-4 shrink-0 text-primary" />
+                {item}
+              </li>
+            ))}
           </ul>
-        </div>
+        </section>
 
-        <div className="seo-cta-section">
-          <Link href="/" className="btn btn-primary btn-lg">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            Analyze My Bank Statement
-          </Link>
-          <p className="seo-return-link">
-            Or <Link href="/">return to the main analyzer</Link> →
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Button asChild size="lg">
+            <Link href="/">
+              <Search className="mr-2 h-4 w-4" />
+              Analyze My Bank Statement
+            </Link>
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            Or <Link href="/" className="text-primary hover:underline">return to the main analyzer</Link>
           </p>
         </div>
 
-        <section className="seo-faq">
-          <h2>Frequently Asked Questions</h2>
-
-          <div className="faq-item">
-            <h3>Is this bank statement analyzer free?</h3>
-            <p>Yes — it's completely free to use with no signup.</p>
-          </div>
-
-          <div className="faq-item">
-            <h3>Do you store my bank data?</h3>
-            <p>No. Your statement is processed in memory and never saved.</p>
-          </div>
-
-          <div className="faq-item">
-            <h3>What file formats are supported?</h3>
-            <p>CSV and PDF bank statements.</p>
-          </div>
-
-          <div className="faq-item">
-            <h3>Is this financial advice?</h3>
-            <p>No. This tool provides informational insights only.</p>
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">Frequently Asked Questions</h2>
+          <div className="space-y-4">
+            {faqs.map((faq) => (
+              <div key={faq.q} className="space-y-1">
+                <h3 className="font-medium">{faq.q}</h3>
+                <p className="text-sm text-muted-foreground">{faq.a}</p>
+              </div>
+            ))}
           </div>
         </section>
 
-        <p className="seo-disclaimer">
+        <p className="text-center text-xs text-muted-foreground">
           Privacy-first: your data is processed in memory and never stored.
           This tool is for informational purposes only.
         </p>
       </article>
 
-      <footer className="seo-footer">
-        <Link href="/">← Back to Home</Link>
+      <footer className="mt-8 border-t pt-4">
+        <Link href="/" className="text-sm text-primary hover:underline">&larr; Back to Home</Link>
       </footer>
     </main>
   )

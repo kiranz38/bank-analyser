@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Progress } from '@/components/ui/progress'
+import { Check, Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface LoadingOverlayProps {
   isLoading: boolean
@@ -30,22 +33,12 @@ export default function LoadingOverlay({ isLoading, isDemo }: LoadingOverlayProp
     const stepDelay = isDemo ? 300 : 1500
     const extraDelay = isDemo ? 150 : 800
 
-    // Progress through steps
     const interval = setInterval(() => {
-      setCurrentStep((prev) => {
-        if (prev < steps.length - 1) {
-          return prev + 1
-        }
-        return prev
-      })
+      setCurrentStep((prev) => (prev < steps.length - 1 ? prev + 1 : prev))
     }, stepDelay)
 
-    // Extra progress for the final stretch
     const extraInterval = setInterval(() => {
-      setExtraProgress((prev) => {
-        if (prev < (isDemo ? 15 : 10)) return prev + 1
-        return prev
-      })
+      setExtraProgress((prev) => (prev < (isDemo ? 15 : 10) ? prev + 1 : prev))
     }, extraDelay)
 
     return () => {
@@ -56,65 +49,57 @@ export default function LoadingOverlay({ isLoading, isDemo }: LoadingOverlayProp
 
   if (!isLoading) return null
 
-  // Progress: steps contribute up to 85%, extra progress fills the rest
   const basePercent = Math.round((currentStep / (steps.length - 1)) * 85)
   const maxPercent = isDemo ? 100 : 95
   const progressPercent = Math.min(maxPercent, basePercent + extraProgress)
 
   return (
-    <div className="loading-overlay">
-      <div className="loading-card">
-        <div className="loading-spinner" />
-        <h3 className="loading-title">{isDemo ? 'Loading Demo' : 'Analyzing Your Spending'}</h3>
-        <p className="loading-subtitle">
-          {isDemo ? 'Preparing your demo analysis...' : 'Grab a coffee while we crunch the numbers for you...'}
-        </p>
-        {!isDemo && (
-          <p className="loading-time-hint">
-            This typically takes 30 seconds to a minute.
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-md rounded-xl border bg-card p-8 shadow-lg">
+        <div className="flex flex-col items-center text-center">
+          <Loader2 className="mb-4 h-10 w-10 animate-spin text-primary" />
+          <h3 className="text-lg font-semibold">
+            {isDemo ? 'Loading Demo' : 'Analyzing Your Spending'}
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {isDemo ? 'Preparing your demo analysis...' : 'Grab a coffee while we crunch the numbers for you...'}
           </p>
-        )}
-        <div className="progress-container">
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          <span className="progress-text">{progressPercent}%</span>
+          {!isDemo && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              This typically takes 30 seconds to a minute.
+            </p>
+          )}
         </div>
-        <div className="loading-steps">
+
+        <div className="mt-6 space-y-2">
+          <Progress value={progressPercent} className="h-2" />
+          <p className="text-right text-xs font-medium text-muted-foreground">{progressPercent}%</p>
+        </div>
+
+        <div className="mt-5 space-y-2">
           {steps.map((step, index) => (
-            <div key={step.id} className="loading-step">
+            <div key={step.id} className="flex items-center gap-3">
               <div
-                className={`step-icon ${
-                  index < currentStep
-                    ? 'completed'
-                    : index === currentStep
-                    ? 'active'
-                    : 'pending'
-                }`}
+                className={cn(
+                  'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs',
+                  index < currentStep && 'bg-primary text-primary-foreground',
+                  index === currentStep && 'border-2 border-primary text-primary',
+                  index > currentStep && 'border border-border text-muted-foreground'
+                )}
               >
                 {index < currentStep ? (
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path
-                      d="M10 3L4.5 8.5L2 6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <Check className="h-3 w-3" />
                 ) : index === currentStep ? (
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <circle cx="6" cy="6" r="3" fill="currentColor" />
-                  </svg>
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary" />
                 ) : (
                   <span>{index + 1}</span>
                 )}
               </div>
               <span
-                className={`step-text ${index > currentStep ? 'pending' : ''}`}
+                className={cn(
+                  'text-sm',
+                  index > currentStep ? 'text-muted-foreground' : 'text-foreground'
+                )}
               >
                 {step.text}
               </span>

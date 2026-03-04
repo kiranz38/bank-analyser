@@ -3,21 +3,34 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
+import { Button } from '@/components/ui/button'
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Wallet, Sun, Moon, Menu, Coffee, User, LogOut, LayoutDashboard, Settings } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export default function Header() {
   const { data: session, status } = useSession()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
   const [isDarkMode, setIsDarkMode] = useState(false)
 
-  // Initialize theme — default to light; only honour saved preference if explicitly 'dark'
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
     const useDark = savedTheme === 'dark'
     setIsDarkMode(useDark)
     document.documentElement.classList.toggle('dark', useDark)
-    // Ensure first-time visitors get light mode persisted
     if (!savedTheme) {
       localStorage.setItem('theme', 'light')
     }
@@ -35,17 +48,12 @@ export default function Header() {
       const currentScrollY = window.scrollY
       const scrollThreshold = 10
 
-      // Always show header at the top of the page
       if (currentScrollY < 50) {
         setIsVisible(true)
-      }
-      // Scrolling down - hide header
-      else if (currentScrollY > lastScrollY + scrollThreshold) {
+      } else if (currentScrollY > lastScrollY + scrollThreshold) {
         setIsVisible(false)
-        setMobileMenuOpen(false) // Close mobile menu when hiding
-      }
-      // Scrolling up - show header
-      else if (currentScrollY < lastScrollY - scrollThreshold) {
+        setMobileOpen(false)
+      } else if (currentScrollY < lastScrollY - scrollThreshold) {
         setIsVisible(true)
       }
 
@@ -58,255 +66,205 @@ export default function Header() {
 
   const isLoggedIn = status === 'authenticated' && session?.user
 
+  const navLinks = [
+    { href: '/how-it-works', label: 'How it works' },
+    { href: '/pricing', label: 'Pricing' },
+    { href: '/example', label: 'Example' },
+  ]
+
   return (
-    <header className={`site-header ${isVisible ? 'header-visible' : 'header-hidden'}`}>
-      <div className="header-container">
-        <a href="/" className="header-brand" onClick={() => { sessionStorage.removeItem('leaky_wallet_results') }}>
-          <svg className="header-logo-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-            {/* Wallet body */}
-            <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
-            {/* Wallet fold/flap */}
-            <path d="M3 7V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1" />
-            {/* Card clasp */}
-            <rect x="15" y="10" width="6" height="4" rx="1" />
-            {/* Leak drops - subtle coins falling */}
-            <circle cx="6" cy="21" r="1.2" fill="currentColor" fillOpacity="0.45" stroke="none" />
-            <circle cx="10" cy="22" r="1" fill="currentColor" fillOpacity="0.35" stroke="none" />
-            <circle cx="13.5" cy="21.5" r="0.8" fill="currentColor" fillOpacity="0.25" stroke="none" />
-          </svg>
-          <span className="header-brand-text">Leaky Wallet</span>
+    <header
+      className={cn(
+        'fixed inset-x-0 top-0 z-50 border-b bg-background/80 backdrop-blur-sm transition-transform duration-300',
+        isVisible ? 'translate-y-0' : '-translate-y-full'
+      )}
+    >
+      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+        {/* Brand */}
+        <a
+          href="/"
+          className="flex items-center gap-2 font-bold"
+          onClick={() => sessionStorage.removeItem('leaky_wallet_results')}
+        >
+          <Wallet className="h-5 w-5 text-primary" />
+          <span>Leaky Wallet</span>
         </a>
 
-        {/* Desktop Navigation */}
-        <nav className="header-nav desktop-nav">
-          <Link href="/how-it-works" className="header-link">
-            How it works
-          </Link>
-          <Link href="/pricing" className="header-link">
-            Pricing
-          </Link>
-          <Link href="/example" className="header-link">
-            Example
-          </Link>
+        {/* Desktop Nav */}
+        <nav className="hidden items-center gap-1 md:flex">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {link.label}
+            </Link>
+          ))}
           <a
             href="https://buymeacoffee.com/joh38"
             target="_blank"
             rel="noopener noreferrer"
-            className="header-link header-support"
+            className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-              <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-              <line x1="6" y1="1" x2="6" y2="4" />
-              <line x1="10" y1="1" x2="10" y2="4" />
-              <line x1="14" y1="1" x2="14" y2="4" />
-            </svg>
-            Buy me a coffee
+            <Coffee className="h-4 w-4" />
+            Support
           </a>
 
-          {/* Auth section */}
-          {isLoggedIn ? (
-            <>
-              <Link href="/dashboard" className="header-link">
-                Dashboard
-              </Link>
-              <div className="header-user-menu">
-                <Link href="/account" className="header-user-btn">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                  <span>{session.user.name || session.user.email?.split('@')[0]}</span>
-                </Link>
-                <button
-                  onClick={() => signOut({ callbackUrl: '/' })}
-                  className="header-link header-logout"
-                >
-                  Sign out
-                </button>
-              </div>
-            </>
-          ) : status !== 'loading' ? (
-            <>
-              <Link href="/login" className="header-link">
-                Sign in
-              </Link>
-              <Link href="/signup" className="btn btn-primary btn-sm header-signup-btn">
-                Sign up
-              </Link>
-            </>
-          ) : null}
-
-          {/* Dark Mode Toggle */}
-          <button
-            onClick={toggleDarkMode}
-            className="theme-toggle"
-            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {isDarkMode ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="5" />
-                <line x1="12" y1="1" x2="12" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="23" />
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                <line x1="1" y1="12" x2="3" y2="12" />
-                <line x1="21" y1="12" x2="23" y2="12" />
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            )}
-          </button>
-        </nav>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="mobile-menu-btn"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          {mobileMenuOpen ? (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          ) : (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          )}
-        </button>
-      </div>
-
-      {/* Mobile Navigation */}
-      {mobileMenuOpen && (
-        <nav className="header-nav mobile-nav">
-          <Link
-            href="/how-it-works"
-            className="header-link"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            How it works
-          </Link>
-          <Link
-            href="/pricing"
-            className="header-link"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Pricing
-          </Link>
-          <Link
-            href="/example"
-            className="header-link"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Example
-          </Link>
-          <a
-            href="https://buymeacoffee.com/joh38"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="header-link header-support"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-              <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-              <line x1="6" y1="1" x2="6" y2="4" />
-              <line x1="10" y1="1" x2="10" y2="4" />
-              <line x1="14" y1="1" x2="14" y2="4" />
-            </svg>
-            Buy me a coffee
-          </a>
-
-          {/* Auth section - Mobile */}
           {isLoggedIn ? (
             <>
               <Link
                 href="/dashboard"
-                className="header-link"
-                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 Dashboard
               </Link>
-              <Link
-                href="/account"
-                className="header-link"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Account
-              </Link>
-              <button
-                onClick={() => {
-                  signOut({ callbackUrl: '/' })
-                  setMobileMenuOpen(false)
-                }}
-                className="header-link header-logout"
-              >
-                Sign out
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1.5">
+                    <User className="h-4 w-4" />
+                    {session.user.name || session.user.email?.split('@')[0]}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard" className="gap-2">
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/account" className="gap-2">
+                      <Settings className="h-4 w-4" />
+                      Account
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })} className="gap-2">
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : status !== 'loading' ? (
             <>
               <Link
                 href="/login"
-                className="header-link"
-                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 Sign in
               </Link>
-              <Link
-                href="/signup"
-                className="header-link header-signup-mobile"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Sign up
-              </Link>
+              <Button size="sm" asChild>
+                <Link href="/signup">Sign up</Link>
+              </Button>
             </>
           ) : null}
 
-          {/* Dark Mode Toggle - Mobile */}
-          <button
-            onClick={() => {
-              toggleDarkMode()
-              setMobileMenuOpen(false)
-            }}
-            className="theme-toggle mobile-theme-toggle"
+          {/* Dark mode toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={toggleDarkMode}
             aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            {isDarkMode ? (
-              <>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="5" />
-                  <line x1="12" y1="1" x2="12" y2="3" />
-                  <line x1="12" y1="21" x2="12" y2="23" />
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                  <line x1="1" y1="12" x2="3" y2="12" />
-                  <line x1="21" y1="12" x2="23" y2="12" />
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                </svg>
-                <span>Light Mode</span>
-              </>
-            ) : (
-              <>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-                <span>Dark Mode</span>
-              </>
-            )}
-          </button>
+            {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
         </nav>
-      )}
+
+        {/* Mobile: theme toggle + sheet trigger */}
+        <div className="flex items-center gap-1 md:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={toggleDarkMode}
+            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-64">
+              <nav className="mt-6 flex flex-col gap-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                <a
+                  href="https://buymeacoffee.com/joh38"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <Coffee className="h-4 w-4" />
+                  Buy me a coffee
+                </a>
+
+                <div className="my-2 h-px bg-border" />
+
+                {isLoggedIn ? (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/account"
+                      className="rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      Account
+                    </Link>
+                    <button
+                      onClick={() => {
+                        signOut({ callbackUrl: '/' })
+                        setMobileOpen(false)
+                      }}
+                      className="rounded-md px-3 py-2 text-left text-sm text-destructive transition-colors hover:bg-accent"
+                    >
+                      Sign out
+                    </button>
+                  </>
+                ) : status !== 'loading' ? (
+                  <>
+                    <Link
+                      href="/login"
+                      className="rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      Sign in
+                    </Link>
+                    <Link
+                      href="/signup"
+                      className="rounded-md bg-primary px-3 py-2 text-center text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      Sign up
+                    </Link>
+                  </>
+                ) : null}
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
     </header>
   )
 }

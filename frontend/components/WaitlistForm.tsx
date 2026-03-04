@@ -1,6 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { CheckCircle, LayoutGrid, AlertCircle, X } from 'lucide-react'
 import { trackWaitlistSubmitted } from '@/lib/analytics'
 
 interface WaitlistFormProps {
@@ -54,113 +59,98 @@ export default function WaitlistForm({ onClose, onBack }: WaitlistFormProps) {
 
   if (submitted) {
     return (
-      <div className="waitlist-form waitlist-success">
-        <div className="waitlist-success-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-            <polyline points="22 4 12 14.01 9 11.01" />
-          </svg>
-        </div>
-        <h3>You're on the list!</h3>
-        <p>We'll notify you when bank connect is available in your region.</p>
-        <div className="waitlist-actions">
-          <button className="btn btn-secondary" onClick={onBack}>
-            Try upload instead
-          </button>
-          <button className="btn btn-outline" onClick={onClose}>
-            Close
-          </button>
-        </div>
-      </div>
+      <Card className="mx-auto max-w-md">
+        <CardContent className="flex flex-col items-center p-8 text-center">
+          <CheckCircle className="mb-4 h-12 w-12 text-emerald-500" />
+          <h3 className="text-lg font-semibold">You&apos;re on the list!</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            We&apos;ll notify you when bank connect is available in your region.
+          </p>
+          <div className="mt-6 flex gap-3">
+            <Button onClick={onBack}>Try upload instead</Button>
+            <Button variant="outline" onClick={onClose}>Close</Button>
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div className="waitlist-form">
-      <button className="waitlist-close" onClick={onClose} aria-label="Close">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
+    <Card className="relative mx-auto max-w-md">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute right-2 top-2"
+        onClick={onClose}
+        aria-label="Close"
+      >
+        <X className="h-4 w-4" />
+      </Button>
 
-      <div className="waitlist-header">
-        <div className="waitlist-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <path d="M3 9h18" />
-            <path d="M9 21V9" />
-          </svg>
+      <CardHeader className="text-center">
+        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+          <LayoutGrid className="h-6 w-6 text-primary" />
         </div>
-        <h3>Join the Bank Connect Waitlist</h3>
-        <p>
+        <CardTitle>Join the Bank Connect Waitlist</CardTitle>
+        <p className="text-sm text-muted-foreground">
           Bank connect is currently in beta for US and UK users.
-          Join the waitlist to get notified when it's available in your region.
+          Join the waitlist to get notified when it&apos;s available in your region.
         </p>
-      </div>
+      </CardHeader>
 
-      <form onSubmit={handleSubmit} className="waitlist-form-fields">
-        <div className="form-group">
-          <label htmlFor="waitlist-email">Email</label>
-          <input
-            id="waitlist-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="your@email.com"
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="waitlist-country">Country</label>
-          <select
-            id="waitlist-country"
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            required
-          >
-            <option value="">Select your country</option>
-            {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {error && (
-          <div className="waitlist-error">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            {error}
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="waitlist-email">Email</Label>
+            <Input
+              id="waitlist-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              required
+            />
           </div>
-        )}
 
-        <div className="waitlist-actions">
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={loading}
-          >
-            {loading ? 'Joining...' : 'Join Waitlist'}
-          </button>
-          <button
-            type="button"
-            className="btn btn-outline"
-            onClick={onBack}
-          >
-            Back to options
-          </button>
-        </div>
-      </form>
+          <div className="space-y-2">
+            <Label htmlFor="waitlist-country">Country</Label>
+            <select
+              id="waitlist-country"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              required
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="">Select your country</option>
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <p className="waitlist-note">
-        We'll only email you about bank connect availability. No spam.
-      </p>
-    </div>
+          {error && (
+            <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {error}
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <Button type="submit" className="flex-1" disabled={loading}>
+              {loading ? 'Joining...' : 'Join Waitlist'}
+            </Button>
+            <Button type="button" variant="outline" onClick={onBack}>
+              Back to options
+            </Button>
+          </div>
+        </form>
+
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          We&apos;ll only email you about bank connect availability. No spam.
+        </p>
+      </CardContent>
+    </Card>
   )
 }

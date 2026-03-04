@@ -1,5 +1,9 @@
 'use client'
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { AlertCircle, AlertTriangle, Info, X } from 'lucide-react'
+
 interface ErrorMessageProps {
   message: string
   type?: 'error' | 'warning' | 'info'
@@ -8,7 +12,6 @@ interface ErrorMessageProps {
   suggestion?: string
 }
 
-// Map common error messages to user-friendly versions
 const ERROR_MAP: Record<string, { message: string; suggestion?: string }> = {
   'Failed to fetch': {
     message: 'Unable to connect to the server',
@@ -45,23 +48,20 @@ const ERROR_MAP: Record<string, { message: string; suggestion?: string }> = {
 }
 
 function getFriendlyError(message: string): { message: string; suggestion?: string } {
-  // Check for exact matches
-  if (ERROR_MAP[message]) {
-    return ERROR_MAP[message]
-  }
-
-  // Check for partial matches
+  if (ERROR_MAP[message]) return ERROR_MAP[message]
   for (const [key, value] of Object.entries(ERROR_MAP)) {
-    if (message.toLowerCase().includes(key.toLowerCase())) {
-      return value
-    }
+    if (message.toLowerCase().includes(key.toLowerCase())) return value
   }
-
-  // Return original with generic suggestion
   return {
     message,
     suggestion: 'If this problem persists, please try again or use a different file.',
   }
+}
+
+const iconMap = {
+  error: AlertCircle,
+  warning: AlertTriangle,
+  info: Info,
 }
 
 export default function ErrorMessage({
@@ -73,58 +73,35 @@ export default function ErrorMessage({
 }: ErrorMessageProps) {
   const friendly = getFriendlyError(message)
   const displaySuggestion = customSuggestion || friendly.suggestion
-
-  const iconMap = {
-    error: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="15" y1="9" x2="9" y2="15" />
-        <line x1="9" y1="9" x2="15" y2="15" />
-      </svg>
-    ),
-    warning: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-        <line x1="12" y1="9" x2="12" y2="13" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
-      </svg>
-    ),
-    info: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="16" x2="12" y2="12" />
-        <line x1="12" y1="8" x2="12.01" y2="8" />
-      </svg>
-    ),
-  }
+  const Icon = iconMap[type]
 
   return (
-    <div className={`error-message error-message-${type}`}>
-      <div className="error-message-icon">{iconMap[type]}</div>
-      <div className="error-message-content">
-        <p className="error-message-text">{friendly.message}</p>
-        {displaySuggestion && (
-          <p className="error-message-suggestion">{displaySuggestion}</p>
-        )}
-      </div>
-      <div className="error-message-actions">
+    <Alert variant={type === 'error' ? 'destructive' : 'default'} className="relative">
+      <Icon className="h-4 w-4" />
+      <AlertTitle>{friendly.message}</AlertTitle>
+      {displaySuggestion && (
+        <AlertDescription>{displaySuggestion}</AlertDescription>
+      )}
+      <div className="mt-3 flex items-center gap-2">
         {onRetry && (
-          <button className="error-message-retry" onClick={onRetry}>
+          <Button variant="outline" size="sm" onClick={onRetry}>
             Try Again
-          </button>
+          </Button>
         )}
         {onDismiss && (
-          <button className="error-message-dismiss" onClick={onDismiss} aria-label="Dismiss">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute right-2 top-2 h-6 w-6 p-0"
+            onClick={onDismiss}
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         )}
       </div>
-    </div>
+    </Alert>
   )
 }
 
-// Export the friendly error function for use elsewhere
 export { getFriendlyError }

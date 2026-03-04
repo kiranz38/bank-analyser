@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Shield, Lock, Clock, Upload, Search, FileText, Target } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'How It Works – Leaky Wallet Bank Statement Analyzer',
@@ -15,167 +18,157 @@ export const metadata: Metadata = {
   },
 }
 
+const steps = [
+  {
+    number: '1',
+    icon: Upload,
+    title: 'Upload Your Statement',
+    description: "Export a CSV or PDF bank statement from your bank's website or app. Most banks let you download statements from the last 30-90 days.",
+    note: 'Your file is processed in memory only - never stored on our servers.',
+  },
+  {
+    number: '2',
+    icon: Search,
+    title: 'Instant Analysis',
+    description: 'Our analyzer scans every transaction, looking for:',
+    list: [
+      'Recurring subscriptions (Netflix, Spotify, gym memberships)',
+      'Bank fees and charges',
+      'Spending categories and patterns',
+      'Month-over-month changes',
+      'Your biggest transactions',
+    ],
+  },
+  {
+    number: '3',
+    icon: FileText,
+    title: 'Get Your Report',
+    description: "Within seconds, you'll see a complete breakdown including:",
+    list: [
+      'Monthly "leak" amount - money slipping away unnoticed',
+      'Potential annual savings if you fix the leaks',
+      'All detected subscriptions with confidence levels',
+      'Spending by category with visual breakdowns',
+      'Actionable "Easy Wins" to save money',
+    ],
+  },
+  {
+    number: '4',
+    icon: Target,
+    title: 'Take Action',
+    description: 'Use your personalized recovery plan to:',
+    list: [
+      'Cancel forgotten subscriptions',
+      'Negotiate or eliminate bank fees',
+      'Set spending limits for problem categories',
+      'Track your progress over time',
+    ],
+  },
+]
+
+const bankRegions = [
+  { name: 'Australia', banks: ['ANZ', 'Commonwealth Bank', 'Westpac', 'NAB', 'ING', 'Macquarie'] },
+  { name: 'United States', banks: ['Chase', 'Bank of America', 'Wells Fargo', 'Citi', 'Capital One', 'US Bank'] },
+  { name: 'United Kingdom', banks: ['Barclays', 'HSBC', 'Lloyds', 'NatWest', 'Santander UK', 'Monzo'] },
+  { name: 'Other', banks: ['Any CSV with date, description, amount', 'Standard PDF statements', 'Multi-currency support'] },
+]
+
+const privacyFeatures = [
+  { icon: Shield, title: 'No Data Storage', description: 'Your bank statement is processed in memory and immediately discarded. We never save your financial data.' },
+  { icon: Lock, title: 'No Account Required', description: 'No signup, no email, no tracking. Just upload and get your results instantly.' },
+  { icon: Clock, title: 'Session-Only Processing', description: 'When you close your browser tab, all data from your analysis is gone forever.' },
+]
+
 export default function HowItWorksPage() {
   return (
-    <main className="container how-it-works-page">
-      <div className="how-it-works-content">
-        <h1>How Leaky Wallet Works</h1>
-        <p className="how-it-works-intro">
-          Leaky Wallet analyzes your bank statement to find hidden subscriptions,
-          unnecessary fees, and spending patterns you might have missed. Here's exactly how it works.
-        </p>
+    <main className="mx-auto max-w-4xl px-4 py-12">
+      <div className="space-y-12">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">How Leaky Wallet Works</h1>
+          <p className="mt-3 text-lg text-muted-foreground">
+            Leaky Wallet analyzes your bank statement to find hidden subscriptions,
+            unnecessary fees, and spending patterns you might have missed. Here&apos;s exactly how it works.
+          </p>
+        </div>
 
-        {/* Step by step */}
-        <div className="steps-grid">
-          <div className="step-card">
-            <div className="step-number">1</div>
-            <h2>Upload Your Statement</h2>
-            <p>
-              Export a CSV or PDF bank statement from your bank's website or app.
-              Most banks let you download statements from the last 30-90 days.
-            </p>
-            <div className="step-note">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              Your file is processed in memory only - never stored on our servers.
-            </div>
-          </div>
-
-          <div className="step-card">
-            <div className="step-number">2</div>
-            <h2>Instant Analysis</h2>
-            <p>
-              Our analyzer scans every transaction, looking for:
-            </p>
-            <ul>
-              <li>Recurring subscriptions (Netflix, Spotify, gym memberships)</li>
-              <li>Bank fees and charges</li>
-              <li>Spending categories and patterns</li>
-              <li>Month-over-month changes</li>
-              <li>Your biggest transactions</li>
-            </ul>
-          </div>
-
-          <div className="step-card">
-            <div className="step-number">3</div>
-            <h2>Get Your Report</h2>
-            <p>
-              Within seconds, you'll see a complete breakdown including:
-            </p>
-            <ul>
-              <li>Monthly "leak" amount - money slipping away unnoticed</li>
-              <li>Potential annual savings if you fix the leaks</li>
-              <li>All detected subscriptions with confidence levels</li>
-              <li>Spending by category with visual breakdowns</li>
-              <li>Actionable "Easy Wins" to save money</li>
-            </ul>
-          </div>
-
-          <div className="step-card">
-            <div className="step-number">4</div>
-            <h2>Take Action</h2>
-            <p>
-              Use your personalized recovery plan to:
-            </p>
-            <ul>
-              <li>Cancel forgotten subscriptions</li>
-              <li>Negotiate or eliminate bank fees</li>
-              <li>Set spending limits for problem categories</li>
-              <li>Track your progress over time</li>
-            </ul>
-          </div>
+        {/* Steps */}
+        <div className="grid gap-6 sm:grid-cols-2">
+          {steps.map((step) => (
+            <Card key={step.number}>
+              <CardContent className="space-y-3 pt-6">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                    {step.number}
+                  </span>
+                  <h2 className="text-lg font-semibold">{step.title}</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">{step.description}</p>
+                {step.list && (
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    {step.list.map((item) => (
+                      <li key={item} className="flex items-start gap-2">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {step.note && (
+                  <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                    <Lock className="h-3.5 w-3.5 shrink-0" />
+                    {step.note}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Supported banks */}
-        <section className="supported-section">
-          <h2>Supported Banks & Formats</h2>
-          <p>
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">Supported Banks & Formats</h2>
+          <p className="text-muted-foreground">
             Leaky Wallet works with CSV and PDF statements from most major banks worldwide, including:
           </p>
-          <div className="bank-grid">
-            <div className="bank-region">
-              <h3>Australia</h3>
-              <ul>
-                <li>ANZ</li>
-                <li>Commonwealth Bank</li>
-                <li>Westpac</li>
-                <li>NAB</li>
-                <li>ING</li>
-                <li>Macquarie</li>
-              </ul>
-            </div>
-            <div className="bank-region">
-              <h3>United States</h3>
-              <ul>
-                <li>Chase</li>
-                <li>Bank of America</li>
-                <li>Wells Fargo</li>
-                <li>Citi</li>
-                <li>Capital One</li>
-                <li>US Bank</li>
-              </ul>
-            </div>
-            <div className="bank-region">
-              <h3>United Kingdom</h3>
-              <ul>
-                <li>Barclays</li>
-                <li>HSBC</li>
-                <li>Lloyds</li>
-                <li>NatWest</li>
-                <li>Santander UK</li>
-                <li>Monzo</li>
-              </ul>
-            </div>
-            <div className="bank-region">
-              <h3>Other</h3>
-              <ul>
-                <li>Any CSV with date, description, amount</li>
-                <li>Standard PDF statements</li>
-                <li>Multi-currency support</li>
-              </ul>
-            </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {bankRegions.map((region) => (
+              <Card key={region.name}>
+                <CardContent className="pt-4">
+                  <h3 className="mb-2 font-semibold">{region.name}</h3>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    {region.banks.map((bank) => (
+                      <li key={bank}>{bank}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </section>
 
-        {/* Privacy section */}
-        <section className="privacy-section">
-          <h2>Your Privacy Matters</h2>
-          <div className="privacy-grid">
-            <div className="privacy-item">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              <h3>No Data Storage</h3>
-              <p>Your bank statement is processed in memory and immediately discarded. We never save your financial data.</p>
-            </div>
-            <div className="privacy-item">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              <h3>No Account Required</h3>
-              <p>No signup, no email, no tracking. Just upload and get your results instantly.</p>
-            </div>
-            <div className="privacy-item">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              <h3>Session-Only Processing</h3>
-              <p>When you close your browser tab, all data from your analysis is gone forever.</p>
-            </div>
+        {/* Privacy */}
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">Your Privacy Matters</h2>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {privacyFeatures.map((feature) => (
+              <Card key={feature.title}>
+                <CardContent className="space-y-2 pt-6 text-center">
+                  <feature.icon className="mx-auto h-6 w-6 text-primary" />
+                  <h3 className="font-semibold">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground">{feature.description}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </section>
 
         {/* CTA */}
-        <section className="how-cta-section">
-          <h2>Ready to Find Your Money Leaks?</h2>
-          <p>Most people discover $200-$600/month in hidden spending.</p>
-          <Link href="/" className="btn btn-primary btn-lg">
-            Analyze My Statement
-          </Link>
+        <section className="space-y-3 text-center">
+          <h2 className="text-xl font-semibold">Ready to Find Your Money Leaks?</h2>
+          <p className="text-muted-foreground">Most people discover $200-$600/month in hidden spending.</p>
+          <Button asChild size="lg">
+            <Link href="/">Analyze My Statement</Link>
+          </Button>
         </section>
       </div>
     </main>

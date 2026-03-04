@@ -3,6 +3,11 @@
 import { useSession } from 'next-auth/react'
 import { useState } from 'react'
 import { signOut } from 'next-auth/react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { AlertCircle, CheckCircle } from 'lucide-react'
 
 export default function AccountPage() {
   const { data: session, update } = useSession()
@@ -95,126 +100,133 @@ export default function AccountPage() {
     }
   }
 
-  return (
-    <main className="container">
-      <div className="account-page">
-        <h1 className="account-title">Account Settings</h1>
+  const MessageBanner = ({ msg }: { msg: { type: 'success' | 'error'; text: string } }) => (
+    <div className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${
+      msg.type === 'success'
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400'
+        : 'border-destructive/50 bg-destructive/10 text-destructive'
+    }`}>
+      {msg.type === 'success' ? <CheckCircle className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+      {msg.text}
+    </div>
+  )
 
+  return (
+    <main className="mx-auto max-w-2xl px-4 py-8">
+      <h1 className="mb-6 text-2xl font-bold tracking-tight">Account Settings</h1>
+
+      <div className="space-y-6">
         {/* Profile Section */}
-        <section className="account-section">
-          <h2 className="account-section-title">Profile</h2>
-          {profileMsg && (
-            <div className={`auth-message auth-message-${profileMsg.type}`}>
-              {profileMsg.text}
-            </div>
-          )}
-          <form onSubmit={handleProfileUpdate} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="email" className="form-label">Email</label>
-              <input
-                id="email"
-                type="email"
-                value={session?.user?.email || ''}
-                className="form-input"
-                disabled
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="name" className="form-label">Name</label>
-              <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="form-input"
-                placeholder="Your name"
-              />
-            </div>
-            <button type="submit" className="btn btn-primary" disabled={profileLoading}>
-              {profileLoading ? 'Saving...' : 'Save changes'}
-            </button>
-          </form>
-        </section>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Profile</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {profileMsg && <MessageBanner msg={profileMsg} />}
+            <form onSubmit={handleProfileUpdate} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={session?.user?.email || ''}
+                  disabled
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                />
+              </div>
+              <Button type="submit" disabled={profileLoading}>
+                {profileLoading ? 'Saving...' : 'Save changes'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
         {/* Password Section */}
-        <section className="account-section">
-          <h2 className="account-section-title">Change Password</h2>
-          {passwordMsg && (
-            <div className={`auth-message auth-message-${passwordMsg.type}`}>
-              {passwordMsg.text}
-            </div>
-          )}
-          <form onSubmit={handlePasswordChange} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="currentPassword" className="form-label">Current password</label>
-              <input
-                id="currentPassword"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="form-input"
-                required
-                autoComplete="current-password"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="newPassword" className="form-label">New password</label>
-              <input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="form-input"
-                required
-                minLength={8}
-                autoComplete="new-password"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="confirmNewPassword" className="form-label">Confirm new password</label>
-              <input
-                id="confirmNewPassword"
-                type="password"
-                value={confirmNewPassword}
-                onChange={(e) => setConfirmNewPassword(e.target.value)}
-                className="form-input"
-                required
-                autoComplete="new-password"
-              />
-            </div>
-            <button type="submit" className="btn btn-primary" disabled={passwordLoading}>
-              {passwordLoading ? 'Changing...' : 'Change password'}
-            </button>
-          </form>
-        </section>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Change Password</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {passwordMsg && <MessageBanner msg={passwordMsg} />}
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current password</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmNewPassword">Confirm new password</Label>
+                <Input
+                  id="confirmNewPassword"
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                />
+              </div>
+              <Button type="submit" disabled={passwordLoading}>
+                {passwordLoading ? 'Changing...' : 'Change password'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
         {/* Danger Zone */}
-        <section className="account-section account-danger-zone">
-          <h2 className="account-section-title">Danger Zone</h2>
-          <p className="account-danger-text">
-            Permanently delete your account and all saved analyses. This action cannot be undone.
-          </p>
-          {!deleteConfirm ? (
-            <button
-              className="btn btn-danger"
-              onClick={() => setDeleteConfirm(true)}
-            >
-              Delete Account
-            </button>
-          ) : (
-            <div className="delete-confirm">
-              <p>Are you sure? This will delete all your data permanently.</p>
-              <div className="delete-confirm-actions">
-                <button className="btn btn-danger" onClick={handleDeleteAccount}>
-                  Yes, delete my account
-                </button>
-                <button className="btn btn-secondary" onClick={() => setDeleteConfirm(false)}>
-                  Cancel
-                </button>
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Permanently delete your account and all saved analyses. This action cannot be undone.
+            </p>
+            {!deleteConfirm ? (
+              <Button variant="destructive" onClick={() => setDeleteConfirm(true)}>
+                Delete Account
+              </Button>
+            ) : (
+              <div className="space-y-3 rounded-md border border-destructive/30 bg-destructive/5 p-4">
+                <p className="text-sm font-medium">Are you sure? This will delete all your data permanently.</p>
+                <div className="flex gap-3">
+                  <Button variant="destructive" onClick={handleDeleteAccount}>
+                    Yes, delete my account
+                  </Button>
+                  <Button variant="outline" onClick={() => setDeleteConfirm(false)}>
+                    Cancel
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-        </section>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </main>
   )

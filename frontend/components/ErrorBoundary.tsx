@@ -1,6 +1,9 @@
 'use client'
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { AlertCircle } from 'lucide-react'
 
 interface Props {
   children: ReactNode
@@ -24,16 +27,10 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to console in development
     console.error('[ErrorBoundary] Caught error:', error, errorInfo)
-
-    // Call optional error handler
     if (this.props.onError) {
       this.props.onError(error, errorInfo)
     }
-
-    // In production, you could send to error tracking service
-    // e.g., Sentry, LogRocket, etc.
   }
 
   handleRetry = () => {
@@ -46,38 +43,24 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      // Custom fallback provided
-      if (this.props.fallback) {
-        return this.props.fallback
-      }
+      if (this.props.fallback) return this.props.fallback
 
-      // Default error UI
       return (
-        <div className="error-boundary">
-          <div className="error-boundary-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-          </div>
-          <h3>Something went wrong</h3>
-          <p className="error-boundary-message">
-            We encountered an unexpected error. Your data is safe and hasn't been lost.
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <AlertCircle className="mb-4 h-12 w-12 text-destructive" />
+          <h3 className="text-lg font-semibold">Something went wrong</h3>
+          <p className="mt-1 max-w-md text-sm text-muted-foreground">
+            We encountered an unexpected error. Your data is safe and hasn&apos;t been lost.
           </p>
-          <div className="error-boundary-actions">
-            <button className="btn btn-primary" onClick={this.handleRetry}>
-              Try Again
-            </button>
-            <button className="btn btn-outline" onClick={this.handleReload}>
-              Reload Page
-            </button>
+          <div className="mt-4 flex gap-3">
+            <Button onClick={this.handleRetry}>Try Again</Button>
+            <Button variant="outline" onClick={this.handleReload}>Reload Page</Button>
           </div>
           {process.env.NODE_ENV === 'development' && this.state.error && (
-            <details className="error-boundary-details">
-              <summary>Error Details (Development Only)</summary>
-              <pre>{this.state.error.message}</pre>
-              <pre>{this.state.error.stack}</pre>
+            <details className="mt-6 w-full max-w-lg text-left">
+              <summary className="cursor-pointer text-xs text-muted-foreground">Error Details (Development Only)</summary>
+              <pre className="mt-2 overflow-auto rounded-md bg-muted/30 p-3 text-xs">{this.state.error.message}</pre>
+              <pre className="mt-1 overflow-auto rounded-md bg-muted/30 p-3 text-xs">{this.state.error.stack}</pre>
             </details>
           )}
         </div>
@@ -86,12 +69,6 @@ export default class ErrorBoundary extends Component<Props, State> {
 
     return this.props.children
   }
-}
-
-// Functional wrapper for easier use with hooks
-interface ErrorBoundaryWrapperProps {
-  children: ReactNode
-  fallbackMessage?: string
 }
 
 export function withErrorBoundary<P extends object>(
@@ -103,14 +80,11 @@ export function withErrorBoundary<P extends object>(
       <ErrorBoundary
         fallback={
           fallbackMessage ? (
-            <div className="error-boundary-inline">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <span>{fallbackMessage}</span>
-            </div>
+            <Alert variant="destructive" className="my-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{fallbackMessage}</AlertDescription>
+            </Alert>
           ) : undefined
         }
       >

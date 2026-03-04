@@ -1,5 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { LayoutGrid, Lock, CheckCircle, Check } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Bank Connect – Automatic Statement Analysis (Coming Soon)',
@@ -15,187 +19,130 @@ export const metadata: Metadata = {
   },
 }
 
+const steps = [
+  { icon: LayoutGrid, title: '1. Select Your Bank', description: 'Choose from thousands of supported banks in the US and UK.' },
+  { icon: Lock, title: '2. Secure Login', description: "Log in through Plaid's secure interface. We never see your credentials." },
+  { icon: CheckCircle, title: '3. Instant Analysis', description: 'Your transactions are analyzed automatically. Get results in seconds.' },
+]
+
+const securityItems = [
+  { title: 'Read-Only Access', description: 'We can only view transactions. No ability to move money or make changes.' },
+  { title: 'Powered by Plaid', description: 'The same infrastructure used by Venmo, Coinbase, and thousands of financial apps.' },
+  { title: 'No Credential Storage', description: 'We never see or store your bank login. Authentication happens directly with Plaid.' },
+  { title: 'Disconnect Anytime', description: "Revoke access instantly from your bank's website or our dashboard." },
+]
+
+const regions = [
+  { flag: '\u{1F1FA}\u{1F1F8}', name: 'United States', status: 'Beta', available: true, description: '5,000+ banks supported including Chase, Bank of America, Wells Fargo, and more.' },
+  { flag: '\u{1F1EC}\u{1F1E7}', name: 'United Kingdom', status: 'Beta', available: true, description: 'Major UK banks including Barclays, HSBC, Lloyds, NatWest, and more.' },
+  { flag: '\u{1F1E6}\u{1F1FA}', name: 'Australia', status: 'Coming Soon', available: false, description: 'Join the waitlist to be notified when we add Australian banks.' },
+  { flag: '\u{1F1E8}\u{1F1E6}', name: 'Canada', status: 'Coming Soon', available: false, description: 'Canadian bank support is planned for later this year.' },
+]
+
+const faqs = [
+  { q: 'Is Bank Connect free?', a: 'Yes, Bank Connect will be free during the beta period.' },
+  { q: "What if my bank isn't supported?", a: 'You can always use the manual upload option. Export a CSV or PDF from your bank and upload it directly. This works with any bank worldwide.' },
+  { q: 'Can I disconnect my bank later?', a: "Absolutely. You can revoke Plaid access at any time through your bank's connected apps settings or directly through our site." },
+  { q: 'What data do you access?', a: "Only transaction data: dates, descriptions, and amounts. We don't access account numbers, balances, or personal information beyond what's needed for analysis." },
+]
+
 export default function BanksPage() {
   return (
-    <main className="container banks-page">
-      <div className="banks-content">
-        <div className="banks-header">
-          <span className="banks-badge">Coming Soon</span>
-          <h1>Bank Connect</h1>
-          <p className="banks-intro">
+    <main className="mx-auto max-w-4xl px-4 py-12">
+      <div className="space-y-12">
+        {/* Header */}
+        <div className="text-center">
+          <Badge variant="secondary" className="mb-3">Coming Soon</Badge>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Bank Connect</h1>
+          <p className="mt-3 text-lg text-muted-foreground">
             Skip the manual upload. Connect your bank directly and get automatic
             spending analysis with read-only access.
           </p>
         </div>
 
         {/* How it works */}
-        <section className="banks-section">
-          <h2>How Bank Connect Works</h2>
-          <div className="banks-steps">
-            <div className="banks-step">
-              <div className="banks-step-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <path d="M3 9h18" />
-                  <path d="M9 21V9" />
-                </svg>
-              </div>
-              <h3>1. Select Your Bank</h3>
-              <p>Choose from thousands of supported banks in the US and UK.</p>
-            </div>
-            <div className="banks-step">
-              <div className="banks-step-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-              </div>
-              <h3>2. Secure Login</h3>
-              <p>Log in through Plaid's secure interface. We never see your credentials.</p>
-            </div>
-            <div className="banks-step">
-              <div className="banks-step-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-              </div>
-              <h3>3. Instant Analysis</h3>
-              <p>Your transactions are analyzed automatically. Get results in seconds.</p>
-            </div>
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">How Bank Connect Works</h2>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {steps.map((step) => (
+              <Card key={step.title}>
+                <CardContent className="space-y-2 pt-6 text-center">
+                  <step.icon className="mx-auto h-6 w-6 text-primary" />
+                  <h3 className="font-semibold">{step.title}</h3>
+                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </section>
 
         {/* Security */}
-        <section className="banks-section">
-          <h2>Bank-Level Security</h2>
-          <div className="banks-security-grid">
-            <div className="banks-security-item">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              <div>
-                <h4>Read-Only Access</h4>
-                <p>We can only view transactions. No ability to move money or make changes.</p>
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">Bank-Level Security</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {securityItems.map((item) => (
+              <div key={item.title} className="flex items-start gap-3 rounded-lg border p-4">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <div>
+                  <h4 className="text-sm font-semibold">{item.title}</h4>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                </div>
               </div>
-            </div>
-            <div className="banks-security-item">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              <div>
-                <h4>Powered by Plaid</h4>
-                <p>The same infrastructure used by Venmo, Coinbase, and thousands of financial apps.</p>
-              </div>
-            </div>
-            <div className="banks-security-item">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              <div>
-                <h4>No Credential Storage</h4>
-                <p>We never see or store your bank login. Authentication happens directly with Plaid.</p>
-              </div>
-            </div>
-            <div className="banks-security-item">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              <div>
-                <h4>Disconnect Anytime</h4>
-                <p>Revoke access instantly from your bank's website or our dashboard.</p>
-              </div>
-            </div>
+            ))}
           </div>
         </section>
 
         {/* Availability */}
-        <section className="banks-section">
-          <h2>Availability</h2>
-          <div className="banks-availability">
-            <div className="banks-region available">
-              <div className="banks-region-header">
-                <span className="banks-region-flag">🇺🇸</span>
-                <span className="banks-region-name">United States</span>
-                <span className="banks-region-status">Beta</span>
-              </div>
-              <p>5,000+ banks supported including Chase, Bank of America, Wells Fargo, and more.</p>
-            </div>
-            <div className="banks-region available">
-              <div className="banks-region-header">
-                <span className="banks-region-flag">🇬🇧</span>
-                <span className="banks-region-name">United Kingdom</span>
-                <span className="banks-region-status">Beta</span>
-              </div>
-              <p>Major UK banks including Barclays, HSBC, Lloyds, NatWest, and more.</p>
-            </div>
-            <div className="banks-region coming-soon">
-              <div className="banks-region-header">
-                <span className="banks-region-flag">🇦🇺</span>
-                <span className="banks-region-name">Australia</span>
-                <span className="banks-region-status soon">Coming Soon</span>
-              </div>
-              <p>Join the waitlist to be notified when we add Australian banks.</p>
-            </div>
-            <div className="banks-region coming-soon">
-              <div className="banks-region-header">
-                <span className="banks-region-flag">🇨🇦</span>
-                <span className="banks-region-name">Canada</span>
-                <span className="banks-region-status soon">Coming Soon</span>
-              </div>
-              <p>Canadian bank support is planned for later this year.</p>
-            </div>
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">Availability</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {regions.map((region) => (
+              <Card key={region.name} className={!region.available ? 'opacity-70' : ''}>
+                <CardContent className="pt-4">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="text-lg">{region.flag}</span>
+                    <span className="font-semibold">{region.name}</span>
+                    <Badge variant={region.available ? 'default' : 'secondary'} className="ml-auto text-xs">
+                      {region.status}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{region.description}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </section>
 
         {/* CTA */}
-        <section className="banks-cta-section">
-          <h2>Join the Waitlist</h2>
-          <p>
+        <section className="space-y-3 text-center">
+          <h2 className="text-xl font-semibold">Join the Waitlist</h2>
+          <p className="text-muted-foreground">
             Bank Connect is currently in beta. Join the waitlist to get early access
-            when it's available in your region.
+            when it&apos;s available in your region.
           </p>
-          <Link href="/" className="btn btn-primary btn-lg">
-            Get Started
-          </Link>
-          <p className="banks-cta-note">
-            Or <Link href="/">upload a statement manually</Link> - works with any bank worldwide.
+          <Button asChild size="lg">
+            <Link href="/">Get Started</Link>
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            Or <Link href="/" className="text-primary hover:underline">upload a statement manually</Link> - works with any bank worldwide.
           </p>
         </section>
 
         {/* FAQ */}
-        <section className="banks-faq">
-          <h2>Frequently Asked Questions</h2>
-
-          <div className="faq-item">
-            <h3>Is Bank Connect free?</h3>
-            <p>
-              Yes, Bank Connect will be free during the beta period. See our <Link href="/pricing">pricing page</Link> for details.
-            </p>
-          </div>
-
-          <div className="faq-item">
-            <h3>What if my bank isn't supported?</h3>
-            <p>
-              You can always use the manual upload option. Export a CSV or PDF from your
-              bank and upload it directly. This works with any bank worldwide.
-            </p>
-          </div>
-
-          <div className="faq-item">
-            <h3>Can I disconnect my bank later?</h3>
-            <p>
-              Absolutely. You can revoke Plaid access at any time through your bank's
-              connected apps settings or directly through our site.
-            </p>
-          </div>
-
-          <div className="faq-item">
-            <h3>What data do you access?</h3>
-            <p>
-              Only transaction data: dates, descriptions, and amounts. We don't access
-              account numbers, balances, or personal information beyond what's needed for analysis.
-            </p>
+        <section className="space-y-6">
+          <h2 className="text-xl font-semibold">Frequently Asked Questions</h2>
+          <div className="space-y-4">
+            {faqs.map((faq) => (
+              <div key={faq.q} className="space-y-1">
+                <h3 className="font-medium">{faq.q}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {faq.a}
+                  {faq.q.includes('free') && (
+                    <> See our <Link href="/pricing" className="text-primary hover:underline">pricing page</Link> for details.</>
+                  )}
+                </p>
+              </div>
+            ))}
           </div>
         </section>
       </div>

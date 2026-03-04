@@ -8,10 +8,10 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <main className="container legal-page">
-      <div className="legal-content">
+    <main className="mx-auto max-w-3xl px-4 py-12">
+      <div className="prose prose-neutral dark:prose-invert max-w-none">
         <h1>Terms of Use</h1>
-        <p className="legal-updated">Last updated: February 2026</p>
+        <p className="text-sm text-muted-foreground">Last updated: February 2026</p>
 
         <section>
           <h2>Acceptance of Terms</h2>
@@ -139,8 +139,8 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <div className="legal-back">
-          <Link href="/">&#8592; Back to Analyzer</Link>
+        <div className="mt-8 border-t pt-4">
+          <Link href="/" className="text-sm text-primary hover:underline">&larr; Back to Analyzer</Link>
         </div>
       </div>
     </main>

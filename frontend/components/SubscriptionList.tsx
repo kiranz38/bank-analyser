@@ -1,3 +1,9 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { RefreshCw, HelpCircle } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
 interface Subscription {
   merchant: string
   monthly_cost: number
@@ -26,7 +32,6 @@ export default function SubscriptionList({ subscriptions }: SubscriptionListProp
     return null
   }
 
-  // Filter to high confidence subscriptions
   const confirmedSubs = subscriptions.filter(s => s.confidence >= 0.6)
   const possibleSubs = subscriptions.filter(s => s.confidence >= 0.5 && s.confidence < 0.6)
 
@@ -34,91 +39,84 @@ export default function SubscriptionList({ subscriptions }: SubscriptionListProp
   const totalAnnual = totalMonthly * 12
 
   const getConfidenceLabel = (confidence: number) => {
-    if (confidence >= 0.9) return { text: 'Confirmed', className: 'confidence-high' }
-    if (confidence >= 0.7) return { text: 'Likely', className: 'confidence-medium' }
-    return { text: 'Possible', className: 'confidence-low' }
+    if (confidence >= 0.9) return { text: 'Confirmed', variant: 'default' as const }
+    if (confidence >= 0.7) return { text: 'Likely', variant: 'secondary' as const }
+    return { text: 'Possible', variant: 'outline' as const }
   }
 
   return (
-    <div className="card subscriptions-card">
-      <h2>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
-          <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
-        </svg>
-        Detected Subscriptions
-        <span className="subscription-count">{confirmedSubs.length} found</span>
-      </h2>
-
-      {/* Summary banner */}
-      <div className="subscription-summary">
-        <div className="subscription-summary-item">
-          <span className="subscription-summary-label">Monthly Total</span>
-          <span className="subscription-summary-value">{formatCurrency(totalMonthly)}</span>
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2">
+          <RefreshCw className="h-5 w-5" />
+          Detected Subscriptions
+          <Badge variant="secondary" className="ml-1">{confirmedSubs.length} found</Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Summary banner */}
+        <div className="flex items-center justify-around rounded-lg bg-muted/50 p-4">
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">Monthly Total</p>
+            <p className="text-lg font-bold">{formatCurrency(totalMonthly)}</p>
+          </div>
+          <Separator orientation="vertical" className="h-10" />
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">Annual Cost</p>
+            <p className="text-lg font-bold text-destructive">{formatCurrency(totalAnnual)}</p>
+          </div>
         </div>
-        <div className="subscription-summary-divider" />
-        <div className="subscription-summary-item">
-          <span className="subscription-summary-label">Annual Cost</span>
-          <span className="subscription-summary-value danger">{formatCurrency(totalAnnual)}</span>
-        </div>
-      </div>
 
-      {/* Subscription list */}
-      <ul className="subscription-list">
-        {confirmedSubs.map((sub, index) => {
-          const confidenceInfo = getConfidenceLabel(sub.confidence)
-          return (
-            <li key={index} className="subscription-item">
-              <div className="subscription-info">
-                <div className="subscription-header">
-                  <span className="subscription-merchant">{sub.merchant}</span>
-                  <span className={`subscription-confidence ${confidenceInfo.className}`}>
-                    {confidenceInfo.text}
-                  </span>
+        {/* Subscription list */}
+        <ul className="space-y-3">
+          {confirmedSubs.map((sub, index) => {
+            const confidenceInfo = getConfidenceLabel(sub.confidence)
+            return (
+              <li key={index} className="flex items-start justify-between gap-4 rounded-lg border p-3">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{sub.merchant}</span>
+                    <Badge variant={confidenceInfo.variant} className="text-xs">
+                      {confidenceInfo.text}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                    <span>{sub.reason}</span>
+                    {sub.last_date && <span>Last: {sub.last_date}</span>}
+                  </div>
                 </div>
-                <div className="subscription-details">
-                  <span className="subscription-reason">{sub.reason}</span>
-                  {sub.last_date && (
-                    <span className="subscription-last-date">Last: {sub.last_date}</span>
-                  )}
-                </div>
-              </div>
-              <div className="subscription-cost">
-                <div className="subscription-monthly">{formatCurrency(sub.monthly_cost)}/mo</div>
-                <div className="subscription-annual">{formatCurrency(sub.annual_cost)}/yr</div>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
-
-      {/* Possible subscriptions */}
-      {possibleSubs.length > 0 && (
-        <div className="possible-subscriptions">
-          <h3>Possible Subscriptions</h3>
-          <ul className="subscription-list possible">
-            {possibleSubs.map((sub, index) => (
-              <li key={index} className="subscription-item faded">
-                <div className="subscription-info">
-                  <span className="subscription-merchant">{sub.merchant}</span>
-                  <span className="subscription-reason">{sub.reason}</span>
-                </div>
-                <div className="subscription-cost">
-                  <span className="subscription-monthly">{formatCurrency(sub.monthly_cost)}/mo</span>
+                <div className="shrink-0 text-right">
+                  <p className="font-semibold">{formatCurrency(sub.monthly_cost)}/mo</p>
+                  <p className="text-xs text-muted-foreground">{formatCurrency(sub.annual_cost)}/yr</p>
                 </div>
               </li>
-            ))}
-          </ul>
-        </div>
-      )}
+            )
+          })}
+        </ul>
 
-      <div className="subscription-tip">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-          <line x1="12" y1="17" x2="12.01" y2="17" />
-        </svg>
-        <span>Review each subscription and cancel ones you no longer use to save {formatCurrency(totalAnnual)}/year</span>
-      </div>
-    </div>
+        {/* Possible subscriptions */}
+        {possibleSubs.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-muted-foreground">Possible Subscriptions</h3>
+            <ul className="space-y-2">
+              {possibleSubs.map((sub, index) => (
+                <li key={index} className="flex items-center justify-between rounded-lg border border-dashed p-3 opacity-70">
+                  <div className="space-y-0.5">
+                    <span className="text-sm font-medium">{sub.merchant}</span>
+                    <p className="text-xs text-muted-foreground">{sub.reason}</p>
+                  </div>
+                  <span className="text-sm font-medium">{formatCurrency(sub.monthly_cost)}/mo</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+          <HelpCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>Review each subscription and cancel ones you no longer use to save {formatCurrency(totalAnnual)}/year</span>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

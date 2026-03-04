@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { trackAlternativeClicked } from '@/lib/analytics'
 
 interface PriceChange {
@@ -58,36 +61,21 @@ export default function InsightsTabs({
 }: InsightsTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('prices')
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)
 
-  const formatCurrencyPrecise = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount)
-  }
+  const formatCurrencyPrecise = (amount: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount)
 
-  // Count items for each tab
   const tabs = [
     { id: 'prices' as TabType, label: 'Price Changes', count: priceChanges.length },
     { id: 'duplicates' as TabType, label: 'Duplicates', count: duplicates.length },
     { id: 'alternatives' as TabType, label: 'Alternatives', count: alternatives.length },
-    { id: 'transactions' as TabType, label: 'Top Transactions', count: topSpending.length }
+    { id: 'transactions' as TabType, label: 'Top Transactions', count: topSpending.length },
   ]
 
-  // Only show tabs that have data
   const activeTabs = tabs.filter(tab => tab.count > 0)
 
-  // Set first available tab as active if current tab has no data
   useEffect(() => {
     const currentTabHasData = tabs.find(t => t.id === activeTab)?.count ?? 0 > 0
     if (!currentTabHasData && activeTabs.length > 0) {
@@ -95,126 +83,116 @@ export default function InsightsTabs({
     }
   }, [priceChanges.length, duplicates.length, alternatives.length, topSpending.length])
 
-  if (activeTabs.length === 0) {
-    return null
-  }
+  if (activeTabs.length === 0) return null
 
   return (
-    <div className="dashboard-card insights-tabs-card">
-      <div className="insights-tabs-header">
-        {activeTabs.map(tab => (
-          <button
-            key={tab.id}
-            className={`insights-tab ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-            <span className="insights-tab-count">{tab.count}</span>
-          </button>
-        ))}
-      </div>
+    <Card>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
+        <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
+          {activeTabs.map(tab => (
+            <TabsTrigger
+              key={tab.id}
+              value={tab.id}
+              className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm data-[state=active]:border-primary data-[state=active]:shadow-none"
+            >
+              {tab.label}
+              <Badge variant="secondary" className="ml-1.5 text-xs">{tab.count}</Badge>
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      <div className="insights-tabs-content">
-        {/* Price Changes Panel */}
-        {activeTab === 'prices' && priceChanges.length > 0 && (
-          <div className="insights-panel price-changes-panel">
-            <p className="insights-panel-intro">
-              Some subscriptions have increased in price
-            </p>
-            <ul className="insights-list">
+        <CardContent className="pt-4">
+          {/* Price Changes */}
+          <TabsContent value="prices" className="mt-0 space-y-3">
+            <p className="text-sm text-muted-foreground">Some subscriptions have increased in price</p>
+            <ul className="space-y-2">
               {priceChanges.slice(0, 4).map((change, index) => (
-                <li key={index} className="insights-list-item">
-                  <div className="insights-item-main">
-                    <span className="insights-item-name">{change.merchant}</span>
-                    <span className="insights-item-change price-up">
-                      +{formatCurrencyPrecise(change.increase)}/mo
-                    </span>
+                <li key={index} className="flex items-center justify-between rounded-md border p-2.5 text-sm">
+                  <div>
+                    <p className="font-medium">{change.merchant}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatCurrencyPrecise(change.old_price)} → {formatCurrencyPrecise(change.new_price)}
+                    </p>
                   </div>
-                  <div className="insights-item-detail">
-                    {formatCurrencyPrecise(change.old_price)} → {formatCurrencyPrecise(change.new_price)}
-                  </div>
+                  <span className="text-sm font-medium text-destructive">
+                    +{formatCurrencyPrecise(change.increase)}/mo
+                  </span>
                 </li>
               ))}
             </ul>
-          </div>
-        )}
+          </TabsContent>
 
-        {/* Duplicates Panel */}
-        {activeTab === 'duplicates' && duplicates.length > 0 && (
-          <div className="insights-panel duplicates-panel">
-            <p className="insights-panel-intro">
-              You have overlapping subscriptions in these categories
-            </p>
-            <ul className="insights-list">
+          {/* Duplicates */}
+          <TabsContent value="duplicates" className="mt-0 space-y-3">
+            <p className="text-sm text-muted-foreground">You have overlapping subscriptions in these categories</p>
+            <ul className="space-y-2">
               {duplicates.slice(0, 4).map((dup, index) => (
-                <li key={index} className="insights-list-item">
-                  <div className="insights-item-main">
-                    <span className="insights-item-name">{dup.category}</span>
-                    <span className="insights-item-badge">{dup.count} services</span>
+                <li key={index} className="rounded-md border p-2.5 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{dup.category}</span>
+                    <Badge variant="secondary">{dup.count} services</Badge>
                   </div>
-                  <div className="insights-item-detail">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {dup.services.slice(0, 3).join(', ')} — {formatCurrency(dup.combined_monthly)}/mo
-                  </div>
+                  </p>
                 </li>
               ))}
             </ul>
-          </div>
-        )}
+          </TabsContent>
 
-        {/* Alternatives Panel */}
-        {activeTab === 'alternatives' && alternatives.length > 0 && (
-          <div className="insights-panel alternatives-panel">
-            <p className="insights-panel-intro">
-              Cheaper or free alternatives to your current subscriptions
-            </p>
-            <ul className="insights-list">
+          {/* Alternatives */}
+          <TabsContent value="alternatives" className="mt-0 space-y-3">
+            <p className="text-sm text-muted-foreground">Cheaper or free alternatives to your current subscriptions</p>
+            <ul className="space-y-2">
               {alternatives.slice(0, 4).map((alt, index) => (
                 <li
                   key={index}
-                  className="insights-list-item clickable"
+                  className="cursor-pointer rounded-md border p-2.5 text-sm transition-colors hover:bg-accent"
                   onClick={() => trackAlternativeClicked({
                     original: alt.original,
                     alternative: alt.alternative,
                     potentialSavings: alt.yearly_savings
                   })}
                 >
-                  <div className="insights-item-main">
-                    <span className="insights-item-name">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">
                       {alt.original} → {alt.alternative}
-                      {alt.alternative_price === 0 && <span className="free-badge">FREE</span>}
+                      {alt.alternative_price === 0 && (
+                        <Badge className="ml-1.5 bg-emerald-500 text-xs">FREE</Badge>
+                      )}
                     </span>
-                    <span className="insights-item-savings">
+                    <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
                       Save {formatCurrency(alt.yearly_savings)}/yr
                     </span>
                   </div>
-                  <div className="insights-item-detail">{alt.note}</div>
+                  <p className="mt-1 text-xs text-muted-foreground">{alt.note}</p>
                 </li>
               ))}
             </ul>
-          </div>
-        )}
+          </TabsContent>
 
-        {/* Top Transactions Panel */}
-        {activeTab === 'transactions' && topSpending.length > 0 && (
-          <div className="insights-panel transactions-panel">
-            <p className="insights-panel-intro">
-              Your biggest transactions this period
-            </p>
-            <ul className="insights-list">
+          {/* Top Transactions */}
+          <TabsContent value="transactions" className="mt-0 space-y-3">
+            <p className="text-sm text-muted-foreground">Your biggest transactions this period</p>
+            <ul className="space-y-2">
               {topSpending.slice(0, 5).map((item, index) => (
-                <li key={index} className="insights-list-item">
-                  <div className="insights-item-main">
-                    <span className="insights-item-rank">#{index + 1}</span>
-                    <span className="insights-item-name">{item.merchant}</span>
-                    <span className="insights-item-amount">{formatCurrencyPrecise(item.amount)}</span>
+                <li key={index} className="flex items-center justify-between rounded-md border p-2.5 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                      {index + 1}
+                    </span>
+                    <span className="font-medium">{item.merchant}</span>
                   </div>
-                  {item.date && <div className="insights-item-detail">{item.date}</div>}
+                  <div className="text-right">
+                    <p className="font-medium">{formatCurrencyPrecise(item.amount)}</p>
+                    {item.date && <p className="text-xs text-muted-foreground">{item.date}</p>}
+                  </div>
                 </li>
               ))}
             </ul>
-          </div>
-        )}
-      </div>
-    </div>
+          </TabsContent>
+        </CardContent>
+      </Tabs>
+    </Card>
   )
 }

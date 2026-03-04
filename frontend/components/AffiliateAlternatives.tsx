@@ -1,6 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { ArrowUpFromLine, ChevronUp, ChevronDown, ExternalLink } from 'lucide-react'
 import type { Alternative } from '@/lib/types'
 import { enrichAlternatives, type EnrichedAlternative } from '@/lib/affiliateMatching'
 import { getRegistryConfig, isAffiliateEnabled } from '@/lib/affiliateRegistry'
@@ -68,97 +77,101 @@ export default function AffiliateAlternatives({ alternatives, isPro, isDemo }: A
   }
 
   return (
-    <div className="card">
-      <div className="section-header-row" onClick={() => setExpanded(!expanded)}>
-        <h2>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
-            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-            <polyline points="16 6 12 2 8 6" />
-            <line x1="12" y1="2" x2="12" y2="15" />
-          </svg>
-          Cheaper Alternatives ({enriched.length})
-        </h2>
-        <span className="toggle-icon">{expanded ? '\u25B2' : '\u25BC'}</span>
-      </div>
+    <Card>
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <CollapsibleTrigger className="w-full">
+          <CardHeader className="flex-row items-center justify-between pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <ArrowUpFromLine className="h-5 w-5" />
+              Cheaper Alternatives ({enriched.length})
+            </CardTitle>
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </CardHeader>
+        </CollapsibleTrigger>
 
-      {expanded && (
-        <div className="affiliate-section">
-          {/* Disclosure banner */}
-          {hasAnyAffiliate && isAffiliateEnabled() && (
-            <div className="affiliate-disclosure">
-              {config.disclosureText}
-            </div>
-          )}
+        <CollapsibleContent>
+          <CardContent className="space-y-4">
+            {/* Disclosure banner */}
+            {hasAnyAffiliate && isAffiliateEnabled() && (
+              <p className="rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
+                {config.disclosureText}
+              </p>
+            )}
 
-          {/* Alternative cards */}
-          <div className="affiliate-cards">
-            {enriched.map((alt, index) => {
-              const ctaUrl = getCtaUrl(alt)
+            {/* Alternative cards */}
+            <div className="space-y-3">
+              {enriched.map((alt, index) => {
+                const ctaUrl = getCtaUrl(alt)
 
-              return (
-                <div key={index} className="affiliate-alt-card">
-                  <div className="affiliate-alt-header">
-                    <span className="affiliate-alt-names">
-                      {alt.original} &rarr; {alt.alternative}
-                    </span>
-                    {alt.alternative_price === 0 && (
-                      <span className="free-badge">FREE</span>
+                return (
+                  <div key={index} className="rounded-lg border p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium">
+                        {alt.original} → {alt.alternative}
+                      </span>
+                      {alt.alternative_price === 0 && (
+                        <Badge variant="default" className="bg-emerald-500">FREE</Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {formatCurrencyPrecise(alt.current_price)}/mo
+                      </span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                        Save {formatCurrency(alt.yearly_savings)}/yr
+                      </span>
+                    </div>
+
+                    <details className="group">
+                      <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+                        Why this alternative?
+                      </summary>
+                      <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                        <p>{alt.note}</p>
+                        <p>
+                          Category: {alt.category} | Alt price: {alt.alternative_price === 0 ? 'Free' : `${formatCurrencyPrecise(alt.alternative_price)}/mo`}
+                        </p>
+                      </div>
+                    </details>
+
+                    {ctaUrl ? (
+                      <Button size="sm" variant="outline" className="w-full" asChild>
+                        <a
+                          href={ctaUrl}
+                          target="_blank"
+                          rel="noopener noreferrer nofollow"
+                          onClick={() => handleCtaClick(alt)}
+                        >
+                          {alt.hasAffiliate ? 'Switch & Save' : 'Visit site'}
+                          <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <p className="text-center text-sm text-muted-foreground">{alt.alternative}</p>
                     )}
                   </div>
+                )
+              })}
+            </div>
 
-                  <div className="affiliate-alt-pricing">
-                    <span className="affiliate-alt-current">
-                      {formatCurrencyPrecise(alt.current_price)}/mo
-                    </span>
-                    <span className="affiliate-alt-savings">
-                      Save {formatCurrency(alt.yearly_savings)}/yr
-                    </span>
-                  </div>
-
-                  <details className="affiliate-alt-details">
-                    <summary>Why this alternative?</summary>
-                    <div className="affiliate-alt-details-body">
-                      <p>{alt.note}</p>
-                      <p className="affiliate-alt-meta">
-                        Category: {alt.category} | Alt price: {alt.alternative_price === 0 ? 'Free' : `${formatCurrencyPrecise(alt.alternative_price)}/mo`}
-                      </p>
-                    </div>
-                  </details>
-
-                  {ctaUrl ? (
-                    <a
-                      href={ctaUrl}
-                      target="_blank"
-                      rel="noopener noreferrer nofollow"
-                      className="btn-affiliate-cta"
-                      onClick={() => handleCtaClick(alt)}
-                    >
-                      {alt.hasAffiliate ? 'Switch & Save \u2192' : 'Visit site \u2192'}
-                    </a>
-                  ) : (
-                    <span className="affiliate-alt-no-link">
-                      {alt.alternative}
-                    </span>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Footer */}
-          <div className="affiliate-footer">
-            <p>{config.footerNote}</p>
-            <button
-              className="affiliate-report-btn"
-              onClick={() => {
-                window.location.href = 'mailto:support@leakywallet.com?subject=Incorrect alternative reported'
-              }}
-            >
-              Report incorrect alternative
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+            {/* Footer */}
+            <div className="space-y-2 border-t pt-3">
+              <p className="text-xs text-muted-foreground">{config.footerNote}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-muted-foreground"
+                onClick={() => {
+                  window.location.href = 'mailto:support@leakywallet.com?subject=Incorrect alternative reported'
+                }}
+              >
+                Report incorrect alternative
+              </Button>
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
   )
 }

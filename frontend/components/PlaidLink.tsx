@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Script from 'next/script'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { LayoutGrid, Lock, AlertCircle, Check, Shield, Loader2 } from 'lucide-react'
 import { createLinkToken, exchangeTokenAndAnalyze, PlaidLinkResult } from '@/lib/plaid'
 import {
   trackPlaidLinkOpened,
@@ -9,7 +13,6 @@ import {
   trackPlaidLinkExit
 } from '@/lib/analytics'
 
-// Plaid Link types
 declare global {
   interface Window {
     Plaid?: {
@@ -32,17 +35,8 @@ interface PlaidHandler {
 }
 
 interface PlaidMetadata {
-  institution?: {
-    name: string
-    institution_id: string
-  }
-  accounts?: Array<{
-    id: string
-    name: string
-    mask: string
-    type: string
-    subtype: string
-  }>
+  institution?: { name: string; institution_id: string }
+  accounts?: Array<{ id: string; name: string; mask: string; type: string; subtype: string }>
   link_session_id?: string
   status?: string
 }
@@ -67,28 +61,22 @@ export default function PlaidLink({ onSuccess, onExit, onError }: PlaidLinkProps
   const [plaidLoaded, setPlaidLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Initialize link token on mount
   useEffect(() => {
     async function initLinkToken() {
       setLoading(true)
       setError(null)
-
       const result = await createLinkToken()
-
       if (result) {
         setLinkToken(result.link_token)
       } else {
         setError('Failed to initialize bank connection. Please try again.')
         onError('Failed to initialize bank connection')
       }
-
       setLoading(false)
     }
-
     initLinkToken()
   }, [onError])
 
-  // Handle Plaid Link open
   const handleOpenPlaid = useCallback(() => {
     if (!linkToken || !window.Plaid) {
       setError('Bank connection is not ready. Please refresh and try again.')
@@ -102,11 +90,8 @@ export default function PlaidLink({ onSuccess, onExit, onError }: PlaidLinkProps
       onSuccess: async (publicToken: string, metadata: PlaidMetadata) => {
         setProcessing(true)
         setError(null)
-
         console.log('[Plaid] Success - Institution:', metadata.institution?.name)
-
         const result = await exchangeTokenAndAnalyze(publicToken)
-
         if (result.success) {
           trackPlaidLinkSuccess()
           onSuccess(result)
@@ -114,21 +99,18 @@ export default function PlaidLink({ onSuccess, onExit, onError }: PlaidLinkProps
           setError(result.error || 'Failed to analyze transactions')
           onError(result.error || 'Failed to analyze transactions')
         }
-
         setProcessing(false)
       },
-      onExit: (err: PlaidError | null, metadata: PlaidMetadata) => {
+      onExit: (err: PlaidError | null) => {
         if (err) {
           console.error('[Plaid] Exit with error:', err)
           trackPlaidLinkExit(err.error_code)
-
           if (err.error_code !== 'USER_ABORT') {
             setError(err.display_message || 'Connection was interrupted')
           }
         } else {
           trackPlaidLinkExit('user_cancelled')
         }
-
         onExit()
       },
       onEvent: (eventName: string) => {
@@ -140,8 +122,7 @@ export default function PlaidLink({ onSuccess, onExit, onError }: PlaidLinkProps
   }, [linkToken, onSuccess, onExit, onError])
 
   return (
-    <div className="plaid-link-container">
-      {/* Load Plaid Link script */}
+    <div className="mx-auto max-w-md">
       <Script
         src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"
         onLoad={() => setPlaidLoaded(true)}
@@ -151,84 +132,65 @@ export default function PlaidLink({ onSuccess, onExit, onError }: PlaidLinkProps
         }}
       />
 
-      <div className="plaid-link-card">
-        <div className="plaid-link-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <path d="M3 9h18" />
-            <path d="M9 21V9" />
-          </svg>
-        </div>
-
-        <h3>Connect Your Bank</h3>
-
-        <p className="plaid-link-description">
-          Securely connect your bank account to automatically import your transactions.
-          We use Plaid, trusted by millions.
-        </p>
-
-        {error && (
-          <div className="plaid-link-error">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            {error}
+      <Card>
+        <CardContent className="flex flex-col items-center p-8 text-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <LayoutGrid className="h-8 w-8 text-primary" />
           </div>
-        )}
 
-        <button
-          className="btn btn-primary btn-block"
-          onClick={handleOpenPlaid}
-          disabled={loading || processing || !plaidLoaded || !linkToken}
-        >
-          {loading && 'Initializing...'}
-          {processing && (
-            <>
-              <span className="spinner"></span>
-              Analyzing transactions...
-            </>
+          <h3 className="text-lg font-semibold">Connect Your Bank</h3>
+
+          <p className="mt-2 text-sm text-muted-foreground">
+            Securely connect your bank account to automatically import your transactions.
+            We use Plaid, trusted by millions.
+          </p>
+
+          {error && (
+            <div className="mt-4 flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {error}
+            </div>
           )}
-          {!loading && !processing && (
-            <>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              Connect Bank Account
-            </>
-          )}
-        </button>
 
-        <div className="plaid-link-security">
-          <div className="security-item">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            <span>Read-only access</span>
-          </div>
-          <div className="security-item">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            <span>256-bit encryption</span>
-          </div>
-          <div className="security-item">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            <span>Credentials never stored</span>
-          </div>
-        </div>
+          <Button
+            className="mt-6 w-full"
+            size="lg"
+            onClick={handleOpenPlaid}
+            disabled={loading || processing || !plaidLoaded || !linkToken}
+          >
+            {loading && 'Initializing...'}
+            {processing && (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Analyzing transactions...
+              </>
+            )}
+            {!loading && !processing && (
+              <>
+                <Lock className="mr-2 h-4 w-4" />
+                Connect Bank Account
+              </>
+            )}
+          </Button>
 
-        <p className="plaid-link-note">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-          Powered by Plaid. Your bank login is never shared with us.
-        </p>
-      </div>
+          <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Check className="h-3 w-3" /> Read-only access
+            </span>
+            <span className="flex items-center gap-1">
+              <Check className="h-3 w-3" /> 256-bit encryption
+            </span>
+            <span className="flex items-center gap-1">
+              <Check className="h-3 w-3" /> Credentials never stored
+            </span>
+          </div>
+
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Shield className="h-3.5 w-3.5" />
+            Powered by Plaid. Your bank login is never shared with us.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }

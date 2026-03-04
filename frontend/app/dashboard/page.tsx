@@ -3,6 +3,9 @@
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Plus, FileText, Loader2 } from 'lucide-react'
 
 interface SavedAnalysis {
   id: string
@@ -45,75 +48,72 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="container">
-      <div className="dashboard-page">
-        <div className="dashboard-header">
+    <main className="mx-auto max-w-4xl px-4 py-8">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="dashboard-title">Dashboard</h1>
-            <p className="dashboard-subtitle">
+            <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">
               Welcome back{session?.user?.name ? `, ${session.user.name}` : ''}
             </p>
           </div>
-          <Link href="/" className="btn btn-primary">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            New Analysis
-          </Link>
+          <Button asChild>
+            <Link href="/">
+              <Plus className="mr-2 h-4 w-4" />
+              New Analysis
+            </Link>
+          </Button>
         </div>
 
         {loading ? (
-          <div className="dashboard-loading">
-            <div className="spinner" />
-            <p>Loading your analyses...</p>
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <Loader2 className="mb-3 h-6 w-6 animate-spin" />
+            <p className="text-sm">Loading your analyses...</p>
           </div>
         ) : analyses.length === 0 ? (
-          <div className="dashboard-empty">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
-            </svg>
-            <h2>No analyses yet</h2>
-            <p>Upload a bank statement to get started. Your results will be saved here automatically.</p>
-            <Link href="/" className="btn btn-primary">
-              Analyze Your First Statement
-            </Link>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <FileText className="mb-4 h-12 w-12 text-muted-foreground/50" />
+            <h2 className="text-lg font-semibold">No analyses yet</h2>
+            <p className="mb-4 max-w-sm text-sm text-muted-foreground">
+              Upload a bank statement to get started. Your results will be saved here automatically.
+            </p>
+            <Button asChild>
+              <Link href="/">Analyze Your First Statement</Link>
+            </Button>
           </div>
         ) : (
-          <div className="analyses-grid">
+          <div className="grid gap-4 sm:grid-cols-2">
             {analyses.map((analysis) => (
-              <div key={analysis.id} className="analysis-card">
-                <div className="analysis-card-header">
-                  <span className="analysis-date">{formatDate(analysis.createdAt)}</span>
-                  {analysis.title && (
-                    <span className="analysis-title">{analysis.title}</span>
-                  )}
-                </div>
-                <div className="analysis-card-stats">
-                  <div className="analysis-stat">
-                    <span className="analysis-stat-label">Monthly leak</span>
-                    <span className="analysis-stat-value analysis-stat-danger">
-                      {formatCurrency(analysis.results.monthly_leak)}
-                    </span>
+              <Card key={analysis.id}>
+                <CardContent className="p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">{formatDate(analysis.createdAt)}</span>
+                    {analysis.title && (
+                      <span className="text-sm font-medium">{analysis.title}</span>
+                    )}
                   </div>
-                  <div className="analysis-stat">
-                    <span className="analysis-stat-label">Annual savings</span>
-                    <span className="analysis-stat-value analysis-stat-success">
-                      {formatCurrency(analysis.results.annual_savings)}
-                    </span>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Monthly leak</p>
+                      <p className="text-sm font-semibold text-destructive">
+                        {formatCurrency(analysis.results.monthly_leak)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Annual savings</p>
+                      <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(analysis.results.annual_savings)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Subscriptions</p>
+                      <p className="text-sm font-semibold">
+                        {analysis.results.subscriptions?.length || 0}
+                      </p>
+                    </div>
                   </div>
-                  <div className="analysis-stat">
-                    <span className="analysis-stat-label">Subscriptions</span>
-                    <span className="analysis-stat-value">
-                      {analysis.results.subscriptions?.length || 0}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
