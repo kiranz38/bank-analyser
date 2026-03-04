@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getProvider, isAffiliateEnabled } from '@/lib/affiliateRegistry'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   if (!isAffiliateEnabled()) {
     return NextResponse.json({ error: 'Affiliate redirects are disabled' }, { status: 404 })
