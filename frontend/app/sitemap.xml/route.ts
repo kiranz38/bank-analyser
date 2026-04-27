@@ -42,6 +42,13 @@ export async function GET() {
     // NZ bank pages
     { url: '/anz-nz-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
 
+    // Additional intent pages
+    { url: '/where-did-my-money-go', priority: '0.8', changefreq: 'monthly' },
+    { url: '/expense-calculator', priority: '0.9', changefreq: 'monthly' },
+    { url: '/budget-calculator', priority: '0.9', changefreq: 'monthly' },
+    { url: '/monthly-expense-tracker', priority: '0.8', changefreq: 'monthly' },
+    { url: '/cancel-subscriptions', priority: '0.8', changefreq: 'monthly' },
+
     // Other
     { url: '/banks', priority: '0.6', changefreq: 'monthly' },
     { url: '/privacy', priority: '0.3', changefreq: 'yearly' },
