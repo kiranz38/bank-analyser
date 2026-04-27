@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Shield, Lock, Clock, Upload, Search, FileText, Target } from 'lucide-react'
+import { JsonLd } from '@/components/JsonLd'
 
 export const metadata: Metadata = {
   title: 'How It Works – Leaky Wallet Bank Statement Analyzer',
@@ -79,9 +80,45 @@ const privacyFeatures = [
   { icon: Clock, title: 'Session-Only Processing', description: 'When you close your browser tab, all data from your analysis is gone forever.' },
 ]
 
+const howToSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: 'How to Analyze Your Bank Statement to Find Hidden Subscriptions',
+  description: 'Upload your bank statement CSV or PDF to instantly find hidden subscriptions, spending leaks, and unnecessary fees.',
+  totalTime: 'PT2M',
+  tool: { '@type': 'HowToTool', name: 'Leaky Wallet – Free Bank Statement Analyzer' },
+  step: [
+    {
+      '@type': 'HowToStep',
+      position: 1,
+      name: 'Export your bank statement',
+      text: "Log in to your bank's website or app and export your recent transactions as a CSV or PDF file. Most banks support this under Statements or Transaction History.",
+    },
+    {
+      '@type': 'HowToStep',
+      position: 2,
+      name: 'Upload to Leaky Wallet',
+      text: 'Go to whereismymoneygo.com and drag-and-drop your CSV or PDF bank statement. Your file is processed privately in memory and never stored.',
+    },
+    {
+      '@type': 'HowToStep',
+      position: 3,
+      name: 'Review your spending analysis',
+      text: 'Within seconds, see a full breakdown of your spending: hidden subscriptions, bank fees, category totals, and your monthly money leaks.',
+    },
+    {
+      '@type': 'HowToStep',
+      position: 4,
+      name: 'Take action on your savings plan',
+      text: 'Use the easy wins list to cancel forgotten subscriptions, eliminate fees, and set spending limits. Unlock the full Pro report for a personalised 12-week savings roadmap.',
+    },
+  ],
+}
+
 export default function HowItWorksPage() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-12">
+      <JsonLd schema={howToSchema} />
       <div className="space-y-12">
         <div>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">How Leaky Wallet Works</h1>
