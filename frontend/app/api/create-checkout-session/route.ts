@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createPayment } from '@/lib/paymentStore'
+import { upsertDelivery, saveAnalysisSnapshot } from '@/lib/deliveryStore'
+import { trackMetric } from '@/lib/metrics'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,9 +16,10 @@ const PRICE_CENTS = parseInt(process.env.PRO_REPORT_PRICE_CENTS || '199', 10)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, legalAcceptedAt } = body as {
+    const { email, legalAcceptedAt, analysisResults } = body as {
       email?: string
       legalAcceptedAt?: string
+      analysisResults?: object
     }
 
     if (!legalAcceptedAt) {
@@ -57,8 +61,26 @@ export async function POST(request: NextRequest) {
 
     const session = await stripe.checkout.sessions.create(sessionParams)
 
-    // Create payment record
+    // Create in-memory payment record (fast path)
     createPayment(session.id, email || '', legalAcceptedAt)
+
+    // Persist to DB immediately — email captured before Stripe redirect
+    const delivery = await upsertDelivery(session.id, email || '', legalAcceptedAt)
+
+    // Store analysis snapshot if provided so we can re-generate later
+    if (analysisResults && delivery) {
+      await saveAnalysisSnapshot(delivery.id, analysisResults).catch(err =>
+        logger.error('Failed to save analysis snapshot', { sessionId: session.id, error: String(err) })
+      )
+    }
+
+    await trackMetric('checkout_started', {
+      sessionId: session.id,
+      email: email || undefined,
+      valueUsd: PRICE_CENTS / 100,
+    })
+
+    logger.info('Checkout session created', { sessionId: session.id, email: email || 'unknown' })
 
     return NextResponse.json({ url: session.url, sessionId: session.id })
   } catch (error) {

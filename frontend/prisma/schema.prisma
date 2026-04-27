@@ -56,3 +56,51 @@ model Analysis {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// Persistent record for every pro report payment attempt
+model ProReportDelivery {
+  id              String    @id @default(cuid())
+  stripeSessionId String    @unique
+  paymentIntentId String?
+  email           String
+  paymentStatus   String    @default("pending") // pending | paid | refunded
+  pdfStatus       String    @default("pending") // pending | generated | failed
+  emailStatus     String    @default("pending") // pending | sent | failed
+  reportId        String?
+  pdfBlobUrl      String?   // Vercel Blob URL for retry
+  retryCount      Int       @default(0)
+  lastAttemptAt   DateTime?
+  legalAcceptedAt DateTime?
+  pdfSizeBytes    Int?
+  errorMessage    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  snapshot        AnalysisSnapshot?
+}
+
+// Stores raw analysis results so reports can be re-generated later
+model AnalysisSnapshot {
+  id               String            @id @default(cuid())
+  deliveryId       String            @unique
+  results          Json              // Full AnalysisResult object
+  sourceType       String            @default("upload") // upload | plaid
+  createdAt        DateTime          @default(now())
+
+  delivery         ProReportDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+}
+
+// Append-only event log for business metrics and tracing
+model MetricEvent {
+  id         String   @id @default(cuid())
+  event      String   // e.g. checkout_started, payment_confirmed, email_sent
+  sessionId  String?
+  email      String?
+  valueUsd   Float?   // revenue amount if applicable
+  meta       Json?    // arbitrary key-value context
+  createdAt  DateTime @default(now())
+
+  @@index([event])
+  @@index([sessionId])
+  @@index([createdAt])
+}

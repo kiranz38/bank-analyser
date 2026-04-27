@@ -234,7 +234,7 @@ export default function ProReportSection({ results, proPaymentStatus, proSession
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), legalAcceptedAt }),
+        body: JSON.stringify({ email: email.trim(), legalAcceptedAt, analysisResults: results }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to start checkout')

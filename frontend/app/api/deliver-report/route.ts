@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayment, updatePayment, logEvent, storePdf, createPayment } from '@/lib/paymentStore'
 import { sendReportEmail } from '@/lib/sendReportEmail'
+import { getDelivery, updateDelivery } from '@/lib/deliveryStore'
+import { trackMetric } from '@/lib/metrics'
+import { logger } from '@/lib/logger'
+import { put } from '@vercel/blob'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
@@ -21,28 +25,49 @@ export async function POST(request: NextRequest) {
     // Verify payment record exists and is paid
     let record = getPayment(sessionId)
     if (!record) {
-      // Create a record if webhook already confirmed but store was reset
       record = createPayment(sessionId, email)
       updatePayment(sessionId, { status: 'paid' })
     }
 
-    // Generate report ID and store PDF
     const reportId = crypto.randomBytes(16).toString('hex')
     const arrayBuffer = await pdfFile.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
+
+    // Store in-memory for immediate download
     storePdf(reportId, buffer)
 
-    updatePayment(sessionId, {
-      reportId,
-      pdfStatus: 'generated',
-    })
+    // Upload to Vercel Blob for persistent retry storage
+    let pdfBlobUrl: string | null = null
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        const blob = await put(`pro-reports/${sessionId}/${reportId}.pdf`, buffer, {
+          access: 'public',
+          contentType: 'application/pdf',
+        })
+        pdfBlobUrl = blob.url
+      } catch (blobErr) {
+        console.error('[DeliverReport] Blob upload failed (non-fatal):', blobErr)
+      }
+    }
+
+    updatePayment(sessionId, { reportId, pdfStatus: 'generated' })
     logEvent(sessionId, 'pdf_generated', `reportId=${reportId} size=${buffer.length}`)
 
-    // Build download URL
+    // Persist PDF status to DB
+    const delivery = await getDelivery(sessionId)
+    if (delivery) {
+      await updateDelivery(sessionId, {
+        reportId,
+        pdfStatus: 'generated',
+        pdfSizeBytes: buffer.length,
+        pdfBlobUrl: pdfBlobUrl || undefined,
+        lastAttemptAt: new Date(),
+      }).catch(err => console.error('[DeliverReport] DB pdfStatus update failed:', err))
+    }
+
     const origin = request.headers.get('origin') || 'http://localhost:3000'
     const downloadUrl = `${origin}/api/download-report/${reportId}`
 
-    // Send email with PDF attachment via dual-sender utility
     const emailResult = await sendReportEmail({
       toEmail: email,
       subject: 'Your Leaky Wallet savings report is ready',
@@ -90,17 +115,27 @@ export async function POST(request: NextRequest) {
       downloadUrl,
     })
 
-    // Update payment store with email outcome
     const emailStatus: 'sent' | 'failed' = emailResult.ok ? 'sent' : 'failed'
     updatePayment(sessionId, { emailStatus })
+
+    // Persist email outcome to DB
+    await updateDelivery(sessionId, {
+      emailStatus,
+      errorMessage: emailResult.ok ? undefined : (emailResult.errorMessage || emailResult.errorCode),
+      lastAttemptAt: new Date(),
+    }).catch(err => logger.error('DB emailStatus update failed', { sessionId, error: String(err) }))
 
     if (emailResult.ok) {
       const detail = emailResult.usedFallback
         ? `messageId=${emailResult.resendMessageId} usedFallback=true`
         : `messageId=${emailResult.resendMessageId}`
       logEvent(sessionId, 'email_sent', detail)
+      await trackMetric('email_sent', { sessionId, email })
+      logger.info('Report email sent', { sessionId, email, usedFallback: emailResult.usedFallback ?? false, blobStored: !!pdfBlobUrl })
     } else {
       logEvent(sessionId, 'email_failed', emailResult.errorMessage || emailResult.errorCode || 'unknown')
+      await trackMetric('email_failed', { sessionId, email, errorCode: emailResult.errorCode })
+      logger.error('Report email failed', { sessionId, email, error: emailResult.errorMessage || emailResult.errorCode || 'unknown' })
     }
 
     return NextResponse.json({
