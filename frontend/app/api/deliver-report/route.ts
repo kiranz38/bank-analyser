@@ -45,32 +45,39 @@ export async function POST(request: NextRequest) {
     // Send email with PDF attachment via dual-sender utility
     const emailResult = await sendReportEmail({
       toEmail: email,
-      subject: 'Your Financial Report Is Ready',
+      subject: 'Your Leaky Wallet savings report is ready',
       html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #0ea5e9; font-size: 24px; margin-bottom: 16px;">
-            Your Financial Report Is Ready
-          </h1>
-          <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-            Hi,
-          </p>
-          <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-            Your personalized financial report is ready. It's attached to this email as a PDF.
-          </p>
-          <div style="margin: 24px 0;">
-            <a href="${downloadUrl}" style="display: inline-block; background: #0ea5e9; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
-              Download Report
-            </a>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #065f46 0%, #059669 100%); padding: 32px 32px 24px; border-radius: 12px 12px 0 0;">
+            <p style="color: #a7f3d0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 8px;">Leaky Wallet</p>
+            <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0; line-height: 1.3;">
+              Your savings report is ready
+            </h1>
           </div>
-          <p style="color: #64748b; font-size: 14px; line-height: 1.6;">
-            If you don't see this email within 5 minutes, please check spam.
-          </p>
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-          <p style="color: #94a3b8; font-size: 12px;">
-            Thanks,<br />
-            LeakyWallet<br /><br />
-            This report is for informational purposes only and does not constitute financial advice.
-          </p>
+          <!-- Body -->
+          <div style="padding: 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+            <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 16px;">
+              Your personalised financial report is attached to this email as a PDF.
+              It includes your full spending breakdown, every recurring charge we found, and a step-by-step savings plan.
+            </p>
+            <div style="margin: 28px 0;">
+              <a href="${downloadUrl}" style="display: inline-block; background: #059669; color: #ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Download Your Report
+              </a>
+            </div>
+            <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0 0 8px;">
+              The PDF is also attached directly to this email if the button doesn't work.
+            </p>
+            <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0;">
+              If you didn't expect this email, you can safely ignore it.
+            </p>
+            <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 28px 0;" />
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+              Leaky Wallet · whereismymoneygo.com<br />
+              This report is for informational purposes only and does not constitute financial advice.
+            </p>
+          </div>
         </div>
       `,
       attachments: [
