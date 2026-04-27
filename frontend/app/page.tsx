@@ -44,6 +44,10 @@ import {
   Heart,
   Coffee,
   ChevronRight,
+  Shield,
+  Zap,
+  Upload,
+  TrendingDown,
 } from 'lucide-react'
 
 // Feature flags
@@ -308,60 +312,185 @@ export default function HomePage() {
       <main className="mx-auto max-w-4xl px-4 py-8">
         {/* Hero Section */}
         {viewState === 'landing' && (
-          <div className="flex flex-col items-center text-center">
-            <section className="space-y-6 py-12">
-              <div className="flex items-center justify-center gap-2">
-                <Wallet className="h-8 w-8 text-primary" />
-                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Leaky Wallet</h1>
-              </div>
+          <div className="-mx-4 -mt-8">
+            {/* Hero */}
+            <section className="relative overflow-hidden px-4 pb-16 pt-14 text-center">
+              <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-emerald-50/70 via-transparent to-transparent dark:from-emerald-950/20" />
+              <div className="pointer-events-none absolute -right-20 -top-20 -z-10 h-72 w-72 rounded-full bg-emerald-100/50 blur-3xl dark:bg-emerald-900/20" />
+              <div className="pointer-events-none absolute -bottom-10 -left-10 -z-10 h-56 w-56 rounded-full bg-teal-100/40 blur-3xl dark:bg-teal-900/10" />
 
-              <h2 className="text-xl text-muted-foreground sm:text-2xl">
-                Find hidden subscriptions and spending leaks in seconds.
-              </h2>
-              <p className="text-muted-foreground">
-                Upload your bank statement to instantly see where money quietly disappears.
-              </p>
+              <div className="mx-auto max-w-2xl">
+                {/* Pill badge */}
+                <div className="mb-6 flex justify-center">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                    Free · No signup · Files auto-deleted
+                  </span>
+                </div>
 
-              <p className="text-xs text-muted-foreground">
-                No signup &bull; Files auto-deleted &bull; AI analysis
-              </p>
+                <h1 className="mb-4 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+                  Find where your money{' '}
+                  <span className="text-emerald-600 dark:text-emerald-400">quietly disappears</span>
+                </h1>
 
-              <div className="flex flex-col items-center gap-3">
-                <Button size="lg" onClick={handleCTAClick}>
-                  <Search className="mr-2 h-4 w-4" />
-                  Find My Money Leaks
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  Your file is processed temporarily and deleted immediately.
+                <p className="mb-8 text-lg text-muted-foreground sm:text-xl">
+                  Upload your bank statement and see every hidden subscription, sneaky fee,
+                  and spending leak — with a step-by-step plan to fix it.
                 </p>
 
-                <Button variant="outline" onClick={handleSampleRun} disabled={loading}>
-                  <Play className="mr-2 h-4 w-4" />
-                  Try Demo
+                {/* Savings callout */}
+                <div className="mb-8 inline-flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-5 py-3 dark:border-emerald-800 dark:bg-emerald-950/40">
+                  <TrendingDown className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  <p className="text-sm text-emerald-800 dark:text-emerald-300">
+                    Most people discover{' '}
+                    <strong className="text-base font-bold">$200–$600/month</strong>{' '}
+                    in hidden spending
+                  </p>
+                </div>
+
+                {/* CTAs */}
+                <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                  <Button
+                    size="lg"
+                    className="h-12 w-full px-8 text-base font-semibold shadow-md sm:w-auto"
+                    onClick={handleCTAClick}
+                  >
+                    <Search className="mr-2 h-5 w-5" />
+                    Find My Money Leaks
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-12 w-full px-8 text-base sm:w-auto"
+                    onClick={handleSampleRun}
+                    disabled={loading}
+                  >
+                    <Play className="mr-2 h-5 w-5" />
+                    Try Demo
+                  </Button>
+                </div>
+
+                {/* Trust badges */}
+                <div className="mt-7 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Shield className="h-4 w-4 text-emerald-500" />
+                    Privacy-first
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Zap className="h-4 w-4 text-emerald-500" />
+                    Results in 10 seconds
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Check className="h-4 w-4 text-emerald-500" />
+                    No card required
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            {/* How it works */}
+            <section className="border-t px-4 py-12">
+              <div className="mx-auto max-w-3xl">
+                <h2 className="mb-8 text-center text-xl font-bold tracking-tight">How it works</h2>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {[
+                    {
+                      Icon: Upload,
+                      step: '1',
+                      title: 'Upload',
+                      desc: 'Drop your CSV or PDF bank statement. We process it in memory — never stored.',
+                    },
+                    {
+                      Icon: Search,
+                      step: '2',
+                      title: 'Analyze',
+                      desc: 'AI scans every transaction for subscriptions, fees, and spending patterns.',
+                    },
+                    {
+                      Icon: TrendingDown,
+                      step: '3',
+                      title: 'Save',
+                      desc: 'Get a personalized action plan showing exactly what to cancel and cut.',
+                    },
+                  ].map(({ Icon, step, title, desc }) => (
+                    <div
+                      key={step}
+                      className="flex flex-col items-center rounded-xl border bg-card p-5 text-center shadow-sm"
+                    >
+                      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Step {step}
+                      </div>
+                      <h3 className="mb-1.5 font-semibold">{title}</h3>
+                      <p className="text-sm text-muted-foreground">{desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* What we detect */}
+            <section className="bg-muted/30 px-4 py-10">
+              <div className="mx-auto max-w-3xl">
+                <h2 className="mb-6 text-center text-xl font-bold tracking-tight">What we find</h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    { emoji: '📺', label: 'Hidden subscriptions', desc: 'Netflix, Spotify, gym memberships you forgot you signed up for' },
+                    { emoji: '💸', label: 'Bank fees & charges', desc: 'ATM fees, account fees, and overdraft charges quietly adding up' },
+                    { emoji: '🔁', label: 'Duplicate spending', desc: 'Paying twice for the same type of service or category' },
+                    { emoji: '📈', label: 'Price increases', desc: 'Subscriptions that quietly raised their price without telling you' },
+                  ].map((item) => (
+                    <div key={item.label} className="flex gap-4 rounded-xl border bg-card p-4 shadow-sm">
+                      <div className="text-2xl leading-none">{item.emoji}</div>
+                      <div>
+                        <h3 className="mb-0.5 text-sm font-semibold">{item.label}</h3>
+                        <p className="text-sm text-muted-foreground">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Example preview */}
+            <section className="px-4 py-10">
+              <div className="mx-auto max-w-md">
+                <h2 className="mb-6 text-center text-xl font-bold tracking-tight">What your report looks like</h2>
+                <ExamplePreview />
+              </div>
+            </section>
+
+            {/* Footer notes */}
+            <div className="space-y-3 px-4 pb-10">
+              <div className="flex items-start gap-3 rounded-lg border bg-muted/30 p-4">
+                <Info className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+                <div className="text-sm text-muted-foreground">
+                  <strong className="text-foreground">Privacy First:</strong> Your financial data is processed entirely
+                  in your browser session and our server memory. We never store, log, or share your bank statement data.
+                  This tool is for informational purposes only and does not constitute financial advice.
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="flex items-center gap-3">
+                  <Heart className="h-5 w-5 shrink-0 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">Built independently, kept free for everyone</p>
+                    <p className="text-xs text-muted-foreground">
+                      If this helped you find savings, consider supporting the project.
+                    </p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" asChild>
+                  <a href="https://buymeacoffee.com/joh38" target="_blank" rel="noopener noreferrer">
+                    <Coffee className="mr-2 h-4 w-4" />
+                    Support
+                  </a>
                 </Button>
               </div>
-
-              <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Check className="h-3.5 w-3.5" />
-                  No signup required
-                </span>
-                <span className="flex items-center gap-1">
-                  <Check className="h-3.5 w-3.5" />
-                  Files auto-deleted
-                </span>
-                <span className="flex items-center gap-1">
-                  <Check className="h-3.5 w-3.5" />
-                  Privacy-first
-                </span>
-              </div>
-
-              <p className="text-sm text-muted-foreground">
-                Most people discover <strong className="text-foreground">$200–$600/month</strong> in hidden spending.
-              </p>
-
-              <ExamplePreview />
-            </section>
+            </div>
           </div>
         )}
 

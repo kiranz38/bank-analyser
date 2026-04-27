@@ -11,12 +11,12 @@ interface LoadingOverlayProps {
 }
 
 const steps = [
-  { id: 1, text: 'Parsing your bank statement' },
-  { id: 2, text: 'Detecting transaction patterns' },
-  { id: 3, text: 'Identifying subscriptions & fees' },
-  { id: 4, text: 'Calculating potential savings' },
-  { id: 5, text: 'Generating your recovery plan' },
-  { id: 6, text: 'Finalizing analysis...' },
+  { id: 1, text: 'Reading your transactions' },
+  { id: 2, text: 'Scanning for recurring payments' },
+  { id: 3, text: 'Spotting hidden subscriptions & fees' },
+  { id: 4, text: 'Calculating what you could save' },
+  { id: 5, text: 'Building your personalised savings plan' },
+  { id: 6, text: 'Wrapping up your report' },
 ]
 
 export default function LoadingOverlay({ isLoading, isDemo }: LoadingOverlayProps) {
@@ -54,21 +54,23 @@ export default function LoadingOverlay({ isLoading, isDemo }: LoadingOverlayProp
   const progressPercent = Math.min(maxPercent, basePercent + extraProgress)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-md rounded-xl border bg-card p-8 shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-md overflow-hidden rounded-xl border bg-card shadow-xl">
+        {/* Top accent bar */}
+        <div className="h-1 bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400" />
+        <div className="p-8">
         <div className="flex flex-col items-center text-center">
-          <Loader2 className="mb-4 h-10 w-10 animate-spin text-primary" />
-          <h3 className="text-lg font-semibold">
-            {isDemo ? 'Loading Demo' : 'Analyzing Your Spending'}
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+            <Loader2 className="h-7 w-7 animate-spin text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <h3 className="text-lg font-bold">
+            {isDemo ? 'Loading Demo Analysis' : 'Scanning Your Transactions'}
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            {isDemo ? 'Preparing your demo analysis...' : 'Grab a coffee while we crunch the numbers for you...'}
+            {isDemo
+              ? 'Preparing a sample analysis for you to explore...'
+              : 'Hang tight — this usually takes 30–60 seconds.'}
           </p>
-          {!isDemo && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              This typically takes 30 seconds to a minute.
-            </p>
-          )}
         </div>
 
         <div className="mt-6 space-y-2">
@@ -105,6 +107,7 @@ export default function LoadingOverlay({ isLoading, isDemo }: LoadingOverlayProp
               </span>
             </div>
           ))}
+        </div>
         </div>
       </div>
     </div>

@@ -268,12 +268,12 @@ export default function ProReportSection({ results, proPaymentStatus, proSession
   const showResult = cardState === 'success' || cardState === 'error'
 
   const proFeatures = [
-    { icon: <Mail className="h-4 w-4" />, text: 'Send full report to your email' },
-    { icon: <FileText className="h-4 w-4" />, text: 'Downloadable PDF summary' },
-    { icon: <Activity className="h-4 w-4" />, text: 'Deeper spending insights' },
-    { icon: <Clock className="h-4 w-4" />, text: 'Recurring charges detection' },
-    { icon: <TrendingUp className="h-4 w-4" />, text: 'Personalised saving suggestions' },
-    { icon: <LayoutGrid className="h-4 w-4" />, text: 'Category deep dives with trends' },
+    { icon: <FileText className="h-4 w-4" />, text: 'Downloadable PDF you keep forever' },
+    { icon: <Mail className="h-4 w-4" />, text: 'Full report delivered to your inbox' },
+    { icon: <Activity className="h-4 w-4" />, text: 'Merchant-level spending breakdown' },
+    { icon: <Clock className="h-4 w-4" />, text: 'Every recurring charge, itemised' },
+    { icon: <TrendingUp className="h-4 w-4" />, text: 'Personalised savings action plan' },
+    { icon: <LayoutGrid className="h-4 w-4" />, text: 'Category deep-dives with trends' },
   ]
 
   return (
@@ -339,41 +339,50 @@ export default function ProReportSection({ results, proPaymentStatus, proSession
       </Dialog>
 
       {/* Pro Upsell Card */}
-      <Card className="relative overflow-hidden">
-        <Badge className="absolute right-4 top-4 bg-amber-500 text-white">PRO</Badge>
+      <Card className="relative overflow-hidden border-amber-200/60 dark:border-amber-800/40">
+        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400" />
+        <Badge className="absolute right-4 top-4 bg-amber-500 text-white hover:bg-amber-500">UNLOCK</Badge>
 
         <CardContent className="p-6" style={showResult ? { opacity: 0.3, pointerEvents: 'none' } : undefined}>
           <div className="space-y-5">
             <div>
               <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <Star className="h-5 w-5" />
-                Get Your Full Report via Email
+                <Lock className="h-5 w-5 text-amber-500" />
+                Unlock Your Full Savings Plan
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Send the full detailed report straight to your inbox.
+                Get a complete breakdown with exact steps to plug every money leak — delivered as a PDF to your inbox.
               </p>
             </div>
 
-            {/* Blurred preview */}
-            <div className="space-y-2 rounded-lg border bg-muted/30 p-4">
-              {[
-                { label: 'Health Score', value: '72 / 100' },
-                { label: 'Savings Projection (12 mo)', value: '$2,847' },
-                { label: 'Priority Actions', value: '8 items' },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{item.label}</span>
-                  <span className="select-none blur-sm">{item.value}</span>
+            {/* Locked preview teaser */}
+            <div className="relative overflow-hidden rounded-lg border bg-muted/20 p-4">
+              <div className="space-y-2.5">
+                {[
+                  { label: 'Financial Health Score', value: '72 / 100' },
+                  { label: 'Projected 12-Month Savings', value: '$2,847' },
+                  { label: 'Priority Action Items', value: '8 found' },
+                  { label: 'Subscription ROI Analysis', value: '6 services' },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{item.label}</span>
+                    <span className="select-none blur-sm filter">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/60 backdrop-blur-[1px]">
+                <div className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 shadow-sm">
+                  <Lock className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="text-xs font-semibold">Unlock to see your full report</span>
                 </div>
-              ))}
-              <p className="mt-1 text-center text-xs font-medium text-primary">Unlock with Pro Report</p>
+              </div>
             </div>
 
-            {/* Features */}
-            <div className="grid grid-cols-2 gap-2">
+            {/* Features grid */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
               {proFeatures.map((feature, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                  {feature.icon}
+                  <span className="shrink-0 text-emerald-600 dark:text-emerald-400">{feature.icon}</span>
                   <span>{feature.text}</span>
                 </div>
               ))}
@@ -381,9 +390,10 @@ export default function ProReportSection({ results, proPaymentStatus, proSession
 
             {/* Email input */}
             <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Where should we send your report?</label>
               <Input
                 type="email"
-                placeholder="your@email.com — we'll send the report here"
+                placeholder="your@email.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setEmailError(null) }}
               />
@@ -391,30 +401,42 @@ export default function ProReportSection({ results, proPaymentStatus, proSession
             </div>
 
             {/* Legal */}
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-lg bg-muted/30 p-3">
               <div className="flex items-start gap-2">
                 <Checkbox id="legal-data" checked={legalData} onCheckedChange={(c) => setLegalData(c === true)} />
-                <Label htmlFor="legal-data" className="text-xs leading-tight">
-                  I understand my data is processed only for this report and not stored.
+                <Label htmlFor="legal-data" className="text-xs leading-tight text-muted-foreground">
+                  I understand my data is used only to generate this report and is not stored afterwards.
                 </Label>
               </div>
               <div className="flex items-start gap-2">
                 <Checkbox id="legal-refund" checked={legalNoRefund} onCheckedChange={(c) => setLegalNoRefund(c === true)} />
-                <Label htmlFor="legal-refund" className="text-xs leading-tight">
-                  I agree this is a one-time digital purchase delivered instantly via email.
+                <Label htmlFor="legal-refund" className="text-xs leading-tight text-muted-foreground">
+                  I agree this is a one-time digital purchase delivered instantly — not a subscription.
                 </Label>
               </div>
             </div>
 
-            <Button className="w-full" onClick={handleStartCheckout} disabled={!bothLegalChecked || !email.trim()}>
-              <Mail className="mr-2 h-4 w-4" />
-              Get report via email — $1.99
+            <Button
+              className="w-full h-11 text-base font-semibold"
+              onClick={handleStartCheckout}
+              disabled={!bothLegalChecked || !email.trim()}
+            >
+              <Lock className="mr-2 h-4 w-4" />
+              Unlock Full Report — $1.99
             </Button>
-            <p className="text-center text-xs text-muted-foreground">Early access price — helping us build v1</p>
-            <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-              <Lock className="h-3 w-3" />
-              Secure payment via Stripe. We never see your card details.
-            </p>
+
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Lock className="h-3 w-3" />
+                Stripe-secured
+              </span>
+              <span>·</span>
+              <span>One-time payment</span>
+              <span>·</span>
+              <span>No subscription</span>
+              <span>·</span>
+              <span>Instant delivery</span>
+            </div>
 
             {errorMsg && !showResult && <p className="text-sm text-destructive">{errorMsg}</p>}
           </div>

@@ -1,5 +1,4 @@
-import { Card, CardContent } from '@/components/ui/card'
-import { DollarSign, TrendingUp } from 'lucide-react'
+import { TrendingDown, TrendingUp } from 'lucide-react'
 
 interface SummaryStatsProps {
   monthlyLeak: number
@@ -7,35 +6,48 @@ interface SummaryStatsProps {
 }
 
 export default function SummaryStats({ monthlyLeak, annualSavings }: SummaryStatsProps) {
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)
+  const fmt = (n: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n)
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <Card>
-        <CardContent className="flex items-center gap-4 p-6">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-destructive/10">
-            <DollarSign className="h-6 w-6 text-destructive" />
+    <div className="overflow-hidden rounded-xl border shadow-sm">
+      {/* Emotional headline */}
+      <div className="bg-gradient-to-br from-red-50 via-background to-emerald-50/60 px-6 py-7 text-center dark:from-red-950/20 dark:via-background dark:to-emerald-950/20">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Analysis Complete
+        </p>
+        <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+          You may be leaking{' '}
+          <span className="text-destructive">{fmt(monthlyLeak)}/month</span>
+        </h2>
+        <p className="mt-3 text-base text-muted-foreground">
+          That&apos;s an estimated{' '}
+          <strong className="font-bold text-emerald-600 dark:text-emerald-400">
+            {fmt(annualSavings)}/year
+          </strong>{' '}
+          you could keep — here&apos;s exactly where it&apos;s going.
+        </p>
+      </div>
+
+      {/* Quick-glance stat row */}
+      <div className="grid grid-cols-2 divide-x border-t bg-card">
+        <div className="px-6 py-4 text-center">
+          <div className="mb-1 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <TrendingDown className="h-3.5 w-3.5 text-destructive" />
+            Monthly Leak
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Monthly Leak</p>
-            <p className="text-2xl font-bold text-destructive">{formatCurrency(monthlyLeak)}</p>
-            <p className="text-xs text-muted-foreground">potential savings per month</p>
+          <p className="text-2xl font-bold text-destructive">{fmt(monthlyLeak)}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">estimated per month</p>
+        </div>
+        <div className="px-6 py-4 text-center">
+          <div className="mb-1 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <TrendingUp className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            Potential Savings
           </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="flex items-center gap-4 p-6">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
-            <TrendingUp className="h-6 w-6 text-emerald-500" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Annual Savings</p>
-            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(annualSavings)}</p>
-            <p className="text-xs text-muted-foreground">if you address these leaks</p>
-          </div>
-        </CardContent>
-      </Card>
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{fmt(annualSavings)}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">if you act on this</p>
+        </div>
+      </div>
     </div>
   )
 }

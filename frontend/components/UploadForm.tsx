@@ -151,9 +151,29 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
 
   return (
     <section className="space-y-6">
+      {/* Header */}
       <div className="text-center">
-        <h2 className="text-xl font-semibold">Upload your statement to reveal spending leaks</h2>
-        <p className="mt-1 text-sm text-muted-foreground">No signup. Files auto-delete. We analyze transactions only.</p>
+        <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Upload your bank statement</h2>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          We analyse your transactions to identify spending patterns. We do not sell or store your data.
+        </p>
+      </div>
+
+      {/* 3-step flow */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { n: '1', label: 'Upload statement', sub: 'CSV or PDF' },
+          { n: '2', label: 'See your leaks', sub: 'Free instant report' },
+          { n: '3', label: 'Unlock savings plan', sub: 'Optional · $1.99' },
+        ].map(({ n, label, sub }) => (
+          <div key={n} className="flex flex-col items-center gap-1 rounded-lg border bg-card px-2 py-3 text-center">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+              {n}
+            </div>
+            <p className="text-xs font-semibold leading-tight">{label}</p>
+            <p className="text-[10px] text-muted-foreground">{sub}</p>
+          </div>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_280px]">
@@ -228,11 +248,18 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
               </div>
             ) : (
               <>
-                <Upload className="mb-3 h-8 w-8 text-muted-foreground" />
-                <p className="text-sm">
-                  <strong>Drop your bank statements here</strong> or click to browse
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+                  <Upload className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <p className="text-sm font-semibold">
+                  Drop your bank statement here
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">CSV and PDF files up to 10MB each</p>
+                <p className="mt-1 text-sm text-muted-foreground">or click to browse your files</p>
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="rounded border bg-muted px-2 py-0.5 text-xs font-medium">CSV</span>
+                  <span className="rounded border bg-muted px-2 py-0.5 text-xs font-medium">PDF</span>
+                  <span className="text-xs text-muted-foreground">· up to 10MB per file</span>
+                </div>
               </>
             )}
             {fileError && (
@@ -288,39 +315,57 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
           </div>
 
           <Button
-            className="w-full"
+            className="h-11 w-full text-base font-semibold"
             size="lg"
             onClick={handleSubmit}
             disabled={!canSubmit}
           >
-            <Search className="mr-2 h-4 w-4" />
+            <Search className="mr-2 h-5 w-5" />
             Find My Money Leaks
             {files.length > 1 && ` (${files.length} files)`}
           </Button>
           <p className="text-center text-xs text-muted-foreground">
-            Your file is processed temporarily and deleted immediately.
+            Free · No account required · Your file is deleted after analysis
           </p>
         </div>
 
         {/* Trust Box */}
-        <div className="rounded-xl border bg-card p-5">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-            <Shield className="h-4 w-4 text-primary" />
-            What happens to your data?
+        <div className="flex flex-col gap-4">
+          <div className="rounded-xl border bg-card p-5">
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+              <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              Your data is safe
+            </div>
+            <ul className="space-y-2.5 text-sm text-muted-foreground">
+              {[
+                { text: 'We only read date, description, and amount — nothing else.' },
+                { text: 'No names, no credentials, no account numbers.' },
+                { text: 'Your file is processed on our server and discarded immediately after.' },
+                { text: 'We never sell or share your data.' },
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  {item.text}
+                </li>
+              ))}
+            </ul>
           </div>
-          <ul className="space-y-2.5 text-sm text-muted-foreground">
-            {[
-              'We only analyze transaction date, description, and amount.',
-              'No names. No credentials.',
-              'Files are processed temporarily and deleted immediately.',
-              'We don\'t sell or share your data.',
-            ].map((item, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                {item}
-              </li>
-            ))}
-          </ul>
+
+          {/* Accepted formats */}
+          <div className="rounded-xl border bg-card p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Accepted formats</p>
+            <div className="flex flex-wrap gap-2">
+              {['CSV', 'PDF'].map(f => (
+                <span key={f} className="rounded-md border bg-muted px-3 py-1 text-sm font-medium">{f}</span>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">Works with ANZ, Westpac, CommBank, NAB, and most major banks worldwide.</p>
+          </div>
+
+          {/* Legal note */}
+          <p className="rounded-lg border border-dashed px-4 py-3 text-xs text-muted-foreground">
+            <strong>Not financial advice.</strong> This is an informational analysis only. We are not a bank or financial adviser. Do not upload files you are not comfortable sharing.
+          </p>
         </div>
       </div>
 

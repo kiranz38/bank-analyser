@@ -4,54 +4,54 @@
 
 @layer base {
   :root {
-    /* shadcn/ui HSL variables (used by Tailwind + shadcn components) */
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* Emerald green palette — money/finance theme */
+    --background: 0 0% 99%;
+    --foreground: 224 71% 4%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 224 71% 4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 199 89% 48%;
+    --popover-foreground: 224 71% 4%;
+    --primary: 161 94% 30%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 215 16% 47%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --secondary: 150 20% 96%;
+    --secondary-foreground: 224 71% 4%;
+    --muted: 150 14% 96%;
+    --muted-foreground: 224 14% 46%;
+    --accent: 150 20% 94%;
+    --accent-foreground: 224 71% 4%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 199 89% 48%;
-    --radius: 0.75rem;
-    --success: 160 84% 39%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 161 94% 30%;
+    --radius: 0.625rem;
+    --success: 161 94% 30%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 93%;
-    --card: 0 0% 4%;
-    --card-foreground: 0 0% 93%;
-    --popover: 0 0% 4%;
-    --popover-foreground: 0 0% 93%;
-    --primary: 217 91% 60%;
+    --background: 224 71% 4%;
+    --foreground: 210 20% 98%;
+    --card: 224 71% 6%;
+    --card-foreground: 210 20% 98%;
+    --popover: 224 71% 6%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 160 84% 39%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 7%;
-    --secondary-foreground: 0 0% 93%;
-    --muted: 0 0% 60%;
-    --muted-foreground: 0 0% 40%;
-    --accent: 0 0% 7%;
-    --accent-foreground: 0 0% 93%;
+    --secondary: 224 14% 10%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 224 14% 10%;
+    --muted-foreground: 220 14% 55%;
+    --accent: 224 14% 10%;
+    --accent-foreground: 210 20% 98%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 217 91% 60%;
-    --success: 142 71% 45%;
+    --border: 224 14% 14%;
+    --input: 224 14% 14%;
+    --ring: 160 84% 39%;
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
     --warning: 50 80% 49%;
     --warning-foreground: 0 0% 100%;
@@ -74,6 +74,7 @@ body {
 }
 
 body {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   line-height: 1.6;
   min-height: 100vh;
   padding-top: 56px; /* Account for fixed header */
