@@ -181,6 +181,10 @@ export default function HomePage() {
 
       setResults(result)
       setViewState('results')
+
+      if (session?.user) {
+        saveAnalysisToDb(result)
+      }
     }
   }
 
@@ -244,6 +248,10 @@ export default function HomePage() {
 
       setResults(result)
       setViewState('results')
+
+      if (session?.user) {
+        saveAnalysisToDb(result)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -255,6 +263,8 @@ export default function HomePage() {
     setResults(null)
     setError(null)
     setIsSampleRun(false)
+    setAnalysisSaved(false)
+    setSavingAnalysis(false)
     clearSession()
     setViewState('landing')
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -264,8 +274,8 @@ export default function HomePage() {
     setError(null)
   }
 
-  const handleSaveAnalysis = async () => {
-    if (!results || analysisSaved || savingAnalysis) return
+  const saveAnalysisToDb = async (result: AnalysisResult) => {
+    if (analysisSaved || savingAnalysis) return
     setSavingAnalysis(true)
     try {
       const res = await fetch('/api/analyses', {
@@ -273,17 +283,19 @@ export default function HomePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: `Analysis – ${new Date().toLocaleDateString('en-AU')}`,
-          results,
+          results: result,
         }),
       })
-      if (res.ok) {
-        setAnalysisSaved(true)
-      }
+      if (res.ok) setAnalysisSaved(true)
     } catch {
       // Silently fail — non-critical
     } finally {
       setSavingAnalysis(false)
     }
+  }
+
+  const handleSaveAnalysis = async () => {
+    if (results) await saveAnalysisToDb(results)
   }
 
   // Breadcrumb helper
