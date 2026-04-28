@@ -298,7 +298,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <Button asChild>
-            <Link href="/"><Plus className="mr-2 h-4 w-4" />New Analysis</Link>
+            <Link href="/?start=upload"><Plus className="mr-2 h-4 w-4" />New Analysis</Link>
           </Button>
         </div>
         <div className="flex flex-col items-center justify-center py-20 text-center border rounded-xl bg-muted/20">
@@ -308,7 +308,7 @@ export default function DashboardPage() {
             Upload a bank statement — results are saved here automatically so you can track spending over time.
           </p>
           <Button asChild>
-            <Link href="/"><Plus className="mr-2 h-4 w-4" />Analyse Your First Statement</Link>
+            <Link href="/?start=upload"><Plus className="mr-2 h-4 w-4" />Analyse Your First Statement</Link>
           </Button>
         </div>
       </main>
@@ -328,7 +328,7 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
             <p className="text-sm text-muted-foreground">Welcome back{session?.user?.name ? `, ${session.user.name}` : ''}</p>
           </div>
-          <Button asChild><Link href="/"><Plus className="mr-2 h-4 w-4" />New Analysis</Link></Button>
+          <Button asChild><Link href="/?start=upload"><Plus className="mr-2 h-4 w-4" />New Analysis</Link></Button>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
@@ -343,7 +343,7 @@ export default function DashboardPage() {
           <p className="text-sm font-medium">Analyse again next month to unlock trend tracking</p>
           <p className="text-xs text-muted-foreground">Once you have two analyses, you&apos;ll see month-over-month comparisons, a spending trend chart, and alerts when your spending changes.</p>
           <Button asChild size="sm" className="mt-2">
-            <Link href="/">Run Another Analysis</Link>
+            <Link href="/?start=upload">Run Another Analysis</Link>
           </Button>
         </div>
 
@@ -364,7 +364,7 @@ export default function DashboardPage() {
             Welcome back{session?.user?.name ? `, ${session.user.name}` : ''} · {analyses.length} analyses
           </p>
         </div>
-        <Button asChild><Link href="/"><Plus className="mr-2 h-4 w-4" />New Analysis</Link></Button>
+        <Button asChild><Link href="/?start=upload"><Plus className="mr-2 h-4 w-4" />New Analysis</Link></Button>
       </div>
 
       {/* Delta alert */}
