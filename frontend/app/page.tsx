@@ -359,112 +359,106 @@ export default function HomePage() {
         {/* Hero Section */}
         {viewState === 'landing' && (
           <div className="-mx-4 -mt-8">
-            {/* Hero */}
-            <section className="relative overflow-hidden px-4 pb-16 pt-12">
-              <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-emerald-50/70 via-transparent to-transparent dark:from-emerald-950/20" />
-              <div className="pointer-events-none absolute -right-20 -top-20 -z-10 h-72 w-72 rounded-full bg-emerald-100/50 blur-3xl dark:bg-emerald-900/20" />
-              <div className="pointer-events-none absolute -bottom-10 -left-10 -z-10 h-56 w-56 rounded-full bg-teal-100/40 blur-3xl dark:bg-teal-900/10" />
+            {/* Hero — full-bleed background photo with gradient overlay */}
+            <section className="relative overflow-hidden min-h-[560px] md:min-h-[620px] flex items-center">
 
-              <div className="mx-auto max-w-5xl flex flex-col md:flex-row items-center gap-10 md:gap-14">
+              {/* Full-bleed background photo */}
+              <Image
+                src="https://images.unsplash.com/photo-1573496527892-904f897eb744?w=1600&q=90&auto=format&fit=crop&crop=top"
+                alt="Financial analyst helping you find where your money goes"
+                fill
+                className="object-cover object-[70%_20%]"
+                priority
+              />
 
-                {/* Left: text */}
-                <div className="flex-1 text-center md:text-left">
-                  {/* Pill badges */}
-                  <div className="mb-6 flex flex-col items-center md:items-start gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-                      Free · No signup · Files auto-deleted
-                    </span>
-                    {countryConfig.name && (
-                      <Link
-                        href={countryConfig.regionalPage}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-background/60 px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-border transition-colors"
-                      >
-                        Optimised for {countryConfig.name} · {countryConfig.banks.slice(0, 3).join(', ')} & more
-                      </Link>
-                    )}
-                  </div>
+              {/* Gradient overlay: solid on left for text, fades to transparent on right to reveal photo */}
+              <div className="absolute inset-0 bg-gradient-to-r from-background via-background/92 md:via-background/80 to-background/20 md:to-transparent" />
+              {/* Bottom fade so page flows smoothly */}
+              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
 
-                  <h1 className="mb-4 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                    Find where your money{' '}
-                    <span className="text-emerald-600 dark:text-emerald-400">quietly disappears</span>
-                  </h1>
+              {/* Content */}
+              <div className="relative z-10 w-full px-4 py-16 md:py-20">
+                <div className="mx-auto max-w-5xl">
+                  <div className="max-w-xl">
 
-                  <p className="mb-8 text-lg text-muted-foreground sm:text-xl">
-                    Upload your bank statement and see every hidden subscription, sneaky fee,
-                    and spending leak — with a step-by-step plan to fix it.
-                  </p>
-
-                  {/* Savings callout */}
-                  <div className="mb-8 inline-flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-5 py-3 dark:border-emerald-800 dark:bg-emerald-950/40">
-                    <TrendingDown className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    <p className="text-sm text-emerald-800 dark:text-emerald-300">
-                      Most people discover{' '}
-                      <strong className="text-base font-bold">$200–$600/month</strong>{' '}
-                      in hidden spending
-                    </p>
-                  </div>
-
-                  {/* CTAs */}
-                  <div className="flex flex-col items-center gap-3 sm:flex-row md:justify-start sm:justify-center">
-                    <Button
-                      size="lg"
-                      className="h-12 w-full px-8 text-base font-semibold shadow-md sm:w-auto"
-                      onClick={handleCTAClick}
-                    >
-                      <Search className="mr-2 h-5 w-5" />
-                      Find My Money Leaks
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="h-12 w-full px-8 text-base sm:w-auto"
-                      onClick={handleSampleRun}
-                      disabled={loading}
-                    >
-                      <Play className="mr-2 h-5 w-5" />
-                      Try Demo
-                    </Button>
-                  </div>
-
-                  {/* Trust badges */}
-                  <div className="mt-7 flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                      <Shield className="h-4 w-4 text-emerald-500" />
-                      Privacy-first
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Zap className="h-4 w-4 text-emerald-500" />
-                      Results in 10 seconds
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Check className="h-4 w-4 text-emerald-500" />
-                      No card required
-                    </span>
-                  </div>
-                </div>
-
-                {/* Right: hero photo */}
-                <div className="hidden md:block w-[340px] xl:w-[400px] shrink-0">
-                  <div className="relative overflow-hidden rounded-2xl shadow-2xl ring-1 ring-black/5">
-                    <Image
-                      src="https://images.unsplash.com/photo-1758518729459-235dcaadc611?w=800&q=85&auto=format&fit=crop&crop=face,top"
-                      alt="Financial analyst ready to help you find where your money goes"
-                      width={400}
-                      height={500}
-                      className="object-cover w-full h-[420px] xl:h-[480px]"
-                      priority
-                    />
-                    {/* Overlay card */}
-                    <div className="absolute bottom-4 left-4 right-4 rounded-xl border bg-card/90 backdrop-blur-sm px-4 py-3 shadow-lg">
-                      <p className="text-xs font-semibold text-foreground">Average customer saves</p>
-                      <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">$420/year</p>
-                      <p className="text-xs text-muted-foreground">from hidden subscriptions & fees</p>
+                    {/* Pill badges */}
+                    <div className="mb-6 flex flex-col items-start gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50/90 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 backdrop-blur-sm">
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                        Free · No signup · Files auto-deleted
+                      </span>
+                      {countryConfig.name && (
+                        <Link
+                          href={countryConfig.regionalPage}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 backdrop-blur-sm px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+                        >
+                          Optimised for {countryConfig.name} · {countryConfig.banks.slice(0, 3).join(', ')} & more
+                        </Link>
+                      )}
                     </div>
+
+                    <h1 className="mb-4 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+                      Find where your money{' '}
+                      <span className="text-emerald-600 dark:text-emerald-400">quietly disappears</span>
+                    </h1>
+
+                    <p className="mb-8 text-lg text-muted-foreground sm:text-xl max-w-lg">
+                      Upload your bank statement and see every hidden subscription, sneaky fee,
+                      and spending leak — with a step-by-step plan to fix it.
+                    </p>
+
+                    {/* Savings callout */}
+                    <div className="mb-8 inline-flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/90 dark:bg-emerald-950/60 backdrop-blur-sm px-5 py-3 dark:border-emerald-800">
+                      <TrendingDown className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                      <p className="text-sm text-emerald-800 dark:text-emerald-300">
+                        Most people discover{' '}
+                        <strong className="text-base font-bold">$200–$600/month</strong>{' '}
+                        in hidden spending
+                      </p>
+                    </div>
+
+                    {/* CTAs */}
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <Button
+                        size="lg"
+                        className="h-12 w-full px-8 text-base font-semibold shadow-lg sm:w-auto"
+                        onClick={handleCTAClick}
+                      >
+                        <Search className="mr-2 h-5 w-5" />
+                        Find My Money Leaks
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="h-12 w-full px-8 text-base sm:w-auto bg-background/60 backdrop-blur-sm"
+                        onClick={handleSampleRun}
+                        disabled={loading}
+                      >
+                        <Play className="mr-2 h-5 w-5" />
+                        Try Demo
+                      </Button>
+                    </div>
+
+                    {/* Trust badges */}
+                    <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <Shield className="h-4 w-4 text-emerald-500" />
+                        Privacy-first
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Zap className="h-4 w-4 text-emerald-500" />
+                        Results in 10 seconds
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Check className="h-4 w-4 text-emerald-500" />
+                        No card required
+                      </span>
+                    </div>
+
                   </div>
                 </div>
-
               </div>
+
             </section>
 
             {/* How it works */}
