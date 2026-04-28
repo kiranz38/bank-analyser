@@ -360,10 +360,10 @@ export default function HomePage() {
           {/* ── Hero — true full-viewport width, no container constraints ── */}
           <section className="relative w-full overflow-hidden min-h-[580px] md:min-h-[680px] flex items-center">
             <Image
-              src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1800&q=90&auto=format&fit=crop&crop=faces,top"
+              src="https://images.unsplash.com/photo-LlcpQWSWPUo?w=1800&q=90&auto=format&fit=crop&crop=faces,top"
               alt="Professional financial analyst ready to help you find where your money goes"
               fill
-              className="object-cover object-[60%_15%]"
+              className="object-cover object-[55%_10%]"
               priority
             />
             {/* Gradient: opaque on left for text legibility, fades right to reveal photo */}
