@@ -363,7 +363,7 @@ export default function HomePage() {
               src="https://images.unsplash.com/photo-LlcpQWSWPUo?w=1800&q=90&auto=format&fit=crop&crop=faces,top"
               alt="Professional financial analyst ready to help you find where your money goes"
               fill
-              className="object-cover object-[55%_10%]"
+              className="object-cover object-[80%_10%]"
               priority
             />
             {/* Gradient: opaque on left for text legibility, fades right to reveal photo */}
