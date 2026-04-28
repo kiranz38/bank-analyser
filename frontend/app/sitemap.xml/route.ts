@@ -48,6 +48,11 @@ export async function GET() {
     { url: '/budget-calculator', priority: '0.9', changefreq: 'monthly' },
     { url: '/monthly-expense-tracker', priority: '0.8', changefreq: 'monthly' },
     { url: '/cancel-subscriptions', priority: '0.8', changefreq: 'monthly' },
+    { url: '/personal-finance-tracker', priority: '0.9', changefreq: 'monthly' },
+    { url: '/money-management', priority: '0.9', changefreq: 'monthly' },
+    { url: '/bank-fee-checker', priority: '0.9', changefreq: 'monthly' },
+    { url: '/recurring-payments', priority: '0.9', changefreq: 'monthly' },
+    { url: '/financial-health-check', priority: '0.8', changefreq: 'monthly' },
 
     // Other
     { url: '/banks', priority: '0.6', changefreq: 'monthly' },
