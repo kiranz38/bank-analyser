@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import GeoMismatchBanner from '@/components/GeoMismatchBanner'
 
 export const metadata: Metadata = {
   title: 'Bank Statement Analyzer Australia – Free Tool for ANZ, CommBank, Westpac, NAB',
@@ -54,6 +55,7 @@ export default function AustraliaAnalyzerPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
       <JsonLd schema={faqSchema} />
+      <GeoMismatchBanner pageRegionSlug="australia" />
       <article className="space-y-8">
         <div className="space-y-1">
           <p className="text-sm font-medium text-primary">🇦🇺 Australia</p>

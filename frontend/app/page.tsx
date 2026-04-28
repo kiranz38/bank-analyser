@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { PlaidLinkResult } from '@/lib/plaid'
 import { saveToSession, loadFromSession, clearSession } from '@/lib/sessionCache'
 import { hashFiles, getCachedResult, setCachedResult } from '@/lib/analysisCache'
+import { useCountry } from '@/lib/useCountry'
 import { sampleDataToCSV } from '@/lib/sampleData'
 import { DEMO_RESULTS } from '@/lib/demoResults'
 import { AnalysisResult } from '@/lib/types'
@@ -58,6 +59,7 @@ type ViewState = 'landing' | 'method-chooser' | 'upload' | 'waitlist' | 'plaid' 
 
 export default function HomePage() {
   const { data: session } = useSession()
+  const countryConfig = useCountry()
   const [results, setResults] = useState<AnalysisResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -358,11 +360,19 @@ export default function HomePage() {
 
               <div className="mx-auto max-w-2xl">
                 {/* Pill badge */}
-                <div className="mb-6 flex justify-center">
+                <div className="mb-6 flex flex-col items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400">
                     <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
                     Free · No signup · Files auto-deleted
                   </span>
+                  {countryConfig.name && (
+                    <Link
+                      href={countryConfig.regionalPage}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-background/60 px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+                    >
+                      Optimised for {countryConfig.name} · {countryConfig.banks.slice(0, 3).join(', ')} & more
+                    </Link>
+                  )}
                 </div>
 
                 <h1 className="mb-4 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
