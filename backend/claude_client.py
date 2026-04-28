@@ -3,11 +3,35 @@
 import os
 import json
 import logging
+import hashlib
+import time
 from typing import Optional
 from anthropic import Anthropic
 from redactor import redact_transactions
 
 logger = logging.getLogger(__name__)
+
+# In-memory TTL cache for Claude responses — avoids redundant API calls for
+# identical spending patterns within the same server instance (1-hour TTL).
+_cache: dict[str, tuple[dict, float]] = {}
+_CACHE_TTL = 3600  # seconds
+
+
+def _cache_get(key: str) -> Optional[dict]:
+    entry = _cache.get(key)
+    if entry and time.time() - entry[1] < _CACHE_TTL:
+        return entry[0]
+    if entry:
+        del _cache[key]
+    return None
+
+
+def _cache_set(key: str, value: dict) -> None:
+    # Evict oldest entries if cache exceeds 100 items
+    if len(_cache) >= 100:
+        oldest = min(_cache, key=lambda k: _cache[k][1])
+        del _cache[oldest]
+    _cache[key] = (value, time.time())
 
 
 def get_claude_analysis(transactions: list[dict], heuristic_results: dict) -> Optional[dict]:
@@ -31,6 +55,13 @@ def get_claude_analysis(transactions: list[dict], heuristic_results: dict) -> Op
 
         # Prepare ANONYMIZED transaction summary for Claude
         anonymized_summary = _prepare_anonymized_summary(redacted_txns, heuristic_results)
+
+        # Check cache before calling API
+        cache_key = hashlib.sha256(anonymized_summary.encode()).hexdigest()
+        cached = _cache_get(cache_key)
+        if cached is not None:
+            logger.info("Claude cache hit — skipping API call")
+            return cached
 
         prompt = f"""Analyze this anonymized spending data and provide general financial insights.
 
@@ -66,7 +97,9 @@ Respond ONLY with valid JSON, no other text."""
             elif "```" in response_text:
                 response_text = response_text.split("```")[1].split("```")[0]
 
-            return json.loads(response_text.strip())
+            parsed = json.loads(response_text.strip())
+            _cache_set(cache_key, parsed)
+            return parsed
         except json.JSONDecodeError:
             return None
 

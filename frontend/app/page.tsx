@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PlaidLinkResult } from '@/lib/plaid'
 import { saveToSession, loadFromSession, clearSession } from '@/lib/sessionCache'
+import { hashFiles, getCachedResult, setCachedResult } from '@/lib/analysisCache'
 import { sampleDataToCSV } from '@/lib/sampleData'
 import { DEMO_RESULTS } from '@/lib/demoResults'
 import { AnalysisResult } from '@/lib/types'
@@ -209,6 +210,25 @@ export default function HomePage() {
     setResults(null)
 
     try {
+      // Check file hash cache before hitting the backend
+      if (Array.isArray(data) && data.length > 0) {
+        const hash = await hashFiles(data)
+        const cached = getCachedResult(hash)
+        if (cached) {
+          trackUploadCompleted({ fileCount: data.length, totalTransactions: 0 })
+          trackAnalysisGenerated({
+            monthlyLeak: cached.monthly_leak,
+            annualSavings: cached.annual_savings,
+            subscriptionCount: cached.subscriptions?.length || 0,
+          })
+          setResults(cached)
+          setViewState('results')
+          if (session?.user) saveAnalysisToDb(cached)
+          setLoading(false)
+          return
+        }
+      }
+
       const formData = new FormData()
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -245,6 +265,11 @@ export default function HomePage() {
         annualSavings: result.annual_savings,
         subscriptionCount: result.subscriptions?.length || 0
       })
+
+      // Cache result by file hash for instant re-uploads
+      if (Array.isArray(data) && data.length > 0) {
+        hashFiles(data).then(hash => setCachedResult(hash, result))
+      }
 
       setResults(result)
       setViewState('results')
