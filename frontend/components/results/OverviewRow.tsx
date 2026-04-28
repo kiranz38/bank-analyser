@@ -67,7 +67,12 @@ export default function OverviewRow({
                 </span>
               ))}
             </div>
-            <Button variant="ghost" size="sm" className="w-full" onClick={onShowSpending}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border border-border/60 bg-background/40 backdrop-blur-sm shadow-sm hover:bg-background/70 hover:border-border transition-all"
+              onClick={onShowSpending}
+            >
               View Details
             </Button>
           </CardContent>
@@ -89,7 +94,12 @@ export default function OverviewRow({
               <p className="text-xs text-muted-foreground">detected</p>
             </div>
             <p className="text-center text-sm font-semibold">{formatCurrencyPrecise(confirmedSubsMonthly)}/mo</p>
-            <Button variant="ghost" size="sm" className="w-full" onClick={onShowSubscriptions}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border border-border/60 bg-background/40 backdrop-blur-sm shadow-sm hover:bg-background/70 hover:border-border transition-all"
+              onClick={onShowSubscriptions}
+            >
               View Details
             </Button>
           </CardContent>
@@ -113,7 +123,12 @@ export default function OverviewRow({
             <p className="text-center text-sm font-semibold text-emerald-600 dark:text-emerald-400">
               Save {formatCurrency(easyWinsYearlySavings)}/yr
             </p>
-            <Button variant="ghost" size="sm" className="w-full" onClick={onShowQuickWins}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border border-border/60 bg-background/40 backdrop-blur-sm shadow-sm hover:bg-background/70 hover:border-border transition-all"
+              onClick={onShowQuickWins}
+            >
               View Details
             </Button>
           </CardContent>
