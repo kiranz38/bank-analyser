@@ -28,11 +28,12 @@ export default function Header() {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
-    const useDark = savedTheme === 'dark'
+    // Default to dark if no preference saved
+    const useDark = savedTheme !== 'light'
     setIsDarkMode(useDark)
     document.documentElement.classList.toggle('dark', useDark)
     if (!savedTheme) {
-      localStorage.setItem('theme', 'light')
+      localStorage.setItem('theme', 'dark')
     }
   }, [])
 

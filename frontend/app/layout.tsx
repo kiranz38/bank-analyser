@@ -121,7 +121,7 @@ const websiteSchema = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${inter.variable} dark`}>
       <head>
         <JsonLd schema={softwareAppSchema} />
         <JsonLd schema={organizationSchema} />
