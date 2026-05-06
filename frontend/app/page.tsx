@@ -367,8 +367,10 @@ export default function HomePage() {
               style={{ objectPosition: 'center center', transform: 'scaleX(-1)' }}
               priority
             />
-            {/* Gradient left→right: opaque on left (text area) → transparent (shows clean image) */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 md:via-black/35 to-transparent" />
+            {/* Mobile: near-opaque cover so keyboard letters don't bleed through text */}
+            <div className="absolute inset-0 bg-black/80 md:hidden" />
+            {/* Desktop: left-to-right gradient — dark on text side, fades to reveal image */}
+            <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
             {/* Bottom fade into page */}
             <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-background to-transparent" />
 
