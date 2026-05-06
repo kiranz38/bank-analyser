@@ -366,9 +366,11 @@ export default function HomePage() {
               className="object-cover object-[80%_10%]"
               priority
             />
-            {/* Gradient: opaque on left for text legibility, fades right to reveal photo */}
-            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 md:via-background/70 to-background/10 md:to-transparent" />
-            {/* Tall bottom fade — blends seamlessly into page, no hard edge */}
+            {/* Base dark scrim — makes text readable regardless of photo brightness */}
+            <div className="absolute inset-0 bg-black/60" />
+            {/* Directional gradient: denser on left (text area), thinner on right (photo) */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-transparent" />
+            {/* Bottom fade into page */}
             <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-background to-transparent" />
 
             {/* Hero content */}
@@ -392,12 +394,12 @@ export default function HomePage() {
                     )}
                   </div>
 
-                  <h1 className="mb-4 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+                  <h1 className="mb-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
                     Find where your money{' '}
-                    <span className="text-emerald-600 dark:text-emerald-400">quietly disappears</span>
+                    <span className="text-emerald-400">quietly disappears</span>
                   </h1>
 
-                  <p className="mb-8 text-lg text-muted-foreground sm:text-xl max-w-lg">
+                  <p className="mb-8 text-lg text-white/80 sm:text-xl max-w-lg">
                     Upload your bank statement and see every hidden subscription, sneaky fee,
                     and spending leak — with a step-by-step plan to fix it.
                   </p>
@@ -435,7 +437,7 @@ export default function HomePage() {
                   </div>
 
                   {/* Trust badges */}
-                  <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                  <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/70">
                     <span className="flex items-center gap-1.5">
                       <Shield className="h-4 w-4 text-emerald-500" />
                       Privacy-first
