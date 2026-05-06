@@ -360,8 +360,8 @@ export default function HomePage() {
           {/* ── Hero — true full-viewport width, no container constraints ── */}
           <section className="relative w-full overflow-hidden min-h-[580px] md:min-h-[680px] flex items-center">
             <Image
-              src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1920&q=85&auto=format&fit=crop"
-              alt="Financial data analysis dashboard showing spending charts"
+              src="https://images.unsplash.com/photo-1762279389020-eeeb69c25813?w=1920&q=85&auto=format&fit=crop"
+              alt="Abstract financial data network visualisation"
               fill
               className="object-cover object-center"
               priority
