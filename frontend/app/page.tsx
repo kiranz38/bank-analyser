@@ -364,7 +364,7 @@ export default function HomePage() {
               alt="Clean professional workspace for financial analysis"
               fill
               className="object-cover"
-              style={{ objectPosition: '85% center' }}
+              style={{ objectPosition: 'center center', transform: 'scaleX(-1)' }}
               priority
             />
             {/* Gradient left→right: opaque on left (text area) → transparent (shows clean image) */}
