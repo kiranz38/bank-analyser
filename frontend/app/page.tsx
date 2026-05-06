@@ -363,7 +363,8 @@ export default function HomePage() {
               src="https://images.unsplash.com/photo-1453928582365-b6ad33cbcf64?w=1920&q=90&auto=format&fit=crop"
               alt="Clean professional workspace for financial analysis"
               fill
-              className="object-cover object-right"
+              className="object-cover"
+              style={{ objectPosition: '85% center' }}
               priority
             />
             {/* Gradient left→right: opaque on left (text area) → transparent (shows clean image) */}
