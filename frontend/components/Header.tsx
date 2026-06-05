@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Wallet, Sun, Moon, Menu, Coffee, LogOut, LayoutDashboard, Settings } from 'lucide-react'
+import { Wallet, Sun, Moon, Menu, Coffee, LogOut, LayoutDashboard, Settings, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function Header() {
@@ -125,7 +125,7 @@ export default function Header() {
               </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 rounded-full pl-1 pr-2.5 py-1 text-sm font-medium text-foreground hover:bg-accent transition-colors outline-none">
+                  <button className="flex items-center gap-1.5 rounded-full pl-1 pr-2 py-1 text-sm font-medium text-foreground hover:bg-accent transition-colors outline-none">
                     {session.user.image ? (
                       <img src={session.user.image} alt="" className="h-7 w-7 rounded-full object-cover" />
                     ) : (
@@ -136,6 +136,7 @@ export default function Header() {
                     <span className="max-w-[120px] truncate">
                       {session.user.name || session.user.email?.split('@')[0]}
                     </span>
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -192,16 +193,49 @@ export default function Header() {
           </Button>
         </nav>
 
-        {/* Mobile: avatar (if logged in) + theme toggle + sheet trigger */}
+        {/* Mobile: avatar dropdown (if logged in) + theme toggle + sheet trigger */}
         <div className="flex items-center gap-1 md:hidden">
           {isLoggedIn && (
-            session.user.image ? (
-              <img src={session.user.image} alt="" className="h-7 w-7 rounded-full object-cover" />
-            ) : (
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
-                {userInitials}
-              </span>
-            )
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1 rounded-full py-1 pl-1 pr-1.5 outline-none hover:bg-accent transition-colors">
+                  {session.user.image ? (
+                    <img src={session.user.image} alt="" className="h-7 w-7 rounded-full object-cover" />
+                  ) : (
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+                      {userInitials}
+                    </span>
+                  )}
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium truncate">{session.user.name || session.user.email?.split('@')[0]}</p>
+                  {session.user.email && (
+                    <p className="text-xs text-muted-foreground truncate">{session.user.email}</p>
+                  )}
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard" className="gap-2">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/account" className="gap-2">
+                    <Settings className="h-4 w-4" />
+                    Account
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })} className="gap-2 text-destructive focus:text-destructive">
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           <Button
             variant="ghost"
