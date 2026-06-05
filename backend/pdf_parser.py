@@ -57,10 +57,14 @@ SKIP_COLUMNS = ['chq no', 'cheque no', 'ref no', 'reference', 'branch', 'chq.no'
 
 
 def pdf_to_csv(pdf_bytes: bytes) -> str:
-    """Convert PDF bank statement to CSV format."""
+    """Convert PDF bank statement to CSV format.
+
+    Tries regex/table strategies first (fast, free, no quota).
+    Falls back to AI extraction only when all structural strategies fail.
+    """
     try:
         with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
-            # Try multiple extraction strategies
+            # Primary: structural + regex strategies (fast, no quota)
             strategies = [
                 _extract_from_tables,
                 _extract_commbank_format,
@@ -72,14 +76,91 @@ def pdf_to_csv(pdf_bytes: bytes) -> str:
                 _extract_from_text,
             ]
 
+            raw_text = '\n'.join(
+                page.extract_text() or '' for page in pdf.pages
+            )
+
             for strategy in strategies:
                 csv_content = strategy(pdf)
                 if csv_content and _has_valid_data(csv_content):
                     return csv_content
 
+            # Last resort: AI extraction from raw text (uses quota — only when all else fails)
+            if raw_text.strip():
+                ai_result = _extract_with_ai(raw_text)
+                if ai_result and _has_valid_data(ai_result):
+                    return ai_result
+
             return ''
     except Exception as e:
         print(f"PDF parsing error: {e}")
+        return ''
+
+
+def _extract_with_ai(raw_text: str) -> str:
+    """AI-powered fallback: send raw PDF text to Groq/Gemini and extract transactions.
+
+    Only called when all structural/regex strategies fail. Uses quota.
+    """
+    try:
+        from ai_router import get_router, TaskType
+        router = get_router()
+
+        # Trim to avoid token limits — most statements fit in 6000 chars
+        trimmed = raw_text[:6000]
+
+        prompt = f"""You are a bank statement parser. Extract all SPENDING/DEBIT transactions from the bank statement text below.
+
+Return ONLY a JSON object with a "transactions" array. Each item must have:
+- "date": string (keep as shown in the statement, e.g. "02/04/2025" or "02 Apr 2025")
+- "description": merchant or payee name
+- "amount": positive number (spending amount in local currency, no currency symbol)
+
+EXCLUDE: salary, income, direct credits, deposits, refunds, transfers IN, interest received, opening/closing balances.
+
+Bank statement text:
+---
+{trimmed}
+---
+
+Return ONLY valid JSON, no other text. Example:
+{{"transactions":[{{"date":"02/04/2025","description":"NETFLIX.COM","amount":15.99}},{{"date":"03/04/2025","description":"SPOTIFY","amount":12.99}}]}}"""
+
+        result = router.route(TaskType.PDF_EXTRACTION, prompt, max_tokens=2000)
+        if result is None:
+            return ''
+
+        content = result.content
+        if isinstance(content, dict):
+            transactions = content.get('transactions', [])
+        else:
+            return ''
+
+        if not transactions:
+            return ''
+
+        csv_lines = ['Date,Description,Amount']
+        for tx in transactions:
+            date = str(tx.get('date', '')).strip()
+            desc = str(tx.get('description', '')).strip()
+            amount = tx.get('amount', 0)
+            if not date or not desc or not amount:
+                continue
+            try:
+                amount = float(amount)
+                if amount <= 0:
+                    continue
+            except (ValueError, TypeError):
+                continue
+            desc = desc.replace('"', "'")
+            if ',' in desc:
+                desc = f'"{desc}"'
+            csv_lines.append(f"{date},{desc},{amount}")
+
+        return '\n'.join(csv_lines) if len(csv_lines) > 1 else ''
+
+    except Exception as e:
+        print(f"AI PDF extraction error: {e}")
         return ''
 
 
@@ -920,6 +1001,12 @@ def _extract_westpac_multiline(pdf) -> str:
             found_non_numeric = False
             for part in reversed(parts):
                 cleaned = part.replace(',', '').replace('$', '')
+                # Transaction amounts always have a decimal point (e.g. 89.50, 4681.52).
+                # Integer-looking tokens (e.g. reference number "4321") are NOT amounts.
+                if '.' not in cleaned:
+                    found_non_numeric = True
+                    line_desc.insert(0, part)
+                    continue
                 try:
                     val = float(cleaned)
                     # Only consider amounts >= 0.01 as valid amounts

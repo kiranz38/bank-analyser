@@ -135,8 +135,10 @@ def validate_pdf_format(content: bytes) -> bool:
     # Check PDF magic bytes (%PDF-)
     if not content.startswith(b'%PDF'):
         return False
-    # Check for PDF end marker (should contain %%EOF)
-    if b'%%EOF' not in content[-1024:]:
+    # Check for PDF end marker anywhere in the last 8KB
+    # (linearized, digitally-signed, and incremental-update PDFs can place %%EOF
+    #  well before the very end of the file)
+    if b'%%EOF' not in content[-8192:] and b'%%EOF' not in content:
         return False
     return True
 

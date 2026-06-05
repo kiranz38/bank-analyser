@@ -150,23 +150,38 @@ def detect_sign_convention(series: pd.Series) -> str:
     return 'positive_debit'
 
 
+_DATE_FIELD_RE = re.compile(
+    r'^\s*\d{1,2}[/\-.]\d{1,2}([/\-.]\d{2,4})?\s*$'
+)
+
+
 def detect_header_row(lines: list[str]) -> int:
     """Find the index of the actual CSV header row, skipping bank metadata.
 
     Some banks prepend account number, export date, etc. before the real header.
-    We find the first row that contains the most recognisable column-name tokens.
+    Strategy:
+    1. A row where the first comma-separated field looks like a date is data, not a header.
+    2. Among the remaining rows, pick the one whose fields match the most column-name
+       keywords (using word-boundary matching to avoid matching "credit" inside data text).
+    3. If no row scores above 0, return -1 so the caller knows there is no header.
     """
     all_patterns = (
         DATE_PATTERNS + DESCRIPTION_PATTERNS + AMOUNT_PATTERNS +
         DEBIT_PATTERNS + CREDIT_PATTERNS + BALANCE_PATTERNS
     )
-    best_row = 0
+    best_row = -1
     best_score = 0
-    for i, line in enumerate(lines[:20]):   # only scan first 20 lines
+    for i, line in enumerate(lines[:20]):
+        fields = line.split(',')
+        first_field = fields[0].strip()
+        # If the first field is date-shaped, this is a data row — skip
+        if _DATE_FIELD_RE.match(first_field):
+            continue
         score = 0
         lower = line.lower()
         for pattern in all_patterns:
-            if pattern in lower:
+            # Use word-boundary matching so "credit" inside "DIRECT CREDIT" data doesn't score
+            if re.search(r'(?<![a-z])' + re.escape(pattern) + r'(?![a-z])', lower):
                 score += 1
         if score > best_score:
             best_score = score
@@ -290,15 +305,30 @@ def parse_csv(content: str) -> list[dict]:
     header_idx = detect_header_row(lines)
 
     df = None
-    trimmed = '\n'.join(lines[header_idx:])
-    for sep in [',', ';', '\t', '|']:
-        try:
-            candidate = pd.read_csv(io.StringIO(trimmed), sep=sep)
-            if len(candidate.columns) >= 2:
-                df = candidate
-                break
-        except Exception:
-            continue
+    if header_idx >= 0:
+        # Normal case: a header row was found
+        trimmed = '\n'.join(lines[header_idx:])
+        for sep in [',', ';', '\t', '|']:
+            try:
+                candidate = pd.read_csv(io.StringIO(trimmed), sep=sep)
+                if len(candidate.columns) >= 2:
+                    df = candidate
+                    break
+            except Exception:
+                continue
+    else:
+        # No header row detected (e.g. real CommBank export) — use all rows as data
+        full = '\n'.join(lines)
+        for sep in [',', ';', '\t', '|']:
+            try:
+                candidate = pd.read_csv(io.StringIO(full), sep=sep, header=None)
+                if len(candidate.columns) >= 2:
+                    # Rename integer columns to strings so downstream code works
+                    candidate.columns = [str(c) for c in candidate.columns]
+                    df = candidate
+                    break
+            except Exception:
+                continue
 
     if df is None or df.empty:
         return []

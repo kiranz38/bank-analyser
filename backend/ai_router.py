@@ -32,6 +32,7 @@ class TaskType:
     BATCH_ENRICHMENT      = "batch_enrichment"        # Groq free tier ideal
     SAVINGS_STRATEGY      = "savings_strategy"        # Gemini+ quality needed
     PREMIUM_STRATEGY      = "premium_strategy"        # Claude Sonnet only
+    PDF_EXTRACTION        = "pdf_extraction"          # Extract transactions from messy PDF text
 
 
 # ─── Provider base class ─────────────────────────────────────────────────────
@@ -355,6 +356,11 @@ class AIRouter:
             "claude_sonnet",    # Pro feature — always use best model
             "gemini_quality",   # Fallback only if Claude is down
             "groq_quality",     # Emergency fallback
+        ],
+        TaskType.PDF_EXTRACTION: [
+            "groq_quality",     # Llama 70B — best free structured extraction
+            "gemini",           # Gemini Flash free tier fallback
+            "claude_haiku",     # Paid fallback
         ],
     }
 
