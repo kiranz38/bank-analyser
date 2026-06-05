@@ -56,63 +56,84 @@ def _merchant_matches(service_key: str, service_name: str, merchant: str) -> boo
     return False
 
 
-def find_alternatives(merchant: str, monthly_cost: float) -> list[dict]:
-    """Find cheaper alternatives for a given merchant."""
+# BNPL payment services — excluded from alternatives because monthly_cost represents
+# purchase volume, not a subscription fee, so "save $X/yr" would be completely wrong.
+_BNPL_SERVICE_KEYS = {"afterpay", "klarna", "zip", "laybuy", "humm", "paidy", "sezzle"}
+
+
+def find_alternatives(merchant: str, monthly_cost: float) -> tuple[list[dict], str | None]:
+    """Find cheaper alternatives for a given merchant.
+
+    Returns (alternatives_list, matched_service_key).
+    matched_service_key is used by the caller to deduplicate across merchant name variants.
+    """
     alternatives_found = []
+    matched_key = None
 
     for category, services in ALTERNATIVES_DATA.items():
         for service_key, service_data in services.items():
             if _merchant_matches(service_key, service_data["name"], merchant):
+                matched_key = service_key
+
+                # Skip BNPL services — showing their purchase volume as "current price" is misleading
+                if service_key in _BNPL_SERVICE_KEYS:
+                    break
+
+                # Only emit the single best alternative per service (avoids card spam)
+                best_alt = None
+                best_savings = 0
                 for alt in service_data["alternatives"]:
                     savings = monthly_cost - alt["price"]
-                    if savings > 0:
-                        alternatives_found.append({
-                            "original": service_data["name"],
-                            "alternative": alt["name"],
-                            "current_price": round(monthly_cost, 2),
-                            "alternative_price": alt["price"],
-                            "monthly_savings": round(savings, 2),
-                            "yearly_savings": round(savings * 12, 2),
-                            "note": alt["note"],
-                            "category": category
-                        })
+                    if savings > best_savings:
+                        best_savings = savings
+                        best_alt = alt
+
+                if best_alt and best_savings > 0:
+                    alternatives_found.append({
+                        "original": service_data["name"],
+                        "alternative": best_alt["name"],
+                        "current_price": round(monthly_cost, 2),
+                        "alternative_price": best_alt["price"],
+                        "monthly_savings": round(best_savings, 2),
+                        "yearly_savings": round(best_savings * 12, 2),
+                        "note": best_alt["note"],
+                        "category": category
+                    })
                 break
 
-    # Sort by savings (highest first)
-    alternatives_found.sort(key=lambda x: x["monthly_savings"], reverse=True)
-    return alternatives_found[:3]  # Top 3 alternatives per service
+    return alternatives_found, matched_key
 
 
 def find_all_alternatives(subscriptions: list[dict], top_leaks: list[dict]) -> list[dict]:
     """Find alternatives for all detected spending."""
     all_alternatives = []
-    seen_services = set()
+    # Track by normalized merchant name AND by matched service key to prevent
+    # the same service appearing twice (e.g. "Spotify" vs "SPOTIFY AUSTRALIA").
+    seen_merchants: set[str] = set()
+    seen_service_keys: set[str] = set()
 
-    # Check subscriptions first
+    def _process(merchant: str, monthly_cost: float) -> None:
+        norm = merchant.strip().lower()
+        if norm in seen_merchants:
+            return
+        seen_merchants.add(norm)
+
+        alts, service_key = find_alternatives(merchant, monthly_cost)
+        if service_key:
+            if service_key in seen_service_keys:
+                return
+            seen_service_keys.add(service_key)
+
+        all_alternatives.extend(alts)
+
     for sub in subscriptions:
-        merchant = sub.get("merchant", "")
-        if merchant in seen_services:
-            continue
+        _process(sub.get("merchant", ""), sub.get("monthly_cost", 0))
 
-        alternatives = find_alternatives(merchant, sub.get("monthly_cost", 0))
-        if alternatives:
-            seen_services.add(merchant)
-            all_alternatives.extend(alternatives)
-
-    # Check top leaks
     for leak in top_leaks:
-        merchant = leak.get("merchant", "")
-        if merchant in seen_services:
-            continue
+        _process(leak.get("merchant", ""), leak.get("monthly_cost", 0))
 
-        alternatives = find_alternatives(merchant, leak.get("monthly_cost", 0))
-        if alternatives:
-            seen_services.add(merchant)
-            all_alternatives.extend(alternatives)
-
-    # Sort by yearly savings
     all_alternatives.sort(key=lambda x: x["yearly_savings"], reverse=True)
-    return all_alternatives[:10]  # Top 10 overall
+    return all_alternatives[:10]
 
 
 # Fee-related keywords
