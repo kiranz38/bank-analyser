@@ -30,7 +30,7 @@ EXCLUDE_KEYWORDS = [
     'account number', 'account no', 'sort code', 'iban', 'bic', 'bsb',
     'brought forward', 'carried forward', 'summary', 'previous',
     'available', 'pending', 'credit limit', 'minimum payment',
-    'interest rate', 'apr', 'customer service', 'thank you',
+    'interest rate', 'annual percentage rate', 'customer service', 'thank you',
     'routing number', 'swift',
     # Indian bank specific
     'ifsc', 'micr', 'cif no', 'customer id', 'nomination', 'branch code',
@@ -220,9 +220,14 @@ def _extract_from_tables(pdf) -> str:
                         header_indices = indices
                         continue
 
-                # Skip rows that look like summaries
+                # Skip rows that look like summaries (use description cell only to avoid
+                # false positives from date abbreviations like 'May', 'Jun', amounts, etc.)
+                desc_cell = cleaned_row[header_indices.get('description', 1)].lower() if header_indices else ''
                 row_text = ' '.join(cleaned_row).lower()
-                if any(kw in row_text for kw in EXCLUDE_KEYWORDS):
+                if any(kw in desc_cell for kw in EXCLUDE_KEYWORDS):
+                    continue
+                # For multi-word EXCLUDE_KEYWORDS, also check full row_text
+                if any(kw in row_text for kw in EXCLUDE_KEYWORDS if len(kw) > 5):
                     continue
 
                 all_rows.append(cleaned_row)
