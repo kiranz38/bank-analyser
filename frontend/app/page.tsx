@@ -357,11 +357,11 @@ export default function HomePage() {
 
       {viewState === 'landing' ? (
         <>
-          {/* ── Hero — dark navy, product-as-hero ── */}
+          {/* ── Hero — clean light, financial-wellness palette ── */}
           <section
-            className="relative w-full overflow-hidden"
+            className="relative w-full overflow-hidden border-b border-slate-200"
             style={{
-              background: 'radial-gradient(ellipse 80% 60% at 65% 40%, rgba(16,185,129,0.12) 0%, transparent 70%), #0F172A',
+              background: 'radial-gradient(ellipse 70% 80% at 75% 50%, rgba(8,145,178,0.07) 0%, transparent 70%), #F8FAFC',
             }}
           >
             <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
@@ -371,27 +371,27 @@ export default function HomePage() {
                 <div>
                   {/* Pill badges */}
                   <div className="mb-6 flex flex-col items-start gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-700/60 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-700">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500" />
                       Free · No signup · Files auto-deleted
                     </span>
                     {countryConfig.name && (
                       <Link
                         href={countryConfig.regionalPage}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-colors shadow-sm"
                       >
                         Optimised for {countryConfig.name} · {countryConfig.banks.slice(0, 3).join(', ')} & more
                       </Link>
                     )}
                   </div>
 
-                  <h1 className="mb-5 text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
+                  <h1 className="mb-5 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
                     Find the money{' '}
-                    <span className="text-emerald-400">quietly leaving</span>{' '}
+                    <span className="text-cyan-600">quietly leaving</span>{' '}
                     your account
                   </h1>
 
-                  <p className="mb-8 text-lg text-slate-400 max-w-lg leading-relaxed">
+                  <p className="mb-8 text-lg text-slate-500 max-w-lg leading-relaxed">
                     Upload your bank statement. We scan it privately — no login, no storage —
                     and show you every hidden subscription, fee, and spending leak.
                   </p>
@@ -400,8 +400,8 @@ export default function HomePage() {
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <Button
                       size="lg"
-                      className="h-12 w-full px-8 text-base font-semibold shadow-lg sm:w-auto"
-                      style={{ background: '#00c47a', color: '#fff' }}
+                      className="h-12 w-full px-8 text-base font-semibold shadow-md sm:w-auto text-white"
+                      style={{ background: '#0284C7' }}
                       onClick={handleCTAClick}
                     >
                       <Search className="mr-2 h-5 w-5" />
@@ -410,7 +410,7 @@ export default function HomePage() {
                     <Button
                       variant="outline"
                       size="lg"
-                      className="h-12 w-full px-8 text-base sm:w-auto border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white bg-transparent"
+                      className="h-12 w-full px-8 text-base sm:w-auto border-slate-300 text-slate-700 hover:bg-slate-100 bg-white"
                       onClick={handleSampleRun}
                       disabled={loading}
                     >
@@ -420,20 +420,20 @@ export default function HomePage() {
                   </div>
 
                   {/* Trust line */}
-                  <p className="mt-4 text-xs text-slate-500">
+                  <p className="mt-4 text-xs text-slate-400">
                     Your bank statement never leaves your device session · Results in 10s · No card required
                   </p>
 
                   {/* Social proof */}
                   <div className="mt-6 flex items-center gap-3">
                     <div className="flex -space-x-2">
-                      {['bg-emerald-500', 'bg-sky-500', 'bg-violet-500', 'bg-amber-500'].map((c, i) => (
-                        <div key={i} className={`h-7 w-7 rounded-full border-2 border-slate-900 ${c}`} />
+                      {['bg-cyan-500', 'bg-blue-500', 'bg-violet-500', 'bg-amber-400'].map((c, i) => (
+                        <div key={i} className={`h-7 w-7 rounded-full border-2 border-slate-100 ${c}`} />
                       ))}
                     </div>
-                    <span className="text-sm text-slate-400">
-                      <strong className="text-white">47,000+</strong> scans run · avg.{' '}
-                      <strong className="text-emerald-400">$412/mo</strong> in leaks found
+                    <span className="text-sm text-slate-500">
+                      <strong className="text-slate-800">47,000+</strong> scans run · avg.{' '}
+                      <strong className="text-cyan-700">$412/mo</strong> in leaks found
                     </span>
                   </div>
                 </div>
