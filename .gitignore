@@ -47,5 +47,12 @@ htmlcov/
 *.bak
 *.tmp
 
+# Analytics DB — contains aggregate event data, not for version control
+backend/data/analytics.db
+
+# Uploaded statement samples — never commit real bank statements
+backend/uploads/
+
 # Claude Code
 .claude/
+.vercel

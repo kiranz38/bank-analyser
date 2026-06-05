@@ -102,6 +102,71 @@ export interface DuplicateSubscription {
   suggestion: string
 }
 
+// ── New insight types ──────────────────────────────────────────────────────
+
+export interface SpendingVelocity {
+  daily_burn_rate: number
+  monthly_burn_rate: number
+  span_days: number
+  days_to_empty?: number | null
+  savings_rate_pct?: number
+  monthly_surplus?: number
+}
+
+export interface BehavioralPatterns {
+  avg_spend_by_day: Record<string, number>
+  most_expensive_day: string
+  weekend_spend_pct: number
+  weekday_spend_pct: number
+  month_end_spike: boolean
+  first_half_spend: number
+  second_half_spend: number
+}
+
+export interface HabitEntry {
+  merchant: string
+  visit_count: number
+  avg_per_visit: number
+  monthly_visits: number
+  monthly_total: number
+  annual_total: number
+  habit_label: string
+}
+
+export interface CashflowWeek {
+  week: string
+  spending: number
+  income?: number
+  surplus?: number
+}
+
+export interface CategoryDeepDive {
+  category: string
+  monthly_total: number
+  total: number
+  transaction_count: number
+  avg_per_transaction: number
+  largest_transaction: number
+  pct_of_income: number | null
+}
+
+export interface ActionItem {
+  priority: 'high' | 'medium' | 'low'
+  action: string
+  detail: string
+  monthly_impact: number
+  annual_impact: number
+  effort: string
+  type: string
+}
+
+export interface AffordableGoal {
+  goal: string
+  cost: number
+  months_to_reach: number
+  monthly_savings_needed: number
+}
+
 export interface AnalysisResult {
   monthly_leak: number
   annual_savings: number
@@ -117,6 +182,19 @@ export interface AnalysisResult {
   alternatives?: Alternative[]
   price_changes?: PriceChange[]
   duplicate_subscriptions?: DuplicateSubscription[]
+  // Financial planning
+  financial_health?: Record<string, unknown> | null
+  goal_projections?: Record<string, unknown>[]
+  budget_benchmark?: Record<string, unknown> | null
+  savings_strategy?: Record<string, unknown> | null
+  // Deep individual insights
+  spending_velocity?: SpendingVelocity | null
+  behavioral_patterns?: BehavioralPatterns | null
+  habit_analysis?: HabitEntry[]
+  cashflow_calendar?: CashflowWeek[]
+  category_deep_dive?: CategoryDeepDive[]
+  action_plan?: ActionItem[]
+  what_you_could_afford?: AffordableGoal[]
 }
 
 export type { ProReportData } from './proReportTypes'

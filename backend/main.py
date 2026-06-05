@@ -2,6 +2,16 @@
 
 import os
 import logging
+
+# Load .env file if present (development convenience)
+_env_path = os.path.join(os.path.dirname(__file__), ".env")
+if os.path.exists(_env_path):
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith('#') and '=' in _line:
+                _k, _v = _line.split('=', 1)
+                os.environ.setdefault(_k.strip(), _v.strip())
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -14,6 +24,7 @@ from slowapi.errors import RateLimitExceeded
 from parser import parse_csv, merge_transactions
 from pdf_parser import pdf_to_csv
 from analyzer import analyze_transactions
+from analytics import record_analysis, get_full_dashboard
 
 # Configure logging - log errors server-side only
 logging.basicConfig(level=logging.INFO)
@@ -93,6 +104,30 @@ class AnalysisResponse(BaseModel):
     easy_wins: list[dict]
     recovery_plan: list[str]
     disclaimer: str
+    # Enhanced analysis fields
+    category_summary: list[dict] = []
+    subscriptions: list[dict] = []
+    comparison: Optional[dict] = None
+    alternatives: list[dict] = []
+    price_changes: list[dict] = []
+    duplicate_subscriptions: list[dict] = []
+    share_summary: Optional[dict] = None
+    # Financial planning
+    financial_health: Optional[dict] = None
+    goal_projections: list[dict] = []
+    budget_benchmark: Optional[dict] = None
+    savings_strategy: Optional[dict] = None
+    # Individual insights
+    spending_velocity: Optional[dict] = None
+    behavioral_patterns: Optional[dict] = None
+    habit_analysis: list[dict] = []
+    cashflow_calendar: list[dict] = []
+    category_deep_dive: list[dict] = []
+    action_plan: list[dict] = []
+    what_you_could_afford: list[dict] = []
+
+    class Config:
+        extra = "allow"   # pass through any additional fields from the analyzer
 
 
 def validate_pdf_format(content: bytes) -> bool:
@@ -152,10 +187,28 @@ async def process_single_file(file: UploadFile) -> list[dict]:
     return transactions
 
 
+def _detect_bank_format_from_filename(filename: str) -> Optional[str]:
+    """Guess bank format from uploaded filename."""
+    name = filename.lower()
+    for fmt in ["anz-au", "anz-nz", "commbank", "westpac", "nab",
+                "chase", "bank-of-america", "wells-fargo",
+                "td-bank-us", "td-bank-ca", "barclays", "hsbc"]:
+        if fmt.replace("-", "") in name.replace("-", "").replace("_", ""):
+            return fmt
+    return None
+
+
 @app.get("/")
 async def root():
     """Health check endpoint."""
     return {"status": "ok", "message": "Bank Statement Analyzer API"}
+
+
+@app.get("/ai/health")
+async def ai_health():
+    """Report which AI providers are currently available and their usage stats."""
+    from claude_client import get_router_health
+    return get_router_health()
 
 
 @app.post("/analyze", response_model=AnalysisResponse)
@@ -284,7 +337,16 @@ async def analyze(
     if not all_transactions:
         raise HTTPException(status_code=400, detail="No valid transactions found in the data")
 
+    # Detect bank format from file name(s) for analytics
+    detected_bank_format = None
+    if files and files[0].filename:
+        detected_bank_format = _detect_bank_format_from_filename(files[0].filename)
+    elif file and file.filename:
+        detected_bank_format = _detect_bank_format_from_filename(file.filename)
+
     # Analyze transactions
+    import time
+    t0 = time.monotonic()
     try:
         results = analyze_transactions(all_transactions)
     except Exception as e:
@@ -293,6 +355,13 @@ async def analyze(
             status_code=500,
             detail="Analysis failed. Please try again or use a different file format."
         )
+    parse_ms = int((time.monotonic() - t0) * 1000)
+
+    # Record anonymised analytics event (fire-and-forget, never blocks response)
+    try:
+        record_analysis(results, bank_format=detected_bank_format, parse_time_ms=parse_ms)
+    except Exception:
+        pass
 
     return results
 
@@ -331,6 +400,8 @@ async def analyze_json(request: Request, body: TextRequest):
         raise HTTPException(status_code=400, detail="No valid transactions found in the data")
 
     # Analyze transactions
+    import time
+    t0 = time.monotonic()
     try:
         results = analyze_transactions(transactions)
     except Exception as e:
@@ -339,8 +410,69 @@ async def analyze_json(request: Request, body: TextRequest):
             status_code=500,
             detail="Analysis failed. Please try again or use a different file format."
         )
+    parse_ms = int((time.monotonic() - t0) * 1000)
+
+    try:
+        record_analysis(results, parse_time_ms=parse_ms)
+    except Exception:
+        pass
 
     return results
+
+
+# ─── Admin ────────────────────────────────────────────────────────────────────
+
+@app.get("/admin/dashboard")
+async def admin_dashboard(
+    request: Request,
+    days: int = 30,
+    x_admin_key: Optional[str] = None,
+):
+    """Admin dashboard data — requires ADMIN_API_KEY header."""
+    admin_key = os.getenv("ADMIN_API_KEY", "")
+    provided = request.headers.get("x-admin-key", "") or x_admin_key or ""
+    if not admin_key or provided != admin_key:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return get_full_dashboard(days=days)
+
+
+@app.get("/admin/health")
+async def admin_health(request: Request, x_admin_key: Optional[str] = None):
+    """Quick health probe for the admin panel."""
+    admin_key = os.getenv("ADMIN_API_KEY", "")
+    provided = request.headers.get("x-admin-key", "") or x_admin_key or ""
+    if not admin_key or provided != admin_key:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    from analytics import get_summary_stats
+    return {"status": "ok", "summary_30d": get_summary_stats(30)}
+
+
+@app.post("/admin/retrain")
+async def admin_retrain(request: Request, x_admin_key: Optional[str] = None):
+    """Retrain the column classifier RF model from all CSV files in tests/statements/.
+
+    Runs in a thread pool so it doesn't block the event loop (~5-10s).
+    Returns training stats: CV accuracy, class distribution, top features.
+    """
+    admin_key = os.getenv("ADMIN_API_KEY", "")
+    provided = request.headers.get("x-admin-key", "") or x_admin_key or ""
+    if not admin_key or provided != admin_key:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    import asyncio
+    from column_classifier import train_and_save
+
+    loop = asyncio.get_event_loop()
+    try:
+        result = await loop.run_in_executor(None, train_and_save)
+    except Exception as e:
+        logger.error(f"Retrain failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Training failed: {e}")
+
+    if not result.get("ok"):
+        raise HTTPException(status_code=422, detail=result.get("error", "Training failed"))
+
+    return result
 
 
 if __name__ == "__main__":

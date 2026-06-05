@@ -7,6 +7,8 @@ from typing import Optional
 from claude_client import get_claude_analysis
 from categorizer import categorize_transactions, generate_category_summary, Category
 from subscription_detector import detect_subscriptions, generate_month_comparison, detect_date_range, detect_price_changes, detect_duplicate_subscriptions
+from financial_planner import compute_health_score, compute_goal_projections, build_budget_benchmark
+from insights_engine import compute_all_insights
 
 # Load alternatives data
 ALTERNATIVES_PATH = os.path.join(os.path.dirname(__file__), "data", "alternatives.json")
@@ -234,6 +236,38 @@ def analyze_transactions(transactions: list[dict], use_claude: bool = True) -> d
     result["price_changes"] = price_changes
     result["duplicate_subscriptions"] = duplicate_subscriptions
 
+    # ── Financial planning intelligence ──
+    # Estimate monthly income from Income-categorised transactions (if present)
+    income_txns = [t for t in categorized_txns if t.get("category") == "Income"]
+    estimated_monthly_income: Optional[float] = None
+    if income_txns:
+        _, _, days = detect_date_range(income_txns)
+        months = max(1, days // 30) if days else 1
+        estimated_monthly_income = sum(t["amount"] for t in income_txns) / months
+
+    monthly_leak = result.get("monthly_leak", 0)
+
+    result["financial_health"] = compute_health_score(
+        monthly_leak, category_summary, estimated_monthly_income
+    )
+    result["goal_projections"] = compute_goal_projections(
+        monthly_leak, category_summary, estimated_monthly_income
+    )
+    result["budget_benchmark"] = build_budget_benchmark(
+        category_summary, estimated_monthly_income
+    )
+
+    # ── Deep individual insights ──
+    insights = compute_all_insights(
+        transactions=categorized_txns,
+        category_summary=category_summary,
+        top_leaks=result.get("top_leaks", []),
+        subscriptions=subscriptions,
+        alternatives=alternatives,
+        estimated_monthly_income=estimated_monthly_income,
+    )
+    result.update(insights)
+
     # Generate share summary (privacy-safe)
     result["share_summary"] = _generate_share_summary(result, subscriptions)
 
@@ -260,7 +294,18 @@ def _empty_result() -> dict:
         "share_summary": None,
         "alternatives": [],
         "price_changes": [],
-        "duplicate_subscriptions": []
+        "duplicate_subscriptions": [],
+        "financial_health": None,
+        "goal_projections": [],
+        "budget_benchmark": None,
+        "savings_strategy": None,
+        "spending_velocity": {},
+        "behavioral_patterns": {},
+        "habit_analysis": [],
+        "cashflow_calendar": [],
+        "category_deep_dive": [],
+        "action_plan": [],
+        "what_you_could_afford": [],
     }
 
 
@@ -328,7 +373,8 @@ def _heuristic_analysis(transactions: list[dict], subscriptions: list[dict]) -> 
         "top_spending": top_spending,
         "easy_wins": easy_wins[:5],
         "recovery_plan": recovery_plan,
-        "disclaimer": "This analysis is for informational purposes only. Not financial advice."
+        "disclaimer": "This analysis is for informational purposes only. Not financial advice.",
+        "savings_strategy": None,
     }
 
 
@@ -564,6 +610,10 @@ def _merge_results(heuristic: dict, claude: dict) -> dict:
     # Use Claude's recovery plan if provided
     if "recovery_plan" in claude and claude["recovery_plan"]:
         result["recovery_plan"] = claude["recovery_plan"]
+
+    # Pass through savings strategy if Claude returned it
+    if "savings_strategy" in claude and claude["savings_strategy"]:
+        result["savings_strategy"] = claude["savings_strategy"]
 
     # Recalculate annual savings
     result["annual_savings"] = round(result["monthly_leak"] * 12, 2)

@@ -1,4 +1,13 @@
-"""CSV parsing with heuristic column detection for bank statements."""
+"""Smart CSV parsing with auto-detection for bank statements.
+
+Self-healing heuristics:
+- Skips metadata rows before the actual CSV header
+- Auto-detects sign convention (negative=debit vs positive=debit)
+- Detects and excludes balance/running-balance columns
+- Filters income rows (salary, deposits, transfers in) by description
+- Handles Unicode minus sign and parentheses negatives
+- Supports single-amount, debit-only, and split debit/credit column layouts
+"""
 
 import io
 import math
@@ -6,20 +15,63 @@ import re
 import hashlib
 from typing import Optional
 import pandas as pd
+from column_classifier import classify_all_columns, LABELS
 
 
-# Column name patterns for heuristic detection (Western + Indian banks)
-DATE_PATTERNS = ["date", "posted", "transaction date", "trans date", "posting date",
-                 "txn date", "txn. date", "value date", "val date"]
-DESCRIPTION_PATTERNS = ["description", "merchant", "payee", "memo", "narrative", "details",
-                        "particulars", "narration", "remarks", "transaction particulars"]
+# ─── Column name patterns ────────────────────────────────────────────────────
+
+DATE_PATTERNS = [
+    "date", "posted", "transaction date", "trans date", "posting date",
+    "txn date", "txn. date", "value date", "val date",
+]
+DESCRIPTION_PATTERNS = [
+    "description", "merchant", "payee", "memo", "narrative", "details",
+    "particulars", "narration", "remarks", "transaction particulars",
+    "transaction description", "trans description",
+]
 AMOUNT_PATTERNS = ["amount", "value", "sum", "total", "txn amount"]
-DEBIT_PATTERNS = ["debit", "withdrawal", "out", "dr", "dr.", "debit amount", "withdrawal amt"]
-CREDIT_PATTERNS = ["credit", "deposit", "in", "cr", "cr.", "credit amount", "deposit amt"]
+DEBIT_PATTERNS = [
+    "debit", "withdrawal", "out", "dr", "dr.", "debit amount", "withdrawal amt",
+    "debit amt",
+]
+CREDIT_PATTERNS = [
+    "credit", "deposit", "in", "cr", "cr.", "credit amount", "deposit amt",
+    "credit amt",
+]
+BALANCE_PATTERNS = [
+    "balance", "running bal", "running balance", "bal.", "avail balance",
+    "available balance", "ledger balance", "closing balance",
+]
 
+# Description keywords that indicate income / credit transactions to skip
+INCOME_KEYWORDS = [
+    "PAYROLL", "SALARY", "DIRECT DEPOSIT", "DIRECT CREDIT", "PAY CREDIT",
+    "WAGES", "STIPEND", "PENSION", "BENEFITS", "EMPLOYER",
+    "INTEREST EARNED", "INTEREST CREDIT", "INTEREST PAYMENT",
+    "TAX REFUND", "TAX RETURN",
+    "TRANSFER IN", "FUNDS TRANSFER IN", "INWARD TRANSFER",
+    "PAYMENT RECEIVED", "PAYMENT FROM",
+    "OSKO PAYMENT", "OSKO CREDIT",
+    "ACH CREDIT", "ACH DEPOSIT",
+    "WIRE IN", "WIRE CREDIT", "WIRE TRANSFER IN",
+    "OPENING BALANCE", "CLOSING BALANCE", "STATEMENT BALANCE",
+    "REVERSAL", "REFUND",  # merchant refunds are credits; skip for leak detection
+    "DIVIDEND", "CASHBACK", "CASH BACK", "REWARD",
+]
+
+# Regex patterns for income that need context (e.g. "ZELLE FROM" not "ZELLE TO")
+INCOME_REGEX = [
+    r"ZELLE\s+(FROM|RECEIVED|CREDIT)",
+    r"VENMO\s+(CREDIT|FROM|RECEIVED)",
+    r"CASH\s*APP\s+(CREDIT|RECEIVED|FROM)",
+    r"PAYPAL\s+(CREDIT|FROM|RECEIVED)",
+]
+
+
+# ─── Helpers ─────────────────────────────────────────────────────────────────
 
 def find_column(columns: list[str], patterns: list[str]) -> Optional[str]:
-    """Find a column matching any of the given patterns (case-insensitive)."""
+    """Return the first column whose name contains any of the patterns (case-insensitive)."""
     columns_lower = {col.lower().strip(): col for col in columns}
     for pattern in patterns:
         for col_lower, col_original in columns_lower.items():
@@ -30,124 +82,153 @@ def find_column(columns: list[str], patterns: list[str]) -> Optional[str]:
 
 def normalize_merchant(merchant: str) -> str:
     """Normalize merchant names for consistent matching."""
-    # Remove common suffixes and prefixes
     merchant = merchant.upper().strip()
-    # Remove card numbers, reference numbers, dates
-    merchant = re.sub(r'\d{4,}', '', merchant)
+    merchant = re.sub(r'\d{4,}', '', merchant)       # strip card/ref numbers
     merchant = re.sub(r'\s+', ' ', merchant)
-    # Remove common payment processor prefixes
     for prefix in ['SQ *', 'SP ', 'PAYPAL *', 'STRIPE *', 'PP*']:
         if merchant.startswith(prefix):
             merchant = merchant[len(prefix):]
     return merchant.strip()
 
 
-def parse_amount(value: str) -> Optional[float]:
-    """Parse amount string to float, handling various formats.
+def parse_amount(value) -> Optional[float]:
+    """Parse amount string to float.
 
-    Supports:
-    - Western: $1,234.56 or 1,234.56
-    - Indian: ₹1,23,456.78 or 1,23,456.78 (lakhs format)
-    - UK: £1,234.56
-    - Negative: -$50.00 or (50.00)
+    Handles:
+    - Currency symbols: $ £ € ₹ ¥
+    - Unicode minus sign (U+2212) in addition to hyphen-minus
+    - Indian lakh comma format: 1,23,456.78
+    - Parentheses negatives: (50.00) → -50.00
+    - Already-numeric values
     """
     if pd.isna(value) or value == '':
         return None
     if isinstance(value, (int, float)):
         result = float(value)
-        # Check for NaN
-        if math.isnan(result):
-            return None
-        return result
-    # Remove currency symbols (including Indian Rupee) and whitespace
-    cleaned = re.sub(r'[£$€₹,\s]', '', str(value))
-    # Handle parentheses for negative numbers
-    if cleaned.startswith('(') and cleaned.endswith(')'):
-        cleaned = '-' + cleaned[1:-1]
+        return None if math.isnan(result) else result
+
+    s = str(value).strip()
+    # Replace Unicode minus sign (−, U+2212) with hyphen-minus
+    s = s.replace('−', '-')
+    # Remove currency symbols and commas/whitespace
+    s = re.sub(r'[£$€₹¥,\s]', '', s)
+    # Parentheses → negative
+    if s.startswith('(') and s.endswith(')'):
+        s = '-' + s[1:-1]
     try:
-        return float(cleaned)
+        return float(s)
     except ValueError:
         return None
 
 
-def parse_space_separated(content: str) -> list[dict]:
-    """
-    Parse space-separated bank statement text (like Westpac, PNC, Chase format).
+def is_income_row(description: str) -> bool:
+    """Return True if the description looks like income / credit (should be skipped)."""
+    upper = description.upper().strip()
+    for kw in INCOME_KEYWORDS:
+        if kw in upper:
+            return True
+    for pattern in INCOME_REGEX:
+        if re.search(pattern, upper):
+            return True
+    return False
 
-    Handles multi-line descriptions where amounts appear on continuation lines.
+
+def detect_sign_convention(series: pd.Series) -> str:
+    """Auto-detect whether negative or positive values represent spending.
+
+    Returns 'negative_debit' (most common: ANZ, NAB, CommBank, Barclays)
+    or 'positive_debit' (Chase, BoA — all amounts shown as positive).
+    """
+    numeric = pd.to_numeric(series, errors='coerce').dropna()
+    if numeric.empty:
+        return 'negative_debit'
+    neg_count = (numeric < 0).sum()
+    pos_count = (numeric > 0).sum()
+    # If ≥30 % of transactions are negative → sign encodes direction
+    if neg_count >= pos_count * 0.3:
+        return 'negative_debit'
+    return 'positive_debit'
+
+
+def detect_header_row(lines: list[str]) -> int:
+    """Find the index of the actual CSV header row, skipping bank metadata.
+
+    Some banks prepend account number, export date, etc. before the real header.
+    We find the first row that contains the most recognisable column-name tokens.
+    """
+    all_patterns = (
+        DATE_PATTERNS + DESCRIPTION_PATTERNS + AMOUNT_PATTERNS +
+        DEBIT_PATTERNS + CREDIT_PATTERNS + BALANCE_PATTERNS
+    )
+    best_row = 0
+    best_score = 0
+    for i, line in enumerate(lines[:20]):   # only scan first 20 lines
+        score = 0
+        lower = line.lower()
+        for pattern in all_patterns:
+            if pattern in lower:
+                score += 1
+        if score > best_score:
+            best_score = score
+            best_row = i
+    return best_row
+
+
+# ─── Space-separated parser (Westpac / PNC style) ────────────────────────────
+
+def parse_space_separated(content: str) -> list[dict]:
+    """Parse space-separated bank statement text.
+
     Format: DATE DESCRIPTION DEBIT CREDIT BALANCE
+    Handles multi-line descriptions where amounts appear on continuation lines.
     """
     transactions = []
-    # Support both full dates (DD/MM/YYYY) and short US dates (MM/DD)
     date_pattern = r'^(\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)\s+'
-
     lines = content.strip().split('\n')
 
-    # First pass: identify transaction blocks (date line + continuation lines)
-    tx_blocks = []
-    current_block = None
+    tx_blocks: list[dict] = []
+    current_block: Optional[dict] = None
 
     for line in lines:
         line_stripped = line.strip()
         if not line_stripped:
             continue
-
         date_match = re.match(date_pattern, line_stripped)
-
         if date_match:
-            # Save previous block
             if current_block:
                 tx_blocks.append(current_block)
-            # Start new block
             current_block = {
                 'date': date_match.group(1),
                 'lines': [line_stripped[date_match.end():].strip()]
             }
         elif current_block:
-            # Continuation line
             current_block['lines'].append(line_stripped)
 
-    # Don't forget the last block
     if current_block:
         tx_blocks.append(current_block)
 
-    # Second pass: parse each block
     for block in tx_blocks:
         full_text = ' '.join(block['lines'])
-        full_text_upper = full_text.upper()
 
-        # Skip header/balance/deposit lines
-        # ACH Deposit and Payroll are income - skip them
-        is_deposit = any(skip in full_text_upper for skip in ['OPENING BALANCE', 'CLOSING BALANCE', 'STATEMENT',
-                                                     'TRANSFER IN', 'PAYMENT RECEIVED',
-                                                     'OSKO PAYMENT', 'DIRECT CREDIT', 'PAYROLL'])
-        # "ACH Deposit" is income, but "ACH Debit" is spending
-        if 'ACH DEPOSIT' in full_text_upper or ('DEPOSIT' in full_text_upper and 'ACH DEBIT' not in full_text_upper):
-            is_deposit = True
-        # Zelle received is income
-        if 'ZELLE' in full_text_upper and 'FROM' in full_text_upper:
-            is_deposit = True
-        if is_deposit:
+        if is_income_row(full_text):
+            continue
+        # Legacy guard for ACH Deposit pattern
+        upper = full_text.upper()
+        if 'ACH DEPOSIT' in upper or ('DEPOSIT' in upper and 'ACH DEBIT' not in upper):
             continue
 
-        # Find amounts - look for rightmost numbers on the last line with amounts
         amounts_found = []
         description_parts = []
 
-        # Check all lines for amounts (right to left, last line first)
         for line in reversed(block['lines']):
             parts = line.split()
             line_amounts = []
             line_desc = []
-
-            # Scan from right - only count significant amounts (>= 1.00) as column amounts
             found_non_numeric = False
             for part in reversed(parts):
                 cleaned = part.replace(',', '').replace('$', '')
                 try:
                     val = float(cleaned)
-                    # Only consider amounts >= 1.00 as column amounts (debit/credit/balance)
-                    # Smaller amounts like $0.50 fee are part of description
                     if not found_non_numeric and val >= 1.0:
                         line_amounts.insert(0, val)
                     else:
@@ -171,7 +252,6 @@ def parse_space_separated(content: str) -> list[dict]:
         if not description:
             continue
 
-        # Extract transaction amount (exclude balance which is usually last)
         amount = None
         if len(amounts_found) >= 2:
             for amt in amounts_found[:-1]:
@@ -186,114 +266,166 @@ def parse_space_separated(content: str) -> list[dict]:
                 "date": block['date'],
                 "merchant": normalize_merchant(description),
                 "original_merchant": description,
-                "amount": amount
+                "amount": amount,
             })
 
     return transactions
 
 
-def parse_csv(content: str) -> list[dict]:
-    """
-    Parse CSV content and return normalized transaction data.
+# ─── CSV parser ──────────────────────────────────────────────────────────────
 
-    Returns list of dicts: [{date, merchant, amount}]
-    Includes all transactions (both debits and credits are captured).
+def parse_csv(content: str) -> list[dict]:
+    """Parse CSV bank statement and return normalised debit transactions.
+
+    Returns list of dicts: [{date, merchant, original_merchant, amount}]
+    Only spending rows are returned — income/credit rows are filtered out.
     """
-    # First try space-separated format (Westpac style)
+    # ── Try space-separated (Westpac / fixed-width) first ──
     space_result = parse_space_separated(content)
     if space_result:
         return space_result
 
-    # Try to parse CSV
-    try:
-        df = pd.read_csv(io.StringIO(content))
-    except Exception:
-        # Try with different separators
-        for sep in [';', '\t', '|']:
-            try:
-                df = pd.read_csv(io.StringIO(content), sep=sep)
-                break
-            except Exception:
-                continue
-        else:
-            raise ValueError("Could not parse CSV content")
+    # ── Load CSV, skipping bank metadata before the real header ──
+    lines = content.splitlines()
+    header_idx = detect_header_row(lines)
 
-    if df.empty:
+    df = None
+    trimmed = '\n'.join(lines[header_idx:])
+    for sep in [',', ';', '\t', '|']:
+        try:
+            candidate = pd.read_csv(io.StringIO(trimmed), sep=sep)
+            if len(candidate.columns) >= 2:
+                df = candidate
+                break
+        except Exception:
+            continue
+
+    if df is None or df.empty:
         return []
 
     columns = df.columns.tolist()
 
-    # Find date column
-    date_col = find_column(columns, DATE_PATTERNS)
-    if not date_col and columns:
-        # Assume first column is date if no match
-        date_col = columns[0]
+    # ── Identify column roles via ML classifier ──────────────────────────────
+    # classify_all_columns uses the Random Forest model (if trained) or the
+    # hand-crafted rule scorer as fallback.  Results: {col_name → type_label}
+    col_types = classify_all_columns(df, sample_rows=50)
 
-    # Find description column
-    desc_col = find_column(columns, DESCRIPTION_PATTERNS)
-    if not desc_col:
-        # Try to find a text-heavy column
+    def _first_col_of_type(type_label: str) -> Optional[str]:
         for col in columns:
-            if col != date_col and df[col].dtype == object:
-                desc_col = col
-                break
+            if col_types.get(col) == type_label:
+                return col
+        return None
 
-    # Find amount column(s)
-    amount_col = find_column(columns, AMOUNT_PATTERNS)
-    debit_col = find_column(columns, DEBIT_PATTERNS)
-    credit_col = find_column(columns, CREDIT_PATTERNS)
+    def _best_description_col() -> Optional[str]:
+        """Among all description-typed columns, prefer the one with the most
+        unique values — merchant names are more diverse than payment type codes."""
+        desc_cols = [c for c in columns if col_types.get(c) == "description"]
+        if not desc_cols:
+            return None
+        if len(desc_cols) == 1:
+            return desc_cols[0]
+        # Pick the column with highest unique-value ratio
+        best, best_ratio = desc_cols[0], 0.0
+        for c in desc_cols:
+            vals = df[c].dropna().astype(str)
+            ratio = vals.nunique() / max(1, len(vals))
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best = c
+        return best
 
+    date_col    = _first_col_of_type("date")
+    desc_col    = _best_description_col()
+    debit_col   = _first_col_of_type("debit")
+    credit_col  = _first_col_of_type("credit")
+    amount_col  = _first_col_of_type("amount")
+    balance_col = _first_col_of_type("balance")
+
+    # ── Rule-based fallbacks for columns the classifier missed ───────────────
+    # (keeps backwards-compat for edge-case CSVs)
+    if not date_col:
+        date_col = find_column(columns, DATE_PATTERNS) or (columns[0] if columns else None)
+    if not desc_col:
+        desc_col = find_column(columns, DESCRIPTION_PATTERNS)
+        if not desc_col:
+            for col in columns:
+                if col not in (date_col, balance_col) and df[col].dtype == object:
+                    desc_col = col
+                    break
+    if not debit_col and not amount_col:
+        debit_col  = find_column(columns, DEBIT_PATTERNS)
+        credit_col = find_column(columns, CREDIT_PATTERNS)
+        amount_col = find_column(columns, AMOUNT_PATTERNS)
+    if not balance_col:
+        balance_col = find_column(columns, BALANCE_PATTERNS)
+
+    # If the classifier labelled the same column as both amount and balance, trust balance
+    if amount_col and amount_col == balance_col:
+        amount_col = None
+
+    # ── Sign convention for single-amount-column files ──
+    sign_convention = 'negative_debit'
+    if amount_col and not debit_col:
+        sign_convention = detect_sign_convention(df[amount_col])
+
+    # ── Row iteration ──
     transactions = []
 
     for _, row in df.iterrows():
-        # Get date
-        date_val = str(row.get(date_col, '')) if date_col else ''
+        date_val = str(row[date_col]).strip() if date_col else ''
 
-        # Get merchant/description
-        merchant = str(row.get(desc_col, '')) if desc_col else ''
-        if not merchant or merchant == 'nan':
+        merchant_raw = str(row[desc_col]).strip() if desc_col else ''
+        if not merchant_raw or merchant_raw.lower() == 'nan':
             continue
 
-        amount = None
+        # Skip income / credit rows
+        if is_income_row(merchant_raw):
+            continue
 
-        # Calculate amount
+        amount: Optional[float] = None
+
+        # ── Case 1: Separate debit + credit columns ──
         if debit_col and credit_col:
-            # Separate debit/credit columns
-            debit = parse_amount(row.get(debit_col, 0)) or 0
-            credit = parse_amount(row.get(credit_col, 0)) or 0
-            # We want debits (spending)
+            debit  = parse_amount(row.get(debit_col, '')) or 0
+            credit = parse_amount(row.get(credit_col, '')) or 0
             if abs(debit) > 0:
                 amount = abs(debit)
-            elif abs(credit) > 0:
-                # Skip credits/deposits
-                continue
-        elif debit_col:
-            # Only debit column - all values are spending
-            amount = parse_amount(row.get(debit_col))
-            if amount is not None:
-                amount = abs(amount)
-        elif amount_col:
-            # Single amount column - negative = debit, positive = credit
-            amount = parse_amount(row.get(amount_col))
-            if amount is None:
-                continue
-            # Negative amounts are debits (spending)
-            # Positive amounts could be credits OR debits depending on bank format
-            # We'll include all non-zero amounts and let user filter
-            if amount == 0:
-                continue
-            # If negative, it's definitely a debit
-            # If positive, we still include it (many banks show debits as positive)
-            amount = abs(amount)
-        else:
-            # Try to find any numeric column
-            for col in columns:
-                if col not in [date_col, desc_col]:
-                    amount = parse_amount(row.get(col))
-                    if amount is not None and amount != 0:
-                        amount = abs(amount)
-                        break
             else:
+                continue   # it's a credit — skip
+
+        # ── Case 2: Debit-only column ──
+        elif debit_col:
+            raw = parse_amount(row.get(debit_col))
+            if raw is None or raw == 0:
+                continue
+            amount = abs(raw)
+
+        # ── Case 3: Single amount column ──
+        elif amount_col:
+            raw = parse_amount(row.get(amount_col))
+            if raw is None or raw == 0:
+                continue
+
+            if sign_convention == 'negative_debit':
+                # Negative values are spending; positive values are income/credits
+                if raw > 0:
+                    continue   # income row
+                amount = abs(raw)
+            else:
+                # All values are positive; every row is a debit
+                amount = abs(raw)
+
+        # ── Case 4: Fallback — scan remaining numeric columns ──
+        else:
+            excluded = {date_col, desc_col, balance_col}
+            for col in columns:
+                if col in excluded:
+                    continue
+                raw = parse_amount(row.get(col))
+                if raw is not None and raw != 0:
+                    amount = abs(raw)
+                    break
+            if amount is None:
                 continue
 
         if amount is None or amount == 0 or math.isnan(amount):
@@ -301,81 +433,56 @@ def parse_csv(content: str) -> list[dict]:
 
         transactions.append({
             "date": date_val,
-            "merchant": normalize_merchant(merchant),
-            "original_merchant": merchant.strip(),
-            "amount": amount
+            "merchant": normalize_merchant(merchant_raw),
+            "original_merchant": merchant_raw,
+            "amount": amount,
         })
 
     return transactions
 
 
-def transaction_hash(tx: dict) -> str:
-    """Generate a hash for a transaction for deduplication.
+# ─── Deduplication & merging ─────────────────────────────────────────────────
 
-    Uses date + normalized merchant + amount to identify duplicates.
-    """
-    # Create a consistent string representation
+def transaction_hash(tx: dict) -> str:
+    """Stable hash for deduplication: date + normalised merchant + amount."""
     key = f"{tx.get('date', '')}|{tx.get('merchant', '')}|{tx.get('amount', 0):.2f}"
     return hashlib.md5(key.encode()).hexdigest()
 
 
 def merge_transactions(transactions: list[dict]) -> list[dict]:
-    """Merge and deduplicate transactions from multiple files.
-
-    Conservative deduplication: only removes exact matches on
-    date + normalized merchant + amount.
-
-    Returns sorted transactions by date (most recent first).
-    """
-    seen_hashes = set()
-    unique_transactions = []
-
+    """Deduplicate and sort transactions (most recent first)."""
+    seen: set[str] = set()
+    unique: list[dict] = []
     for tx in transactions:
-        tx_hash = transaction_hash(tx)
-        if tx_hash not in seen_hashes:
-            seen_hashes.add(tx_hash)
-            unique_transactions.append(tx)
+        h = transaction_hash(tx)
+        if h not in seen:
+            seen.add(h)
+            unique.append(tx)
 
-    # Sort by date (most recent first)
     def parse_date_for_sort(date_str: str) -> tuple:
-        """Parse date string for sorting. Returns tuple for comparison."""
         if not date_str:
             return (0, 0, 0)
-
-        # Try common date formats
         date_str = str(date_str).strip()
-
-        # Remove time component if present
         if ' ' in date_str:
             date_str = date_str.split()[0]
-
-        # Try different separators
         for sep in ['/', '-', '.']:
             if sep in date_str:
                 parts = date_str.split(sep)
                 if len(parts) >= 2:
                     try:
-                        # Check for year position
-                        if len(parts[0]) == 4:
-                            # YYYY-MM-DD
+                        if len(parts[0]) == 4:              # YYYY-MM-DD
                             return (int(parts[0]), int(parts[1]), int(parts[2]) if len(parts) > 2 else 1)
-                        elif len(parts[-1]) == 4:
-                            # DD/MM/YYYY or MM/DD/YYYY
+                        elif len(parts[-1]) == 4:           # DD/MM/YYYY or MM/DD/YYYY
                             year = int(parts[-1])
-                            # Assume DD/MM/YYYY for non-US
                             return (year, int(parts[1]) if len(parts) > 2 else int(parts[0]), int(parts[0]))
-                        elif len(parts[-1]) == 2:
-                            # DD/MM/YY
+                        elif len(parts[-1]) == 2:           # DD/MM/YY
                             year = 2000 + int(parts[-1])
                             return (year, int(parts[1]) if len(parts) > 2 else int(parts[0]), int(parts[0]))
-                        else:
-                            # MM/DD format (no year)
+                        else:                               # MM/DD (no year)
                             return (9999, int(parts[0]), int(parts[1]))
                     except (ValueError, IndexError):
                         pass
-
         return (0, 0, 0)
 
-    unique_transactions.sort(key=lambda x: parse_date_for_sort(x.get('date', '')), reverse=True)
-
-    return unique_transactions
+    unique.sort(key=lambda x: parse_date_for_sort(x.get('date', '')), reverse=True)
+    return unique

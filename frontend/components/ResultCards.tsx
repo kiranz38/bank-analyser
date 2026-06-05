@@ -19,6 +19,7 @@ import {
   trackPriceChangesViewed,
   trackDuplicatesViewed,
 } from '@/lib/analytics'
+import InsightsPanel from './InsightsPanel'
 import type { AnalysisResult, Leak } from '@/lib/types'
 
 interface ResultCardsProps {
@@ -156,6 +157,16 @@ export default function ResultCards({ results, proPaymentStatus, proSessionId, p
         priceChanges={results.price_changes}
         formatCurrency={formatCurrency}
         formatCurrencyPrecise={formatCurrencyPrecise}
+      />
+
+      {/* Personal Insights */}
+      <InsightsPanel
+        spending_velocity={results.spending_velocity}
+        behavioral_patterns={results.behavioral_patterns}
+        habit_analysis={results.habit_analysis}
+        category_deep_dive={results.category_deep_dive}
+        action_plan={results.action_plan}
+        what_you_could_afford={results.what_you_could_afford}
       />
 
       {/* Alternatives */}
