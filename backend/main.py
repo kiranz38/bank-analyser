@@ -160,6 +160,94 @@ def validate_pdf_format(content: bytes) -> bool:
     return True
 
 
+# Financial document fingerprint keywords — at least one must appear in the
+# raw PDF text for it to be considered a bank/financial statement.
+_FINANCIAL_KEYWORDS = [
+    'transaction', 'debit', 'credit', 'balance', 'withdrawal', 'deposit',
+    'account', 'statement', 'bsb', 'sort code', 'iban', 'routing',
+    'opening balance', 'closing balance', 'available balance',
+    'direct debit', 'bpay', 'osko', 'eft', 'ach',
+    'netbank', 'internet banking', 'commbank', 'westpac', 'nab', 'anz',
+    'chase', 'barclays', 'hsbc', 'wells fargo', 'bank of america',
+    'td bank', 'citibank', 'pnc bank', 'us bank',
+]
+
+# Non-financial document indicators — if these dominate the document, reject it.
+_NON_FINANCIAL_KEYWORDS = [
+    'curriculum vitae', 'resume', 'work experience', 'education',
+    'references available', 'objective:', 'summary of qualifications',
+    'patient name', 'diagnosis', 'prescription', 'physician',
+    'invoice number', 'tax invoice', 'gst', 'subtotal', 'total due',
+    'electricity usage', 'meter reading', 'kwh', 'gas usage',
+    'insurance policy', 'policy number', 'premium due',
+]
+
+
+def _is_financial_document(raw_text: str) -> tuple[bool, str]:
+    """Check if extracted PDF text looks like a bank/financial statement.
+
+    Returns (is_valid, reason_if_invalid).
+    """
+    if not raw_text or len(raw_text.strip()) < 100:
+        return False, "The PDF appears to be image-only or has no readable text. Try exporting as CSV from your bank's website."
+
+    lower = raw_text.lower()
+
+    # Hard reject: clearly a non-financial document
+    non_fin_hits = sum(1 for kw in _NON_FINANCIAL_KEYWORDS if kw in lower)
+    if non_fin_hits >= 2:
+        return False, "This doesn't look like a bank statement. Please upload a bank statement PDF or CSV export."
+
+    # Must have at least 1 financial keyword
+    has_financial = any(kw in lower for kw in _FINANCIAL_KEYWORDS)
+    if not has_financial:
+        return False, "This doesn't appear to be a bank statement. No transaction or account keywords were found. Try a CSV export instead."
+
+    # Must contain at least 2 number patterns that could be amounts (e.g. 123.45)
+    import re
+    amount_like = re.findall(r'\b\d+\.\d{2}\b', raw_text)
+    if len(amount_like) < 2:
+        return False, "No transaction amounts found in the document. Please upload a bank statement with transaction data."
+
+    return True, ""
+
+
+def _validate_transactions(transactions: list[dict], source_label: str = "the file") -> None:
+    """Raise HTTPException if the transaction list doesn't look like real bank data."""
+    if not transactions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No spending transactions found in {source_label}. "
+                   "This may not be a bank statement, or it may only contain credits/deposits."
+        )
+
+    # Require at least 2 transactions for any meaningful analysis
+    if len(transactions) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only {len(transactions)} transaction found in {source_label}. "
+                   "Upload at least a month of statements for a useful analysis."
+        )
+
+    # Sanity-check amounts — median should be in a plausible spending range
+    amounts = sorted(t.get("amount", 0) for t in transactions if t.get("amount", 0) > 0)
+    if amounts:
+        median_amount = amounts[len(amounts) // 2]
+        if median_amount > 50000:
+            raise HTTPException(
+                status_code=400,
+                detail="The amounts in this file are unusually large. This may not be a personal bank statement."
+            )
+
+    # At least half the transactions must have a non-empty date
+    dated = sum(1 for t in transactions if t.get("date", "").strip())
+    if dated < len(transactions) * 0.5:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Most transactions in {source_label} are missing dates. Please check the file format."
+        )
+
+
 async def process_single_file(file: UploadFile) -> list[dict]:
     """Process a single uploaded file and return transactions."""
     content = await file.read()
@@ -181,6 +269,19 @@ async def process_single_file(file: UploadFile) -> list[dict]:
                 detail=f"'{file.filename}' is not a valid PDF file."
             )
 
+        # Gate: check the raw text looks like a financial document before running
+        # all 8 parsing strategies (saves time and catches random PDFs early)
+        try:
+            import pdfplumber, io as _io
+            with pdfplumber.open(_io.BytesIO(content)) as _pdf:
+                raw_text = '\n'.join(p.extract_text() or '' for p in _pdf.pages[:5])
+        except Exception:
+            raw_text = ''
+
+        is_fin, reason = _is_financial_document(raw_text)
+        if not is_fin:
+            raise HTTPException(status_code=400, detail=reason)
+
         csv_content = pdf_to_csv(content)
         if not csv_content:
             raise HTTPException(
@@ -195,6 +296,17 @@ async def process_single_file(file: UploadFile) -> list[dict]:
             raise HTTPException(
                 status_code=400,
                 detail=f"'{file.filename}' has invalid encoding. Please use UTF-8 encoded files."
+            )
+
+        # Quick sanity check: does this CSV look remotely like financial data?
+        # Reject files with zero numeric values (e.g. plain text documents with .csv extension)
+        import re as _re
+        amount_like = _re.findall(r'\b\d+\.\d{2}\b', csv_content)
+        if not amount_like:
+            raise HTTPException(
+                status_code=400,
+                detail=f"'{file.filename}' doesn't appear to contain financial data. "
+                       "Please upload a bank statement CSV export."
             )
 
     # Parse CSV
@@ -353,8 +465,13 @@ async def analyze(
     if files and len(files) > 1:
         all_transactions = merge_transactions(all_transactions)
 
-    if not all_transactions:
-        raise HTTPException(status_code=400, detail="No valid transactions found in the data")
+    # Content validation: ensure the data actually looks like bank transactions
+    source_label = (
+        f"'{files[0].filename}'" if files and files[0].filename
+        else f"'{file.filename}'" if file and file.filename
+        else "the uploaded file"
+    )
+    _validate_transactions(all_transactions, source_label)
 
     # Detect bank format from file name(s) for analytics
     detected_bank_format = None
@@ -415,8 +532,7 @@ async def analyze_json(request: Request, body: TextRequest):
             detail="Failed to parse the data. Please check the format and try again."
         )
 
-    if not transactions:
-        raise HTTPException(status_code=400, detail="No valid transactions found in the data")
+    _validate_transactions(transactions, "the pasted data")
 
     # Analyze transactions
     import time
