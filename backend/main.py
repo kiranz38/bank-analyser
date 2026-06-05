@@ -557,42 +557,41 @@ async def analyze_json(request: Request, body: TextRequest):
 
 # ─── Admin ────────────────────────────────────────────────────────────────────
 
-@app.get("/admin/dashboard")
-async def admin_dashboard(
-    request: Request,
-    days: int = 30,
-    x_admin_key: Optional[str] = None,
-):
-    """Admin dashboard data — requires ADMIN_API_KEY header."""
+def _require_admin(request: Request) -> None:
+    """Enforce admin key from HTTP header only.
+
+    Never accept the key as a URL query parameter — query params appear in
+    server access logs, browser history, and proxy caches, leaking the secret.
+    """
     admin_key = os.getenv("ADMIN_API_KEY", "")
-    provided = request.headers.get("x-admin-key", "") or x_admin_key or ""
-    if not admin_key or provided != admin_key:
+    provided = request.headers.get("x-admin-key", "")
+    if not admin_key or not provided or provided != admin_key:
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+@app.get("/admin/dashboard")
+async def admin_dashboard(request: Request, days: int = 30):
+    """Admin dashboard data — requires X-Admin-Key header."""
+    _require_admin(request)
     return get_full_dashboard(days=days)
 
 
 @app.get("/admin/health")
-async def admin_health(request: Request, x_admin_key: Optional[str] = None):
+async def admin_health(request: Request):
     """Quick health probe for the admin panel."""
-    admin_key = os.getenv("ADMIN_API_KEY", "")
-    provided = request.headers.get("x-admin-key", "") or x_admin_key or ""
-    if not admin_key or provided != admin_key:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    _require_admin(request)
     from analytics import get_summary_stats
     return {"status": "ok", "summary_30d": get_summary_stats(30)}
 
 
 @app.post("/admin/retrain")
-async def admin_retrain(request: Request, x_admin_key: Optional[str] = None):
+async def admin_retrain(request: Request):
     """Retrain the column classifier RF model from all CSV files in tests/statements/.
 
     Runs in a thread pool so it doesn't block the event loop (~5-10s).
     Returns training stats: CV accuracy, class distribution, top features.
     """
-    admin_key = os.getenv("ADMIN_API_KEY", "")
-    provided = request.headers.get("x-admin-key", "") or x_admin_key or ""
-    if not admin_key or provided != admin_key:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    _require_admin(request)
 
     import asyncio
     from column_classifier import train_and_save

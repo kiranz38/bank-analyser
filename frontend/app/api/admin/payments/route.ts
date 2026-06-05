@@ -5,7 +5,7 @@ import { getMetricsSummary } from '@/lib/metrics'
 
 export async function GET(request: NextRequest) {
   const apiKey = request.headers.get('x-api-key')
-  if (process.env.NODE_ENV === 'production' && apiKey !== process.env.ADMIN_API_KEY) {
+  if (!apiKey || !process.env.ADMIN_API_KEY || apiKey !== process.env.ADMIN_API_KEY) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

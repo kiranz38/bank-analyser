@@ -107,7 +107,10 @@ def _extract_with_ai(raw_text: str) -> str:
         router = get_router()
 
         # Trim to avoid token limits — most statements fit in 6000 chars
-        trimmed = raw_text[:6000]
+        # Strip control characters that could be used for prompt injection
+        # before embedding raw PDF text into the AI prompt.
+        safe_text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', raw_text)
+        trimmed = safe_text[:6000]
 
         prompt = f"""You are a bank statement parser. Extract all SPENDING/DEBIT transactions from the bank statement text below.
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import Stripe from 'stripe'
 import { getPayment, updatePayment, logEvent, storePdf, createPayment } from '@/lib/paymentStore'
 import { sendReportEmail } from '@/lib/sendReportEmail'
 import { getDelivery, updateDelivery } from '@/lib/deliveryStore'
@@ -7,6 +8,12 @@ import { logger } from '@/lib/logger'
 import { put } from '@vercel/blob'
 import crypto from 'crypto'
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2026-01-28.clover',
+})
+
+const MAX_PDF_BYTES = 10 * 1024 * 1024 // 10 MB
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
@@ -14,24 +21,43 @@ export async function POST(request: NextRequest) {
     const email = formData.get('email') as string | null
     const pdfFile = formData.get('pdf') as File | null
 
-    if (!sessionId || !email) {
-      return NextResponse.json({ error: 'Missing sessionId or email' }, { status: 400 })
+    if (!sessionId || typeof sessionId !== 'string' || sessionId.length > 200) {
+      return NextResponse.json({ error: 'Missing or invalid sessionId' }, { status: 400 })
     }
-
+    if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+      return NextResponse.json({ error: 'Missing or invalid email' }, { status: 400 })
+    }
     if (!pdfFile) {
       return NextResponse.json({ error: 'Missing PDF file' }, { status: 400 })
     }
 
-    // Verify payment record exists and is paid
+    // Verify Stripe payment — accept cached paid record to avoid extra API calls on retry
     let record = getPayment(sessionId)
-    if (!record) {
-      record = createPayment(sessionId, email)
+    if (!record || record.status !== 'paid') {
+      let stripeSession: Stripe.Checkout.Session
+      try {
+        stripeSession = await stripe.checkout.sessions.retrieve(sessionId)
+      } catch {
+        return NextResponse.json({ error: 'Invalid payment session' }, { status: 403 })
+      }
+      if (stripeSession.payment_status !== 'paid') {
+        return NextResponse.json({ error: 'Payment not completed' }, { status: 403 })
+      }
+      // Stripe confirms payment — create or promote local record
+      if (!record) {
+        record = createPayment(sessionId, email)
+      }
       updatePayment(sessionId, { status: 'paid' })
     }
 
+    // PDF size guard
+    const sizeCheck = await pdfFile.arrayBuffer()
+    if (sizeCheck.byteLength > MAX_PDF_BYTES) {
+      return NextResponse.json({ error: 'PDF too large' }, { status: 400 })
+    }
+
     const reportId = crypto.randomBytes(16).toString('hex')
-    const arrayBuffer = await pdfFile.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    const buffer = Buffer.from(sizeCheck)
 
     // Store in-memory for immediate download
     storePdf(reportId, buffer)

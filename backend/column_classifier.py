@@ -27,6 +27,7 @@ Training:   python column_classifier.py  (standalone mode)
 """
 
 import re
+import io
 import os
 import math
 import logging
@@ -262,10 +263,32 @@ def _load_rf_model():
     if not os.path.exists(MODEL_PATH):
         return None
     try:
-        import pickle
+        import pickle, hashlib
+        # Verify file hash before deserialising.  pickle.load() executes
+        # arbitrary Python — an attacker who can replace the .pkl file gets RCE.
+        # We store the expected SHA-256 next to the model and refuse to load if
+        # it doesn't match.
+        hash_path = MODEL_PATH + ".sha256"
         with open(MODEL_PATH, "rb") as f:
-            _rf_model = pickle.load(f)
-        logger.info(f"Column classifier: RF model loaded from {MODEL_PATH}")
+            raw = f.read()
+        actual_hash = hashlib.sha256(raw).hexdigest()
+        if os.path.exists(hash_path):
+            with open(hash_path) as hf:
+                expected_hash = hf.read().strip()
+            if actual_hash != expected_hash:
+                logger.error(
+                    "Column classifier: model file hash mismatch — refusing to load "
+                    "(possible tampering). Delete the .pkl and retrain."
+                )
+                _rf_model = None
+                return _rf_model
+        else:
+            # No hash file yet — write it on first load (bootstrapping)
+            with open(hash_path, "w") as hf:
+                hf.write(actual_hash)
+            logger.info(f"Column classifier: wrote initial hash {actual_hash[:16]}…")
+        _rf_model = pickle.load(io.BytesIO(raw))
+        logger.info(f"Column classifier: RF model loaded and verified from {MODEL_PATH}")
     except Exception as e:
         logger.warning(f"Column classifier: could not load RF model: {e}")
         _rf_model = None
@@ -487,6 +510,15 @@ def train_and_save(augment: bool = True) -> dict:
     os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
     with open(MODEL_PATH, "wb") as f:
         pickle.dump(model, f)
+
+    # Write the integrity hash alongside the model so the loader can verify it
+    import hashlib
+    with open(MODEL_PATH, "rb") as f:
+        raw = f.read()
+    model_hash = hashlib.sha256(raw).hexdigest()
+    with open(MODEL_PATH + ".sha256", "w") as hf:
+        hf.write(model_hash)
+    logger.info(f"Column classifier: wrote model hash {model_hash[:16]}…")
 
     # Reload the in-process model immediately
     invalidate_model_cache()
