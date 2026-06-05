@@ -438,8 +438,8 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Right column — animated scanner (hidden on small screens) */}
-                <div className="hidden lg:block">
+                {/* Right column — animated scanner */}
+                <div className="w-full lg:block">
                   <HeroScanner />
                 </div>
 

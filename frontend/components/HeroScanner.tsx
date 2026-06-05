@@ -63,20 +63,22 @@ export default function HeroScanner() {
 
         {/* Laser scan line */}
         <div className="scanner-laser" />
-      </div>
 
-      {/* Floating leak cards */}
-      {LEAK_CARDS.map((card) => (
-        <div
-          key={card.label}
-          className="leak-card absolute -right-4 flex items-center gap-2 rounded-xl border border-slate-700/50 bg-slate-800/90 px-3 py-2 shadow-lg backdrop-blur-sm"
-          style={{ animationDelay: card.delay, top: `${LEAK_CARDS.indexOf(card) * 36 + 30}%` }}
-        >
-          <span className={`h-2 w-2 rounded-full shrink-0 ${card.dotColor}`} />
-          <span className="text-xs text-slate-300">{card.label}</span>
-          <span className={`ml-1 text-xs font-bold ${card.textColor}`}>{card.amount}</span>
+        {/* Floating leak cards — overlaid inside the card so they never overflow */}
+        <div className="absolute inset-x-4 bottom-4 flex flex-col gap-2">
+          {LEAK_CARDS.map((card) => (
+            <div
+              key={card.label}
+              className="leak-card flex items-center gap-2 rounded-xl border border-slate-700/50 bg-slate-800/95 px-3 py-2 shadow-lg backdrop-blur-sm"
+              style={{ animationDelay: card.delay }}
+            >
+              <span className={`h-2 w-2 rounded-full shrink-0 ${card.dotColor}`} />
+              <span className="text-xs text-slate-300">{card.label}</span>
+              <span className={`ml-auto text-xs font-bold ${card.textColor}`}>{card.amount}</span>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
 
       {/* Savings counter at the bottom */}
       <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3">
