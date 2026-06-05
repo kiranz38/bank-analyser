@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
 import GeoMismatchBanner from '@/components/GeoMismatchBanner'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Bank Statement Analyzer Canada – Free Tool for TD, RBC, Scotiabank, BMO, CIBC',
@@ -119,7 +120,8 @@ export default function CanadaAnalyzerPage() {
           <Link href="/find-hidden-subscriptions" className="text-primary hover:underline">Find Hidden Subscriptions</Link>
           <Link href="/subscription-tracker" className="text-primary hover:underline">Subscription Tracker</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/bank-statement-analyzer-canada" />
+
     </main>
   )
 }

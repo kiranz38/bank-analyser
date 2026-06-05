@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
 import GeoMismatchBanner from '@/components/GeoMismatchBanner'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Bank Statement Analyzer New Zealand – Free Tool for ANZ NZ, Westpac NZ, BNZ, ASB',
@@ -117,7 +118,8 @@ export default function NzAnalyzerPage() {
           <Link href="/bank-statement-analyzer-australia" className="text-primary hover:underline">Australia Guide</Link>
           <Link href="/find-hidden-subscriptions" className="text-primary hover:underline">Find Hidden Subscriptions</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/bank-statement-analyzer-new-zealand" />
+
     </main>
   )
 }

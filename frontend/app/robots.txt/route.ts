@@ -3,11 +3,14 @@ export async function GET() {
 User-agent: *
 Allow: /
 
+# Private / no SEO value
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /account
+Disallow: /admin
+
 # Sitemap
 Sitemap: https://whereismymoneygo.com/sitemap.xml
-
-# Disallow API routes
-Disallow: /api/
 `
 
   return new Response(robotsTxt, {

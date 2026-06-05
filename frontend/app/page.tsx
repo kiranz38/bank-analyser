@@ -52,6 +52,8 @@ import {
   Upload,
   TrendingDown,
 } from 'lucide-react'
+import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 // Feature flags
 const BANK_CONNECT_ENABLED = process.env.NEXT_PUBLIC_BANK_CONNECT_BETA === 'true'
@@ -534,6 +536,43 @@ export default function HomePage() {
                 </Button>
               </div>
             </footer>
+
+            {/* FAQ — targets Google People Also Ask boxes */}
+            <JsonLd schema={{
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: [
+                { '@type': 'Question', name: 'Is Leaky Wallet really free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. The full bank statement analysis — subscription detection, spending breakdown, category charts, and savings plan — is completely free with no account required. An optional Pro Report is available for a one-time $1.99.' } },
+                { '@type': 'Question', name: 'Which banks does Leaky Wallet support?', acceptedAnswer: { '@type': 'Answer', text: 'Leaky Wallet works with CSV or PDF exports from any bank worldwide, including ANZ, CommBank, Westpac, NAB, Chase, Bank of America, Wells Fargo, Barclays, HSBC, TD Bank, and hundreds more.' } },
+                { '@type': 'Question', name: 'Is my bank statement data safe?', acceptedAnswer: { '@type': 'Answer', text: 'Your file is processed in server memory and immediately discarded — never stored in a database. We cannot see, access, or sell your financial data.' } },
+                { '@type': 'Question', name: 'How do I export my bank statement?', acceptedAnswer: { '@type': 'Answer', text: "Log in to your bank's internet banking website, go to Transaction History, select 90 days of data, and export as CSV or PDF. Most major banks support this." } },
+                { '@type': 'Question', name: 'What is a spending leak?', acceptedAnswer: { '@type': 'Answer', text: 'A spending leak is money leaving your account that you did not consciously choose to spend: forgotten subscriptions, auto-renewed trials, bank fees, duplicate services, and price increases on existing subscriptions.' } },
+                { '@type': 'Question', name: 'How much money do people find in spending leaks?', acceptedAnswer: { '@type': 'Answer', text: 'Based on 47,000+ scans, the average user finds $412 per month in spending leaks — mostly from forgotten subscriptions, price-increased services, and bank fees.' } },
+              ],
+            }} />
+            <section className="pb-10">
+              <h2 className="text-xl font-bold tracking-tight mb-6">Frequently Asked Questions</h2>
+              <div className="divide-y rounded-lg border">
+                {[
+                  { q: 'Is Leaky Wallet really free?', a: 'Yes. The full analysis — subscription detection, spending breakdown, savings plan — is completely free with no account required. An optional Pro Report PDF is available for a one-time $1.99.' },
+                  { q: 'Which banks does it work with?', a: 'Any bank worldwide that lets you export a CSV or PDF: ANZ, CommBank, Westpac, NAB, Chase, Bank of America, Wells Fargo, Barclays, HSBC, TD Bank, and hundreds more.' },
+                  { q: 'Is my bank statement data safe?', a: 'Your file is processed in server memory and immediately discarded — never stored in a database. We cannot see, access, or sell your financial data.' },
+                  { q: 'How do I export my bank statement?', a: "Log in to your bank's internet banking website, go to Transaction History, select 90 days, and export as CSV or PDF. Most major banks support this on desktop." },
+                  { q: 'How long does the analysis take?', a: 'Under 10 seconds. The analyzer reads every transaction, groups recurring charges, detects subscriptions, and generates your full spending breakdown instantly.' },
+                  { q: 'Does it work with credit card statements?', a: 'Yes. Export your credit card transaction history as CSV or PDF and upload it the same way — it works for both debit and credit card statements.' },
+                ].map(faq => (
+                  <details key={faq.q} className="group px-4 py-3">
+                    <summary className="cursor-pointer list-none flex items-center justify-between font-medium text-sm select-none">
+                      {faq.q}
+                      <span className="ml-4 shrink-0 text-muted-foreground group-open:rotate-45 transition-transform">+</span>
+                    </summary>
+                    <p className="mt-2 text-sm text-muted-foreground">{faq.a}</p>
+                  </details>
+                ))}
+              </div>
+            </section>
+
+            <SeoInternalLinks currentPath="/" />
 
           </div>
         </>

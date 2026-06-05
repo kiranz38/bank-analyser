@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Free Money Management Tool – Analyze Your Spending & Find Where You\'re Losing Money',
@@ -83,7 +84,8 @@ export default function MoneyManagementPage() {
           <Link href="/find-hidden-subscriptions" className="text-primary hover:underline">Find Hidden Subscriptions</Link>
           <Link href="/bank-fee-checker" className="text-primary hover:underline">Bank Fee Checker</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/money-management" />
+
     </main>
   )
 }

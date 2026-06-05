@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'ANZ Bank Statement Analyzer – Find Hidden Subscriptions & Spending Leaks',
@@ -122,7 +123,8 @@ export default function AnzStatementAnalyzerPage() {
           <Link href="/bank-statement-analyzer-australia" className="text-primary hover:underline">Australia Guide</Link>
           <Link href="/bank-statement-analyzer" className="text-primary hover:underline">All Banks</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/anz-bank-statement-analyzer" />
+
     </main>
   )
 }

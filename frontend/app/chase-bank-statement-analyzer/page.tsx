@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Chase Bank Statement Analyzer – Find Hidden Subscriptions & Fees',
@@ -85,7 +86,8 @@ export default function ChaseAnalyzerPage() {
           <Link href="/bank-statement-analyzer-usa" className="text-primary hover:underline">All US Banks</Link>
           <Link href="/find-hidden-subscriptions" className="text-primary hover:underline">Find Hidden Subscriptions</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/chase-bank-statement-analyzer" />
+
     </main>
   )
 }

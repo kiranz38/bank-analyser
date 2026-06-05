@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Free Personal Finance Tracker – Analyze Your Bank Statement Instantly',
@@ -95,7 +96,8 @@ export default function PersonalFinanceTrackerPage() {
           <Link href="/find-hidden-subscriptions" className="text-primary hover:underline">Find Hidden Subscriptions</Link>
           <Link href="/bank-statement-analyzer" className="text-primary hover:underline">Bank Statement Analyzer</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/personal-finance-tracker" />
+
     </main>
   )
 }

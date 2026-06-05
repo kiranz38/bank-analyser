@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search, X } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'How to Cancel Subscriptions – Find & Cancel Hidden Subscriptions From Your Bank Statement',
@@ -111,7 +112,8 @@ export default function CancelSubscriptionsPage() {
           <Link href="/subscription-tracker" className="text-primary hover:underline">Subscription Tracker</Link>
           <Link href="/bank-statement-analyzer" className="text-primary hover:underline">Bank Statement Analyzer</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/cancel-subscriptions" />
+
     </main>
   )
 }

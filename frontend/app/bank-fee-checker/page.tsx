@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search, AlertTriangle } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Free Bank Fee Checker – Find Hidden Bank Fees & Charges in Your Statement',
@@ -97,7 +98,8 @@ export default function BankFeeCheckerPage() {
           <Link href="/money-management" className="text-primary hover:underline">Money Management</Link>
           <Link href="/where-is-my-money-going" className="text-primary hover:underline">Where Is My Money Going?</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/bank-fee-checker" />
+
     </main>
   )
 }

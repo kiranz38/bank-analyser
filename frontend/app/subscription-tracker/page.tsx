@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search, TrendingDown } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Free Subscription Tracker – See All Your Recurring Charges in One Place',
@@ -121,7 +122,8 @@ export default function SubscriptionTrackerPage() {
           <Link href="/where-is-my-money-going" className="text-primary hover:underline">Where Is My Money Going?</Link>
           <Link href="/how-it-works" className="text-primary hover:underline">How It Works</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/subscription-tracker" />
+
     </main>
   )
 }

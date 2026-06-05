@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Westpac Bank Statement Analyzer – Find Hidden Subscriptions & Fees',
@@ -84,7 +85,8 @@ export default function WestpacAnalyzerPage() {
           <Link href="/nab-bank-statement-analyzer" className="text-primary hover:underline">NAB Analyzer</Link>
           <Link href="/bank-statement-analyzer-australia" className="text-primary hover:underline">Australia Guide</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/westpac-statement-analyzer" />
+
     </main>
   )
 }

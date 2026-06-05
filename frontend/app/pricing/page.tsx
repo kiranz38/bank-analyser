@@ -5,18 +5,20 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Check, Heart, Coffee } from 'lucide-react'
+import { JsonLd } from '@/components/JsonLd'
 
 export const metadata: Metadata = {
-  title: 'Pricing – Free Analysis + $1.99 Pro Report | Leaky Wallet',
-  description: 'Leaky Wallet is free to use. Upload your bank statement and get instant insights. Upgrade to a Pro Report for $1.99 — a detailed PDF with health scores, savings projections, and action plans.',
+  title: 'Pricing – Free Bank Statement Analyzer + $1.99 Pro Report | Leaky Wallet',
+  description: 'Leaky Wallet is free forever. Analyze your bank statement instantly — find hidden subscriptions, fees, and spending leaks at no cost. Optional Pro Report for $1.99: financial health score, savings projection, and PDF download.',
   alternates: {
     canonical: 'https://whereismymoneygo.com/pricing',
   },
   openGraph: {
-    title: 'Pricing – Free Analysis + Pro Report | Leaky Wallet',
-    description: 'Free bank statement analysis with optional $1.99 Pro Report — detailed PDF with health scores, savings projections, and personalized action plans.',
+    title: 'Pricing – Free Bank Statement Analyzer | Leaky Wallet',
+    description: 'Free bank statement analysis with optional $1.99 Pro Report. No subscriptions, no hidden fees — just honest pricing.',
     type: 'website',
     url: 'https://whereismymoneygo.com/pricing',
+    siteName: 'Leaky Wallet',
   },
 }
 
@@ -68,9 +70,49 @@ const faqs = [
   },
 ]
 
+const pricingSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: 'Leaky Wallet Pro Report',
+  description: 'Detailed PDF financial report with health score, 12-month savings projection, and prioritized action plan — generated from your bank statement.',
+  url: 'https://whereismymoneygo.com/pricing',
+  brand: { '@type': 'Brand', name: 'Leaky Wallet' },
+  offers: [
+    {
+      '@type': 'Offer',
+      name: 'Free Analysis',
+      price: '0',
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      description: 'Full bank statement analysis — subscription detection, spending breakdown, savings plan. Free forever.',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Pro Report',
+      price: '1.99',
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      priceValidUntil: '2026-12-31',
+      description: 'One-time PDF report with financial health score, 12-month savings projection, and personalized action plan.',
+    },
+  ],
+}
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(faq => ({
+    '@type': 'Question',
+    name: faq.q,
+    acceptedAnswer: { '@type': 'Answer', text: faq.a },
+  })),
+}
+
 export default function PricingPage() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-12">
+      <JsonLd schema={pricingSchema} />
+      <JsonLd schema={faqSchema} />
       <div className="space-y-12">
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Simple, Transparent Pricing</h1>

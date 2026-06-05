@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
 import GeoMismatchBanner from '@/components/GeoMismatchBanner'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Bank Statement Analyzer UK – Free Tool for Barclays, HSBC, Lloyds, NatWest, Monzo',
@@ -122,7 +123,8 @@ export default function UkAnalyzerPage() {
           <Link href="/find-hidden-subscriptions" className="text-primary hover:underline">Find Hidden Subscriptions</Link>
           <Link href="/subscription-tracker" className="text-primary hover:underline">Subscription Tracker</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/bank-statement-analyzer-uk" />
+
     </main>
   )
 }

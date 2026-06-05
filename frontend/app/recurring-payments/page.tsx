@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Find All Recurring Payments & Charges – Free Recurring Payment Finder',
@@ -91,7 +92,8 @@ export default function RecurringPaymentsPage() {
           <Link href="/cancel-subscriptions" className="text-primary hover:underline">Cancel Subscriptions Guide</Link>
           <Link href="/bank-fee-checker" className="text-primary hover:underline">Bank Fee Checker</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/recurring-payments" />
+
     </main>
   )
 }

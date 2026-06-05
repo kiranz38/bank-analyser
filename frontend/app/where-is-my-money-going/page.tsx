@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Where Is My Money Going? – Free Spending Analyzer',
@@ -142,7 +143,8 @@ export default function WhereIsMyMoneyGoingPage() {
           <Link href="/bank-statement-analyzer" className="text-primary hover:underline">Bank Statement Analyzer</Link>
           <Link href="/how-it-works" className="text-primary hover:underline">How It Works</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/where-is-my-money-going" />
+
     </main>
   )
 }

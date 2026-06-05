@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Bank Statement Analyzer – Upload CSV or PDF to Find Hidden Subscriptions',
@@ -157,7 +158,8 @@ export default function BankStatementAnalyzerPage() {
         <p className="text-center text-xs text-muted-foreground">
           Privacy-first: your data is processed in memory and never stored. Not financial advice.
         </p>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/bank-statement-analyzer" />
+
     </main>
   )
 }

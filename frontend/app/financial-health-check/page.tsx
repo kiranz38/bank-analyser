@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Free Financial Health Check – Score Your Spending & Find Money Leaks',
@@ -113,7 +114,8 @@ export default function FinancialHealthCheckPage() {
           <Link href="/find-hidden-subscriptions" className="text-primary hover:underline">Find Hidden Subscriptions</Link>
           <Link href="/bank-fee-checker" className="text-primary hover:underline">Bank Fee Checker</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/financial-health-check" />
+
     </main>
   )
 }

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Free Monthly Expense Tracker – No App, No Signup, Just Upload Your Statement',
@@ -90,7 +91,8 @@ export default function MonthlyExpenseTrackerPage() {
           <Link href="/spending-tracker" className="text-primary hover:underline">Spending Tracker</Link>
           <Link href="/find-hidden-subscriptions" className="text-primary hover:underline">Find Hidden Subscriptions</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/monthly-expense-tracker" />
+
     </main>
   )
 }

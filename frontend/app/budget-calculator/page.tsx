@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Free Budget Calculator – Build Your Budget From Your Actual Bank Transactions',
@@ -91,7 +92,8 @@ export default function BudgetCalculatorPage() {
           <Link href="/where-is-my-money-going" className="text-primary hover:underline">Where Is My Money Going?</Link>
           <Link href="/find-hidden-subscriptions" className="text-primary hover:underline">Find Hidden Subscriptions</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/budget-calculator" />
+
     </main>
   )
 }

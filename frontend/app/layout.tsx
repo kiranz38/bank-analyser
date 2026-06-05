@@ -32,11 +32,21 @@ export const metadata: Metadata = {
     'NAB bank statement',
     'CSV bank statement analyzer',
     'PDF bank statement analyzer',
+    'subscription finder',
+    'recurring payment tracker',
+    'bank fee checker',
     'leaky wallet',
   ],
   metadataBase: new URL('https://whereismymoneygo.com'),
   alternates: {
     canonical: 'https://whereismymoneygo.com',
+    languages: {
+      'en-AU': 'https://whereismymoneygo.com/bank-statement-analyzer-australia',
+      'en-US': 'https://whereismymoneygo.com/bank-statement-analyzer-usa',
+      'en-GB': 'https://whereismymoneygo.com/bank-statement-analyzer-uk',
+      'en-CA': 'https://whereismymoneygo.com/bank-statement-analyzer-canada',
+      'en-NZ': 'https://whereismymoneygo.com/bank-statement-analyzer-new-zealand',
+    },
   },
   openGraph: {
     title: 'Leaky Wallet – Find Hidden Subscriptions & Spending Leaks',
@@ -45,12 +55,21 @@ export const metadata: Metadata = {
     url: 'https://whereismymoneygo.com',
     siteName: 'Leaky Wallet',
     locale: 'en_AU',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'Leaky Wallet – Free Bank Statement Analyzer – Find hidden subscriptions and spending leaks',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Leaky Wallet – Free Bank Statement Analyzer',
     description: 'Upload your bank statement to find hidden subscriptions, fees, and spending leaks instantly. Free, private, no signup.',
     site: '@leakywallet',
+    images: ['/opengraph-image'],
   },
   robots: {
     index: true,
@@ -71,25 +90,32 @@ const softwareAppSchema = {
   applicationCategory: 'FinanceApplication',
   operatingSystem: 'Web',
   url: 'https://whereismymoneygo.com',
-  description: 'Free bank statement analyzer that finds hidden subscriptions, spending leaks, and unnecessary fees. Upload CSV or PDF from any bank.',
-  offers: {
-    '@type': 'Offer',
-    price: '0',
-    priceCurrency: 'USD',
-  },
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.8',
-    reviewCount: '127',
-  },
+  description: 'Free bank statement analyzer that finds hidden subscriptions, spending leaks, and unnecessary fees. Upload CSV or PDF from any bank — ANZ, CommBank, Westpac, NAB, Chase, Barclays, and more.',
+  offers: [
+    {
+      '@type': 'Offer',
+      name: 'Free Analysis',
+      price: '0',
+      priceCurrency: 'USD',
+      description: 'Full bank statement analysis, subscription detection, spending breakdown — free, no account required.',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Pro Report',
+      price: '1.99',
+      priceCurrency: 'USD',
+      description: 'Downloadable PDF with financial health score, 12-month savings projection, and personalized action plan.',
+    },
+  ],
   featureList: [
     'Hidden subscription detection',
-    'Spending category breakdown',
-    'Month-over-month comparison',
-    'Bank fee identification',
+    'Spending category breakdown with charts',
+    'Month-over-month spending comparison',
+    'Bank fee and charge identification',
     'Personalized savings action plan',
-    'CSV and PDF support',
-    'Privacy-first: no data stored',
+    'CSV and PDF bank statement support',
+    'Privacy-first: no data stored on servers',
+    'Works with ANZ, CommBank, Westpac, NAB, Chase, Barclays, HSBC',
   ],
 }
 

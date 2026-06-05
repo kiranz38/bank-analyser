@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
 import GeoMismatchBanner from '@/components/GeoMismatchBanner'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Bank Statement Analyzer USA – Free Tool for Chase, Bank of America, Wells Fargo',
@@ -123,7 +124,8 @@ export default function UsaAnalyzerPage() {
           <Link href="/td-bank-statement-analyzer" className="text-primary hover:underline">TD Bank</Link>
           <Link href="/find-hidden-subscriptions" className="text-primary hover:underline">Find Hidden Subscriptions</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/bank-statement-analyzer-usa" />
+
     </main>
   )
 }

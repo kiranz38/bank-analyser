@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, Search, AlertTriangle } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Find Hidden Subscriptions – Free Subscription Finder Tool',
@@ -149,7 +150,8 @@ export default function FindHiddenSubscriptionsPage() {
           <Link href="/where-is-my-money-going" className="text-primary hover:underline">Where Is My Money Going?</Link>
           <Link href="/how-it-works" className="text-primary hover:underline">How It Works</Link>
         </nav>
-      </article>
+      </article>        <SeoInternalLinks currentPath="/find-hidden-subscriptions" />
+
     </main>
   )
 }

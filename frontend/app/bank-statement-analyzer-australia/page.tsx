@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Check, Search } from 'lucide-react'
 import { JsonLd } from '@/components/JsonLd'
 import GeoMismatchBanner from '@/components/GeoMismatchBanner'
+import { SeoInternalLinks } from '@/components/SeoInternalLinks'
 
 export const metadata: Metadata = {
   title: 'Bank Statement Analyzer Australia – Free Tool for ANZ, CommBank, Westpac, NAB',
@@ -51,10 +52,21 @@ const faqSchema = {
   mainEntity: faqs.map(faq => ({ '@type': 'Question', name: faq.q, acceptedAnswer: { '@type': 'Answer', text: faq.a } })),
 }
 
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Leaky Wallet', item: 'https://whereismymoneygo.com' },
+    { '@type': 'ListItem', position: 2, name: 'Bank Statement Analyzer', item: 'https://whereismymoneygo.com/bank-statement-analyzer' },
+    { '@type': 'ListItem', position: 3, name: 'Australia', item: 'https://whereismymoneygo.com/bank-statement-analyzer-australia' },
+  ],
+}
+
 export default function AustraliaAnalyzerPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
       <JsonLd schema={faqSchema} />
+      <JsonLd schema={breadcrumbSchema} />
       <GeoMismatchBanner pageRegionSlug="australia" />
       <article className="space-y-8">
         <div className="space-y-1">
@@ -116,14 +128,7 @@ export default function AustraliaAnalyzerPage() {
           </div>
         </section>
 
-        <nav className="flex flex-wrap gap-x-4 gap-y-1 text-sm border-t pt-4">
-          <Link href="/anz-bank-statement-analyzer" className="text-primary hover:underline">ANZ</Link>
-          <Link href="/commbank-statement-analyzer" className="text-primary hover:underline">CommBank</Link>
-          <Link href="/westpac-statement-analyzer" className="text-primary hover:underline">Westpac</Link>
-          <Link href="/nab-bank-statement-analyzer" className="text-primary hover:underline">NAB</Link>
-          <Link href="/find-hidden-subscriptions" className="text-primary hover:underline">Find Hidden Subscriptions</Link>
-          <Link href="/subscription-tracker" className="text-primary hover:underline">Subscription Tracker</Link>
-        </nav>
+        <SeoInternalLinks currentPath="/bank-statement-analyzer-australia" />
       </article>
     </main>
   )
