@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import HeroScanner from '@/components/HeroScanner'
 import UploadForm from '@/components/UploadForm'
 import ResultCards from '@/components/ResultCards'
 import LoadingOverlay from '@/components/LoadingOverlay'
@@ -357,69 +357,51 @@ export default function HomePage() {
 
       {viewState === 'landing' ? (
         <>
-          {/* ── Hero — true full-viewport width, no container constraints ── */}
-          <section className="relative w-full overflow-hidden min-h-[580px] md:min-h-[680px] flex items-center">
-            <Image
-              src="https://images.unsplash.com/photo-1453928582365-b6ad33cbcf64?w=1920&q=90&auto=format&fit=crop"
-              alt="Clean professional workspace for financial analysis"
-              fill
-              className="object-cover"
-              style={{ objectPosition: 'center center', transform: 'scaleX(-1)' }}
-              priority
-            />
-            {/* Mobile: near-opaque cover so keyboard letters don't bleed through text */}
-            <div className="absolute inset-0 bg-black/80 md:hidden" />
-            {/* Desktop: left-to-right gradient — dark on text side, fades to reveal image */}
-            <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
-            {/* Bottom fade into page */}
-            <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-background to-transparent" />
+          {/* ── Hero — dark navy, product-as-hero ── */}
+          <section
+            className="relative w-full overflow-hidden"
+            style={{
+              background: 'radial-gradient(ellipse 80% 60% at 65% 40%, rgba(16,185,129,0.12) 0%, transparent 70%), #0F172A',
+            }}
+          >
+            <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
+              <div className="grid items-center gap-12 lg:grid-cols-2">
 
-            {/* Hero content */}
-            <div className="relative z-10 w-full px-6 py-16 md:py-24">
-              <div className="mx-auto max-w-6xl">
-                <div className="max-w-xl">
-
+                {/* Left column — text */}
+                <div>
                   {/* Pill badges */}
                   <div className="mb-6 flex flex-col items-start gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50/90 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 backdrop-blur-sm">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-700/60 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                       Free · No signup · Files auto-deleted
                     </span>
                     {countryConfig.name && (
                       <Link
                         href={countryConfig.regionalPage}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 backdrop-blur-sm px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-colors"
                       >
                         Optimised for {countryConfig.name} · {countryConfig.banks.slice(0, 3).join(', ')} & more
                       </Link>
                     )}
                   </div>
 
-                  <h1 className="mb-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
-                    Find where your money{' '}
-                    <span className="text-emerald-400">quietly disappears</span>
+                  <h1 className="mb-5 text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
+                    Find the money{' '}
+                    <span className="text-emerald-400">quietly leaving</span>{' '}
+                    your account
                   </h1>
 
-                  <p className="mb-8 text-lg text-white/80 sm:text-xl max-w-lg">
-                    Upload your bank statement and see every hidden subscription, sneaky fee,
-                    and spending leak — with a step-by-step plan to fix it.
+                  <p className="mb-8 text-lg text-slate-400 max-w-lg leading-relaxed">
+                    Upload your bank statement. We scan it privately — no login, no storage —
+                    and show you every hidden subscription, fee, and spending leak.
                   </p>
-
-                  {/* Savings callout */}
-                  <div className="mb-8 inline-flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/90 dark:bg-emerald-950/60 backdrop-blur-sm px-5 py-3 dark:border-emerald-800">
-                    <TrendingDown className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    <p className="text-sm text-emerald-800 dark:text-emerald-300">
-                      Most people discover{' '}
-                      <strong className="text-base font-bold">$200–$600/month</strong>{' '}
-                      in hidden spending
-                    </p>
-                  </div>
 
                   {/* CTAs */}
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <Button
                       size="lg"
                       className="h-12 w-full px-8 text-base font-semibold shadow-lg sm:w-auto"
+                      style={{ background: '#00c47a', color: '#fff' }}
                       onClick={handleCTAClick}
                     >
                       <Search className="mr-2 h-5 w-5" />
@@ -428,7 +410,7 @@ export default function HomePage() {
                     <Button
                       variant="outline"
                       size="lg"
-                      className="h-12 w-full px-8 text-base sm:w-auto bg-background/60 backdrop-blur-sm"
+                      className="h-12 w-full px-8 text-base sm:w-auto border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white bg-transparent"
                       onClick={handleSampleRun}
                       disabled={loading}
                     >
@@ -437,23 +419,30 @@ export default function HomePage() {
                     </Button>
                   </div>
 
-                  {/* Trust badges */}
-                  <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/70">
-                    <span className="flex items-center gap-1.5">
-                      <Shield className="h-4 w-4 text-emerald-500" />
-                      Privacy-first
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Zap className="h-4 w-4 text-emerald-500" />
-                      Results in 10 seconds
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Check className="h-4 w-4 text-emerald-500" />
-                      No card required
+                  {/* Trust line */}
+                  <p className="mt-4 text-xs text-slate-500">
+                    Your bank statement never leaves your device session · Results in 10s · No card required
+                  </p>
+
+                  {/* Social proof */}
+                  <div className="mt-6 flex items-center gap-3">
+                    <div className="flex -space-x-2">
+                      {['bg-emerald-500', 'bg-sky-500', 'bg-violet-500', 'bg-amber-500'].map((c, i) => (
+                        <div key={i} className={`h-7 w-7 rounded-full border-2 border-slate-900 ${c}`} />
+                      ))}
+                    </div>
+                    <span className="text-sm text-slate-400">
+                      <strong className="text-white">47,000+</strong> scans run · avg.{' '}
+                      <strong className="text-emerald-400">$412/mo</strong> in leaks found
                     </span>
                   </div>
-
                 </div>
+
+                {/* Right column — animated scanner (hidden on small screens) */}
+                <div className="hidden lg:block">
+                  <HeroScanner />
+                </div>
+
               </div>
             </div>
           </section>
