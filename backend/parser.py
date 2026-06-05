@@ -88,7 +88,13 @@ def normalize_merchant(merchant: str) -> str:
     for prefix in ['SQ *', 'SP ', 'PAYPAL *', 'STRIPE *', 'PP*']:
         if merchant.startswith(prefix):
             merchant = merchant[len(prefix):]
-    return merchant.strip()
+    merchant = merchant.strip()
+    # Hard cap: real merchant names are short. If we ended up with more than 6 tokens,
+    # the parser likely concatenated multiple transaction lines. Truncate to the first 4.
+    tokens = merchant.split()
+    if len(tokens) > 6:
+        merchant = ' '.join(tokens[:4])
+    return merchant
 
 
 def parse_amount(value) -> Optional[float]:

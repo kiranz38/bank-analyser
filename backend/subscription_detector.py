@@ -56,29 +56,62 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
     Returns list of detected subscriptions with:
     - merchant, monthly_cost, annual_cost, confidence, last_date, occurrences
     """
-    # Known subscription keywords for high confidence matching
+    # Known subscription service tokens — matched as WHOLE WORDS only to avoid
+    # "CLAUDE" matching "ST. CLAUDE RESTAURANT" or "DIRECT DEBIT" matching mid-word.
     KNOWN_SUBSCRIPTIONS = [
         "NETFLIX", "SPOTIFY", "HULU", "DISNEY", "HBO", "AMAZON PRIME",
         "APPLE MUSIC", "YOUTUBE", "PARAMOUNT", "PEACOCK", "AUDIBLE",
-        "ADOBE", "MICROSOFT 365", "GOOGLE ONE", "DROPBOX", "ICLOUD",
-        "PLANET FITNESS", "LA FITNESS", "ANYTIME FITNESS", "EQUINOX",
-        "GYM", "FITNESS", "PELOTON",
+        "ADOBE", "MICROSOFT 365", "MICROSOFT", "GOOGLE ONE", "DROPBOX", "ICLOUD",
+        "PLANET FITNESS", "ANYTIME FITNESS", "EQUINOX",
         "ONLYFANS", "PATREON", "TWITCH",
-        "AFTERPAY", "KLARNA", "ZIP PAY", "AFFIRM",
+        "AFTERPAY", "KLARNA", "AFFIRM",
         "HEADSPACE", "CALM", "NOOM",
-        "HELLO FRESH", "BLUE APRON",
-        "CHATGPT", "CLAUDE", "OPENAI",
-        "COMMSEC", "DIRECT DEBIT"
+        "HELLO FRESH", "HELLOFRESH", "BLUE APRON",
+        "CHATGPT", "CLAUDE.AI", "ANTHROPIC", "OPENAI",
+        "COMMSEC",
+    ]
+
+    # Sanity cap: subscriptions above this monthly amount are almost certainly
+    # not a digital/streaming subscription (catches BNPL totals, groceries, etc.)
+    # Raised for gym/fitness/insurance which can be legitimately high.
+    SUBSCRIPTION_AMOUNT_CAP = 500.0
+
+    # Non-subscription merchants — keyword match high-confidence kill-switch
+    NOT_SUBSCRIPTION_PATTERNS = [
+        "WOOLWORTHS", "COLES", "ALDI", "IGA", "COSTCO",
+        "MCDONALD", "KFC", "SUBWAY", "BURGER KING", "HUNGRY",
+        "UBER EATS", "DOORDASH", "MENULOG", "DELIVEROO",
+        "PETROL", "SHELL", "CALTEX", "BP ", "MOBIL", "AMPOL",
+        "PHARMACY", "CHEMIST", "PRICELINE",
+        "HARVEY NORMAN", "JB HI-FI", "KMART", "BUNNINGS", "IKEA",
+        "HOSPITAL", "CLINIC", "MEDICAL", "DENTAL",
     ]
 
     # Recurring payment patterns (may have variable amounts)
     RECURRING_PATTERNS = ["DIRECT DEBIT", "BPAY", "AUTOPAY", "AUTO PAY"]
 
-    # Group transactions by normalized merchant
-    merchant_groups = defaultdict(list)
+    def _is_known_sub(merchant_upper: str) -> bool:
+        """Whole-word match against known subscription keywords."""
+        for kw in KNOWN_SUBSCRIPTIONS:
+            pattern = r'(?<![A-Z0-9])' + re.escape(kw) + r'(?![A-Z0-9])'
+            if re.search(pattern, merchant_upper):
+                return True
+        return False
+
+    def _is_non_subscription(merchant_upper: str) -> bool:
+        """Return True if the merchant is clearly not a subscription service."""
+        return any(pat in merchant_upper for pat in NOT_SUBSCRIPTION_PATTERNS)
+
+    # Group transactions by canonical merchant (falls back to raw merchant if normalizer unavailable)
+    merchant_groups: dict[str, list] = defaultdict(list)
 
     for txn in transactions:
-        merchant = txn.get("normalized_merchant") or txn.get("merchant", "")
+        # Prefer canonical name set by merchant normalizer; fall back to raw
+        merchant = (
+            txn.get("canonical_merchant")
+            or txn.get("normalized_merchant")
+            or txn.get("merchant", "")
+        )
         if not merchant:
             continue
         merchant_groups[merchant.upper()].append(txn)
@@ -87,6 +120,18 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
 
     for merchant, txns in merchant_groups.items():
         if len(txns) == 0:
+            continue
+
+        # Hard-exclude obvious non-subscription merchants
+        if _is_non_subscription(merchant):
+            continue
+
+        # Reject suspiciously long merchant names — these are parser concatenation
+        # artifacts where multiple transaction lines were merged into one string
+        # (e.g. "IVACS AUSTRALIA RAMKUMAR RA CLAUDE.AI"). Real subscription names
+        # are usually 1–4 tokens.
+        token_count = len(re.split(r'[\s.]+', merchant.strip()))
+        if token_count > 7:
             continue
 
         # Get amounts and dates (filter out NaN values)
@@ -102,6 +147,11 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
         max_amount = max(amounts)
         min_amount = min(amounts)
 
+        # Reject obviously non-subscription amounts unless it's a high-ticket
+        # known service (insurance, software licences) — cap at $500/mo
+        if avg_amount > SUBSCRIPTION_AMOUNT_CAP:
+            continue
+
         # Check if amounts are consistent (within 5% or $2 tolerance)
         amount_variance = max_amount - min_amount
         is_consistent = (
@@ -109,8 +159,8 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
             (avg_amount > 0 and amount_variance / avg_amount <= 0.05)
         )
 
-        # Check for known subscription keywords
-        is_known_sub = any(kw in merchant for kw in KNOWN_SUBSCRIPTIONS)
+        # Check for known subscription keywords (whole-word match)
+        known_sub = _is_known_sub(merchant)
 
         # Check for recurring payment patterns (more lenient - 15% variance allowed)
         is_recurring_pattern = any(kw in merchant for kw in RECURRING_PATTERNS)
@@ -133,9 +183,15 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
         confidence = 0.0
         reason = ""
 
-        if is_known_sub:
+        if known_sub and is_consistent and len(txns) >= 2:
             confidence = 0.95
             reason = "Known subscription service"
+        elif known_sub and is_periodic:
+            confidence = 0.9
+            reason = "Known subscription service (periodic)"
+        elif known_sub:
+            confidence = 0.75
+            reason = "Known subscription service (single charge)"
         elif is_recurring_pattern and len(txns) >= 3 and is_periodic:
             confidence = 0.9
             reason = f"Recurring payment: {len(txns)} charges, ~{avg_interval:.0f} days apart"
@@ -148,9 +204,6 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
         elif len(txns) >= 2 and is_consistent:
             confidence = 0.7
             reason = f"Consistent amounts: {len(txns)} charges of ~${avg_amount:.2f}"
-        elif is_known_sub or (len(txns) == 1 and any(kw in merchant for kw in KNOWN_SUBSCRIPTIONS)):
-            confidence = 0.6
-            reason = "Known subscription (single charge)"
 
         # Add if confidence is high enough and amount is valid
         if confidence >= 0.5 and avg_amount > 0 and not math.isnan(avg_amount):

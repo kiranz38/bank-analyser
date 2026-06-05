@@ -9,6 +9,7 @@ from categorizer import categorize_transactions, generate_category_summary, Cate
 from subscription_detector import detect_subscriptions, generate_month_comparison, detect_date_range, detect_price_changes, detect_duplicate_subscriptions
 from financial_planner import compute_health_score, compute_goal_projections, build_budget_benchmark
 from insights_engine import compute_all_insights
+from merchant_normalizer import normalize_transactions
 
 # Load alternatives data
 ALTERNATIVES_PATH = os.path.join(os.path.dirname(__file__), "data", "alternatives.json")
@@ -198,6 +199,31 @@ def _filter_transactions(transactions: list[dict]) -> list[dict]:
     return filtered
 
 
+def _deduplicate_subscriptions(subscriptions: list[dict]) -> list[dict]:
+    """Merge subscription entries that refer to the same service under different name variants.
+
+    Strategy: normalise merchant name to bare alpha tokens, then keep only the
+    highest-confidence entry when two names produce the same normalised key.
+    """
+    import re as _re
+
+    def _norm_key(name: str) -> str:
+        # Strip non-alpha, lowercase, drop common noise words
+        tokens = _re.sub(r'[^a-z ]', '', name.lower()).split()
+        stop = {'pty', 'ltd', 'inc', 'llc', 'au', 'us', 'com', 'the', 'and'}
+        return ' '.join(t for t in tokens if t not in stop and len(t) >= 3)
+
+    seen: dict[str, dict] = {}
+    for sub in subscriptions:
+        key = _norm_key(sub.get("merchant", ""))
+        if not key:
+            continue
+        if key not in seen or sub.get("confidence", 0) > seen[key].get("confidence", 0):
+            seen[key] = sub
+
+    return sorted(seen.values(), key=lambda s: s.get("monthly_cost", 0), reverse=True)
+
+
 def analyze_transactions(transactions: list[dict], use_claude: bool = True) -> dict:
     """
     Analyze transactions for spending leaks with categorization.
@@ -221,11 +247,23 @@ def analyze_transactions(transactions: list[dict], use_claude: bool = True) -> d
     # Categorize all transactions
     categorized_txns = categorize_transactions(transactions)
 
+    # Normalize merchant names using sentence-transformer embeddings so that
+    # "SPOTIFY USA" and "SPOTIFY AUSTRALIA" collapse to the same canonical entity
+    # before subscription detection and alternative matching.
+    try:
+        categorized_txns = normalize_transactions(categorized_txns)
+    except Exception:
+        pass  # Model unavailable — fall back to raw merchant names
+
     # Generate category summary
     category_summary = generate_category_summary(categorized_txns)
 
     # Detect subscriptions with improved algorithm
     subscriptions = detect_subscriptions(categorized_txns)
+
+    # Post-detection deduplication: collapse subscriptions whose merchant names
+    # are near-identical after normalization (handles edge cases the grouping misses)
+    subscriptions = _deduplicate_subscriptions(subscriptions)
 
     # Detect price changes in subscriptions
     price_changes = detect_price_changes(categorized_txns)

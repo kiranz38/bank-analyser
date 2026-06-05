@@ -70,7 +70,7 @@ export default function OverviewRow({
             <Button
               variant="outline"
               size="sm"
-              className="w-full border border-border/60 bg-background/40 backdrop-blur-sm shadow-sm hover:bg-background/70 hover:border-border transition-all"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
               onClick={onShowSpending}
             >
               View Details
@@ -97,7 +97,7 @@ export default function OverviewRow({
             <Button
               variant="outline"
               size="sm"
-              className="w-full border border-border/60 bg-background/40 backdrop-blur-sm shadow-sm hover:bg-background/70 hover:border-border transition-all"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
               onClick={onShowSubscriptions}
             >
               View Details
@@ -126,7 +126,7 @@ export default function OverviewRow({
             <Button
               variant="outline"
               size="sm"
-              className="w-full border border-border/60 bg-background/40 backdrop-blur-sm shadow-sm hover:bg-background/70 hover:border-border transition-all"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
               onClick={onShowQuickWins}
             >
               View Details

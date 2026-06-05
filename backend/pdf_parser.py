@@ -835,63 +835,51 @@ def _extract_anz_format(pdf) -> str:
         if is_deposit and not is_visa_debit:
             continue
 
-        # Collect all amounts from all lines in the block
+        # Collect amounts from ALL lines in the block.
+        # IMPORTANT: use ONLY the first substantive line for the description.
+        # Subsequent lines in an ANZ block are payment references or metadata
+        # (e.g. "RAMKUMAR RA" = the payer reference), not additional merchant names.
         all_amounts = []
-        description_parts = []
+        description = ''
 
-        for line in block['lines']:
-            # Skip EFFECTIVE DATE lines from description
+        for idx, line in enumerate(block['lines']):
+            # Skip EFFECTIVE DATE lines
             if 'EFFECTIVE DATE' in line.upper():
                 continue
 
-            # Find all amounts in this line
             line_amounts = re.findall(r'[\d,]+\.\d{2}', line)
 
             if line_amounts:
                 for amt_str in line_amounts:
                     try:
-                        amt = float(amt_str.replace(',', ''))
-                        all_amounts.append(amt)
+                        all_amounts.append(float(amt_str.replace(',', '')))
                     except ValueError:
                         continue
-                # Remove amounts and "blank" from line to get description
-                cleaned_line = re.sub(r'[\d,]+\.\d{2}', '', line)
-                cleaned_line = re.sub(r'\bblank\b', '', cleaned_line, flags=re.IGNORECASE)
-                cleaned_line = cleaned_line.strip()
-                if cleaned_line and len(cleaned_line) > 2:
-                    description_parts.append(cleaned_line)
-            else:
-                # No amounts, this is description
-                cleaned_line = re.sub(r'\bblank\b', '', line, flags=re.IGNORECASE).strip()
-                if cleaned_line:
-                    description_parts.append(cleaned_line)
 
-        if not all_amounts:
+            # Use only the FIRST non-empty, non-date line as description
+            if not description:
+                cleaned = re.sub(r'[\d,]+\.\d{2}', '', line)
+                cleaned = re.sub(r'\bblank\b', '', cleaned, flags=re.IGNORECASE)
+                cleaned = cleaned.strip()
+                if cleaned and len(cleaned) > 2:
+                    description = cleaned
+
+        if not all_amounts or not description:
             continue
 
-        # ANZ format: [withdrawal, deposit, balance] or [withdrawal, balance] or [deposit, balance]
-        # Balance is typically the largest and last value
-        # Withdrawal/deposit are typically smaller values
-        # Sort to identify: smallest values are likely transaction amounts, largest is balance
-
-        # The first amount that's NOT the largest is likely the transaction amount
+        # ANZ format: [withdrawal, deposit, balance] or [withdrawal, balance]
+        # Balance is typically the largest value.
         max_amount = max(all_amounts)
         transaction_amount = None
 
         for amt in all_amounts:
-            # Skip the balance (largest value or values > 1000 that look like balances)
             if amt == max_amount:
                 continue
-            # Take the first non-balance amount as transaction
             if amt < 5000:  # Reasonable transaction limit
                 transaction_amount = amt
                 break
 
         if transaction_amount is None or transaction_amount <= 0:
-            continue
-
-        description = ' '.join(description_parts).strip()
-        if not description or len(description) < 3:
             continue
 
         # Clean description
