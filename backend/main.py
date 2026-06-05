@@ -21,6 +21,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
+import threading
+
 from parser import parse_csv, merge_transactions
 from pdf_parser import pdf_to_csv
 from analyzer import analyze_transactions
@@ -29,6 +31,21 @@ from analytics import record_analysis, get_full_dashboard
 # Configure logging - log errors server-side only
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def _warm_up_models() -> None:
+    """Pre-load heavy ML models in a background thread so cold-start doesn't block requests."""
+    try:
+        from merchant_normalizer import _get_model
+        _get_model()
+        logger.info("ML model warm-up complete")
+    except Exception as e:
+        logger.warning(f"ML model warm-up failed (non-fatal): {e}")
+
+
+# Start model warm-up immediately on import — runs in background thread so
+# the server can start accepting requests while the model loads.
+threading.Thread(target=_warm_up_models, daemon=True).start()
 
 # Security constants
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB per file

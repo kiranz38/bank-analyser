@@ -251,14 +251,36 @@ export default function HomePage() {
         formData.append('text', data)
       }
 
-      const response = await fetch(`${apiUrl}/analyze`, {
-        method: 'POST',
-        body: formData,
-      })
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 90000) // 90s timeout
+
+      let response: Response
+      try {
+        response = await fetch(`${apiUrl}/analyze`, {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+        })
+      } catch (fetchErr) {
+        if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
+          throw new Error('Analysis timed out. Your PDF may be too large — try exporting as CSV from your bank instead, or try a shorter date range.')
+        }
+        throw fetchErr
+      } finally {
+        clearTimeout(timeoutId)
+      }
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Analysis failed')
+        let errorMsg = 'Analysis failed'
+        try {
+          const errorData = await response.json()
+          errorMsg = errorData.detail || errorMsg
+        } catch {
+          if (response.status === 524 || response.status === 504 || response.status === 408) {
+            errorMsg = 'Analysis timed out. Your PDF may be too large — try exporting as CSV from your bank instead.'
+          }
+        }
+        throw new Error(errorMsg)
       }
 
       const result = await response.json()

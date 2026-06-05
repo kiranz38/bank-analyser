@@ -18,6 +18,7 @@ const MAX_TOTAL_SIZE = 30 * 1024 * 1024
 const MAX_FILES = 12
 const MAX_TEXT_SIZE = 5 * 1024 * 1024
 const ALLOWED_EXTENSIONS = ['.csv', '.pdf']
+const LARGE_PDF_WARN_SIZE = 2 * 1024 * 1024 // 2MB — warn that CSV is preferred
 
 interface UploadedFile {
   file: File
@@ -30,6 +31,7 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
   const [dragging, setDragging] = useState(false)
   const [showInstructions, setShowInstructions] = useState(false)
   const [fileError, setFileError] = useState<string | null>(null)
+  const [largePdfWarning, setLargePdfWarning] = useState(false)
   const [consentChecked, setConsentChecked] = useState(false)
   const [consentError, setConsentError] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -47,6 +49,7 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
 
   const addFiles = (newFiles: FileList | File[]) => {
     setFileError(null)
+    setLargePdfWarning(false)
     const filesToAdd: UploadedFile[] = []
     let totalSize = files.reduce((sum, f) => sum + f.file.size, 0)
 
@@ -69,6 +72,11 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
 
       const isDuplicate = files.some(f => f.file.name === file.name && f.file.size === file.size)
       if (isDuplicate) continue
+
+      // Warn about large PDFs — bank PDFs with embedded images can time out on upload
+      if (file.name.toLowerCase().endsWith('.pdf') && file.size > LARGE_PDF_WARN_SIZE) {
+        setLargePdfWarning(true)
+      }
 
       totalSize += file.size
       filesToAdd.push({
@@ -267,7 +275,16 @@ export default function UploadForm({ onAnalyze, loading }: UploadFormProps) {
             )}
           </div>
 
-          {showMultiMonthTip && (
+          {largePdfWarning && (
+            <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs dark:bg-amber-950/30">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <span className="text-amber-800 dark:text-amber-300">
+                <strong>Large PDF detected.</strong> Bank PDFs with logos and images can be slow to upload. For best results, export as <strong>CSV</strong> from your bank instead — it&apos;s faster and more reliable.
+              </span>
+            </div>
+          )}
+
+          {showMultiMonthTip && !largePdfWarning && (
             <div className="flex items-start gap-2 rounded-lg bg-blue-50 p-3 text-xs dark:bg-blue-950/30">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
               <span>

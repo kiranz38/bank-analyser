@@ -68,7 +68,6 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
         "HEADSPACE", "CALM", "NOOM",
         "HELLO FRESH", "HELLOFRESH", "BLUE APRON",
         "CHATGPT", "CLAUDE.AI", "ANTHROPIC", "OPENAI",
-        "COMMSEC",
     ]
 
     # Sanity cap: subscriptions above this monthly amount are almost certainly
@@ -85,6 +84,11 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
         "PHARMACY", "CHEMIST", "PRICELINE",
         "HARVEY NORMAN", "JB HI-FI", "KMART", "BUNNINGS", "IKEA",
         "HOSPITAL", "CLINIC", "MEDICAL", "DENTAL",
+        # Investment/brokerage services — recurring debits are contributions, not subscriptions
+        "COMMSEC", "COMMONWEALTH SEC", "VANGUARD", "BETASHARES", "RAIZ",
+        "STAKE", "SUPERHERO", "PEARLER", "SELFWEALTH",
+        "FIDELITY", "SCHWAB", "VANGUARD", "ROBINHOOD", "WEBULL",
+        "SPACESHIP", "BAREFOOT", "ACORNS",
     ]
 
     # Recurring payment patterns (may have variable amounts)
