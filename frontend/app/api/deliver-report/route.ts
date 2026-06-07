@@ -91,8 +91,8 @@ export async function POST(request: NextRequest) {
       }).catch(err => console.error('[DeliverReport] DB pdfStatus update failed:', err))
     }
 
-    const origin = request.headers.get('origin') || 'http://localhost:3000'
-    const downloadUrl = `${origin}/api/download-report/${reportId}`
+    const appOrigin = process.env.NEXT_PUBLIC_APP_URL || 'https://whereismymoneygo.com'
+    const downloadUrl = `${appOrigin}/api/download-report/${reportId}`
 
     const emailResult = await sendReportEmail({
       toEmail: email,

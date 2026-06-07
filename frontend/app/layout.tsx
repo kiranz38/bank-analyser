@@ -5,6 +5,7 @@ import './globals.css'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import Providers from '@/components/Providers'
+import PageViewTracker from '@/components/PageViewTracker'
 import { JsonLd } from '@/components/JsonLd'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -168,6 +169,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           `}
         </Script>
         <Providers>
+          <PageViewTracker />
           <Header />
           <div className="site-content">
             {children}

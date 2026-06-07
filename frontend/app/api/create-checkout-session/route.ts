@@ -29,7 +29,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const origin = request.headers.get('origin') || 'http://localhost:3000'
+    // Use the canonical app URL from env — never trust the client-supplied Origin header,
+    // as it can be spoofed to redirect Stripe callbacks to an attacker's domain.
+    const appOrigin = process.env.NEXT_PUBLIC_APP_URL || 'https://whereismymoneygo.com'
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
@@ -48,8 +50,8 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${origin}?pro_payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}?pro_payment=cancelled`,
+      success_url: `${appOrigin}?pro_payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appOrigin}?pro_payment=cancelled`,
       metadata: {
         legal_accepted_at: legalAcceptedAt,
       },

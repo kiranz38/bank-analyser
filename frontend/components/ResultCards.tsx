@@ -18,6 +18,9 @@ import {
   trackShareClicked,
   trackPriceChangesViewed,
   trackDuplicatesViewed,
+  trackSpendingModalOpened,
+  trackSubscriptionsModalOpened,
+  trackQuickWinsModalOpened,
 } from '@/lib/analytics'
 import InsightsPanel from './InsightsPanel'
 import type { AnalysisResult, Leak } from '@/lib/types'
@@ -129,9 +132,9 @@ export default function ResultCards({ results, proPaymentStatus, proSessionId, p
         confirmedSubsMonthly={confirmedSubs.reduce((s, sub) => s + sub.monthly_cost, 0)}
         easyWinsCount={results.easy_wins.length}
         easyWinsYearlySavings={results.easy_wins.reduce((s, w) => s + w.estimated_yearly_savings, 0)}
-        onShowSpending={() => setShowSpendingModal(true)}
-        onShowSubscriptions={() => setShowSubscriptionsModal(true)}
-        onShowQuickWins={() => setShowQuickWinsModal(true)}
+        onShowSpending={() => { setShowSpendingModal(true); trackSpendingModalOpened() }}
+        onShowSubscriptions={() => { setShowSubscriptionsModal(true); trackSubscriptionsModalOpened() }}
+        onShowQuickWins={() => { setShowQuickWinsModal(true); trackQuickWinsModalOpened() }}
         formatCurrency={formatCurrency}
         formatCurrencyPrecise={formatCurrencyPrecise}
       />
@@ -142,7 +145,7 @@ export default function ResultCards({ results, proPaymentStatus, proSessionId, p
         categoryTotals={categoryTotals}
         recoveryPlan={results.recovery_plan}
         onToggleSection={toggleSection}
-        onShowQuickWins={() => setShowQuickWinsModal(true)}
+        onShowQuickWins={() => { setShowQuickWinsModal(true); trackQuickWinsModalOpened() }}
         formatCurrency={formatCurrency}
         formatCurrencyPrecise={formatCurrencyPrecise}
       />

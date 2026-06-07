@@ -12,6 +12,23 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
 
+// Rate limit: 5 QA calls per IP per hour — prevents cost amplification attacks
+const _rateMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT = 5
+const RATE_WINDOW_MS = 60 * 60 * 1000
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = _rateMap.get(ip)
+  if (!entry || now > entry.resetAt) {
+    _rateMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS })
+    return true
+  }
+  if (entry.count >= RATE_LIMIT) return false
+  entry.count++
+  return true
+}
+
 const SYSTEM_PROMPT = `You are a financial report quality auditor. You receive a REDACTED statistical summary of a consumer spending report (no raw transactions, no PII).
 
 Your job:
@@ -47,6 +64,12 @@ narrativeBullets should be 2-5 plain-English bullet points summarizing key findi
 Set pass=false and severity=high if multiple critical checks fail.`
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ||
+    req.headers.get('x-real-ip') || 'unknown'
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     return NextResponse.json(

@@ -104,8 +104,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET endpoint to check waitlist count (admin only in production)
-export async function GET() {
+// GET endpoint to check waitlist count (admin only)
+export async function GET(request: NextRequest) {
+  const apiKey = request.headers.get('x-api-key')
+  if (!apiKey || !process.env.ADMIN_API_KEY || apiKey !== process.env.ADMIN_API_KEY) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   return NextResponse.json({
     count: waitlist.length,
     countries: waitlist.reduce((acc, entry) => {

@@ -20,14 +20,14 @@ export async function POST(request: NextRequest) {
     const body = await request.text()
     const signature = request.headers.get('stripe-signature')
 
-    if (webhookSecret && signature) {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-    } else if (!webhookSecret) {
-      logger.warn('No STRIPE_WEBHOOK_SECRET configured — skipping signature verification')
-      event = JSON.parse(body) as Stripe.Event
-    } else {
-      return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
+    if (!webhookSecret) {
+      logger.error('STRIPE_WEBHOOK_SECRET not configured — rejecting webhook')
+      return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 })
     }
+    if (!signature) {
+      return NextResponse.json({ error: 'Missing stripe-signature header' }, { status: 400 })
+    }
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Webhook signature verification failed'
     logger.error('Webhook signature error', { error: msg })

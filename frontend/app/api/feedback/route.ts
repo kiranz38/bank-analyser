@@ -157,11 +157,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET endpoint for admin/analytics (in production, add authentication)
+// GET endpoint for admin/analytics
 export async function GET(request: NextRequest) {
-  // Simple API key check (in production, use proper auth)
   const apiKey = request.headers.get('x-api-key')
-  if (apiKey !== process.env.FEEDBACK_API_KEY && process.env.NODE_ENV === 'production') {
+  if (!apiKey || !process.env.FEEDBACK_API_KEY || apiKey !== process.env.FEEDBACK_API_KEY) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

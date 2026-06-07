@@ -149,12 +149,12 @@ function MetricBox({
   icon: React.ElementType
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-xl border bg-card p-4">
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" />
-        {label}
+    <div className="flex flex-col gap-1 rounded-xl border bg-card p-3 sm:p-4">
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Icon className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
+        <span className="truncate">{label}</span>
       </div>
-      <p className="text-2xl font-bold">{value}</p>
+      <p className="min-w-0 truncate text-lg font-bold sm:text-2xl">{value}</p>
       {delta && (
         <TrendBadge delta={delta} inverse={inverseColor} showAbsolute formatValue={fmt} />
       )}
@@ -448,14 +448,15 @@ export default function DashboardPage() {
     return (
       <main className="mx-auto max-w-4xl px-4 py-8 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">
-              {greeting()}{firstName ? `, ${firstName}` : ''} · <ScanStaleness createdAt={latest.createdAt} />
+            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
+              {greeting()}{firstName ? `, ${firstName}` : ''}
+              <ScanStaleness createdAt={latest.createdAt} />
             </p>
             <h1 className="text-2xl font-bold tracking-tight">Your Dashboard</h1>
           </div>
-          <Button asChild style={{ background: '#0284C7' }} className="text-white">
+          <Button asChild style={{ background: '#0284C7' }} className="w-full text-white sm:w-auto">
             <Link href="/?start=upload"><Plus className="mr-2 h-4 w-4" />New Analysis</Link>
           </Button>
         </div>
@@ -499,14 +500,15 @@ export default function DashboardPage() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
-            {greeting()}{firstName ? `, ${firstName}` : ''} · <ScanStaleness createdAt={latest.createdAt} />
+          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
+            {greeting()}{firstName ? `, ${firstName}` : ''}
+            <ScanStaleness createdAt={latest.createdAt} />
           </p>
           <h1 className="text-2xl font-bold tracking-tight">Your Dashboard</h1>
         </div>
-        <Button asChild style={{ background: '#0284C7' }} className="text-white">
+        <Button asChild style={{ background: '#0284C7' }} className="w-full text-white sm:w-auto">
           <Link href="/?start=upload"><Plus className="mr-2 h-4 w-4" />New Analysis</Link>
         </Button>
       </div>

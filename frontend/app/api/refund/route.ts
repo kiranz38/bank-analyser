@@ -11,24 +11,38 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { sessionId, reason } = body as { sessionId: string; reason?: string }
+    const { sessionId, email, reason } = body as { sessionId: string; email?: string; reason?: string }
 
-    if (!sessionId) {
-      return NextResponse.json({ error: 'Missing sessionId' }, { status: 400 })
+    if (!sessionId || typeof sessionId !== 'string' || sessionId.length > 200) {
+      return NextResponse.json({ error: 'Missing or invalid sessionId' }, { status: 400 })
+    }
+
+    // Always fetch from Stripe to get authoritative payment email — never trust client-supplied data alone
+    let stripeSession: Awaited<ReturnType<typeof stripe.checkout.sessions.retrieve>>
+    try {
+      stripeSession = await stripe.checkout.sessions.retrieve(sessionId)
+    } catch {
+      return NextResponse.json({ error: 'Invalid payment session' }, { status: 403 })
+    }
+
+    // Require caller to prove ownership by supplying the email that matches the Stripe record
+    const confirmedEmail = stripeSession.customer_details?.email || stripeSession.customer_email
+    if (!confirmedEmail || !email || email.toLowerCase() !== confirmedEmail.toLowerCase()) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
+    // Only refund paid sessions
+    if (stripeSession.payment_status !== 'paid') {
+      return NextResponse.json({ error: 'No paid payment found for this session' }, { status: 400 })
     }
 
     // Look up payment record
     const record = getPayment(sessionId)
 
-    // Get payment intent ID — either from our store or by retrieving the session
-    let paymentIntentId = record?.paymentIntentId
-
-    if (!paymentIntentId) {
-      const session = await stripe.checkout.sessions.retrieve(sessionId)
-      paymentIntentId = typeof session.payment_intent === 'string'
-        ? session.payment_intent
-        : session.payment_intent?.id || null
-    }
+    const paymentIntentId = record?.paymentIntentId ||
+      (typeof stripeSession.payment_intent === 'string'
+        ? stripeSession.payment_intent
+        : stripeSession.payment_intent?.id || null)
 
     if (!paymentIntentId) {
       return NextResponse.json({ error: 'No payment intent found for this session' }, { status: 400 })

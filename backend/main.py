@@ -562,10 +562,12 @@ def _require_admin(request: Request) -> None:
 
     Never accept the key as a URL query parameter — query params appear in
     server access logs, browser history, and proxy caches, leaking the secret.
+    Uses hmac.compare_digest to prevent timing-based key enumeration.
     """
+    import hmac
     admin_key = os.getenv("ADMIN_API_KEY", "")
     provided = request.headers.get("x-admin-key", "")
-    if not admin_key or not provided or provided != admin_key:
+    if not admin_key or not provided or not hmac.compare_digest(provided, admin_key):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 

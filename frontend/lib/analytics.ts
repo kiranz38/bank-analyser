@@ -285,13 +285,6 @@ export function trackProUpsellViewed(): void {
 }
 
 /**
- * Pro Report preview modal opened
- */
-export function trackProPreviewOpened(): void {
-  trackEvent('pro_preview_opened')
-}
-
-/**
  * Stripe checkout initiated for Pro Report
  */
 export function trackProCheckoutStarted(): void {
@@ -390,9 +383,27 @@ export function trackAffiliateLinkClick(params: {
   })
 }
 
+// ============================================
+// Results Modal Events
+// ============================================
+
 /**
- * Affiliate gating modal shown (free user tried to access locked content)
+ * Spending breakdown modal opened
  */
-export function trackAffiliateModalShown(): void {
-  trackEvent('affiliate_modal_shown')
+export function trackSpendingModalOpened(): void {
+  trackEvent('spending_modal_opened')
+}
+
+/**
+ * Subscriptions detail modal opened
+ */
+export function trackSubscriptionsModalOpened(): void {
+  trackEvent('subscriptions_modal_opened')
+}
+
+/**
+ * Quick wins modal opened
+ */
+export function trackQuickWinsModalOpened(): void {
+  trackEvent('quick_wins_modal_opened')
 }
