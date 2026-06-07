@@ -64,7 +64,7 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://js.stripe.com https://cdn.plaid.com",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://images.unsplash.com https://plus.unsplash.com https://www.googletagmanager.com https://www.google-analytics.com",
+              "img-src 'self' data: blob: https://images.unsplash.com https://plus.unsplash.com https://www.googletagmanager.com https://www.google-analytics.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com",
               "font-src 'self' data:",
               "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://api.stripe.com https://production.plaid.com https://sandbox.plaid.com https://api.anthropic.com https://api.resend.com https://api.whereismymoneygo.com",
               "frame-src https://js.stripe.com https://hooks.stripe.com https://cdn.plaid.com",

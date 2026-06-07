@@ -238,7 +238,7 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
         "WOOLWORTHS", "COLES", "ALDI", "IGA", "COSTCO",
         "MCDONALD", "KFC", "SUBWAY", "BURGER KING", "HUNGRY",
         "UBER EATS", "DOORDASH", "MENULOG", "DELIVEROO",
-        "PETROL", "SHELL", "CALTEX", "BP ", "MOBIL", "AMPOL",
+        "PETROL", "SHELL", "CALTEX", "BP ", "MOBIL ", "AMPOL",
         "PHARMACY", "CHEMIST", "PRICELINE",
         "HARVEY NORMAN", "JB HI-FI", "KMART", "BUNNINGS", "IKEA",
         "HOSPITAL", "CLINIC", "MEDICAL", "DENTAL",
