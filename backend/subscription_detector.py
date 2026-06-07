@@ -56,19 +56,177 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
     Returns list of detected subscriptions with:
     - merchant, monthly_cost, annual_cost, confidence, last_date, occurrences
     """
-    # Known subscription service tokens — matched as WHOLE WORDS only to avoid
-    # "CLAUDE" matching "ST. CLAUDE RESTAURANT" or "DIRECT DEBIT" matching mid-word.
-    KNOWN_SUBSCRIPTIONS = [
-        "NETFLIX", "SPOTIFY", "HULU", "DISNEY", "HBO", "AMAZON PRIME",
-        "APPLE MUSIC", "YOUTUBE", "PARAMOUNT", "PEACOCK", "AUDIBLE",
-        "ADOBE", "MICROSOFT 365", "MICROSOFT", "GOOGLE ONE", "DROPBOX", "ICLOUD",
-        "PLANET FITNESS", "ANYTIME FITNESS", "EQUINOX",
-        "ONLYFANS", "PATREON", "TWITCH",
-        "AFTERPAY", "KLARNA", "AFFIRM",
-        "HEADSPACE", "CALM", "NOOM",
-        "HELLO FRESH", "HELLOFRESH", "BLUE APRON",
-        "CHATGPT", "CLAUDE.AI", "ANTHROPIC", "OPENAI",
-    ]
+    # Comprehensive subscription brand catalog.
+    # Maps uppercase keyword → (canonical_display_name, category)
+    # When a merchant string contains a keyword (whole-word match), we:
+    #   1. Confirm it is a real service (validation)
+    #   2. Replace the messy extracted name with the clean display name
+    SUBSCRIPTION_CATALOG: dict[str, tuple[str, str]] = {
+        # ── Streaming / Video ─────────────────────────────────────────────
+        "NETFLIX": ("Netflix", "streaming"),
+        "HULU": ("Hulu", "streaming"),
+        "DISNEY+": ("Disney+", "streaming"),
+        "DISNEYPLUS": ("Disney+", "streaming"),
+        "DISNEY PLUS": ("Disney+", "streaming"),
+        "DISNEY": ("Disney+", "streaming"),
+        "HBO": ("HBO Max", "streaming"),
+        "AMAZON PRIME VIDEO": ("Amazon Prime Video", "streaming"),
+        "AMAZON PRIME": ("Amazon Prime", "streaming"),
+        "APPLE TV+": ("Apple TV+", "streaming"),
+        "APPLE TV PLUS": ("Apple TV+", "streaming"),
+        "APPLETV": ("Apple TV+", "streaming"),
+        "YOUTUBE PREMIUM": ("YouTube Premium", "streaming"),
+        "YOUTUBE": ("YouTube Premium", "streaming"),
+        "PARAMOUNT+": ("Paramount+", "streaming"),
+        "PARAMOUNT PLUS": ("Paramount+", "streaming"),
+        "PARAMOUNT": ("Paramount+", "streaming"),
+        "PEACOCK": ("Peacock", "streaming"),
+        "STAN": ("Stan", "streaming"),
+        "BINGE": ("Binge", "streaming"),
+        "FOXTEL": ("Foxtel Now", "streaming"),
+        "KAYO": ("Kayo Sports", "streaming"),
+        "BRITBOX": ("BritBox", "streaming"),
+        "SHUDDER": ("Shudder", "streaming"),
+        "HAYU": ("Hayu", "streaming"),
+        "AMC+": ("AMC+", "streaming"),
+        "CRUNCHYROLL": ("Crunchyroll", "streaming"),
+        "FUNIMATION": ("Funimation", "streaming"),
+        "MUBI": ("Mubi", "streaming"),
+        "CURIOSITY STREAM": ("CuriosityStream", "streaming"),
+        "DISCOVERY+": ("Discovery+", "streaming"),
+        "TUBI": ("Tubi", "streaming"),
+        "PLEX": ("Plex", "streaming"),
+        "SHOWTIME": ("Showtime", "streaming"),
+        "STARZ": ("Starz", "streaming"),
+        "CRITERION": ("Criterion Channel", "streaming"),
+        "ESPN+": ("ESPN+", "streaming"),
+        # ── Music / Audio ────────────────────────────────────────────────
+        "SPOTIFY": ("Spotify", "music"),
+        "APPLE MUSIC": ("Apple Music", "music"),
+        "AMAZON MUSIC": ("Amazon Music", "music"),
+        "YOUTUBE MUSIC": ("YouTube Music", "music"),
+        "TIDAL": ("Tidal", "music"),
+        "DEEZER": ("Deezer", "music"),
+        "PANDORA": ("Pandora", "music"),
+        "SOUNDCLOUD": ("SoundCloud", "music"),
+        "AUDIBLE": ("Audible", "audiobooks"),
+        "SCRIBD": ("Scribd", "reading"),
+        "KINDLE UNLIMITED": ("Kindle Unlimited", "reading"),
+        "STORYTEL": ("Storytel", "audiobooks"),
+        # ── Cloud Storage ────────────────────────────────────────────────
+        "DROPBOX": ("Dropbox", "cloud_storage"),
+        "GOOGLE ONE": ("Google One", "cloud_storage"),
+        "ICLOUD": ("iCloud", "cloud_storage"),
+        "ONEDRIVE": ("OneDrive", "cloud_storage"),
+        "BOX": ("Box", "cloud_storage"),
+        "BACKBLAZE": ("Backblaze", "cloud_storage"),
+        "CARBONITE": ("Carbonite", "backup"),
+        "IDRIVE": ("IDrive", "backup"),
+        # ── Software / Productivity ───────────────────────────────────────
+        "ADOBE": ("Adobe Creative Cloud", "software"),
+        "ADOBE CREATIVE": ("Adobe Creative Cloud", "software"),
+        "MICROSOFT 365": ("Microsoft 365", "software"),
+        "MICROSOFT": ("Microsoft 365", "software"),
+        "OFFICE 365": ("Microsoft 365", "software"),
+        "GOOGLE WORKSPACE": ("Google Workspace", "software"),
+        "GSUITE": ("Google Workspace", "software"),
+        "NOTION": ("Notion", "software"),
+        "EVERNOTE": ("Evernote", "software"),
+        "TODOIST": ("Todoist", "software"),
+        "ASANA": ("Asana", "software"),
+        "SLACK": ("Slack", "software"),
+        "ZOOM": ("Zoom", "software"),
+        "CANVA": ("Canva", "software"),
+        "FIGMA": ("Figma", "software"),
+        "GITHUB": ("GitHub", "software"),
+        "GITHUB COPILOT": ("GitHub Copilot", "software"),
+        "JETBRAINS": ("JetBrains", "software"),
+        "GRAMMARLY": ("Grammarly", "software"),
+        "LASTPASS": ("LastPass", "password_manager"),
+        "1PASSWORD": ("1Password", "password_manager"),
+        "DASHLANE": ("Dashlane", "password_manager"),
+        "BITWARDEN": ("Bitwarden", "password_manager"),
+        "NORDVPN": ("NordVPN", "vpn"),
+        "EXPRESSVPN": ("ExpressVPN", "vpn"),
+        "SURFSHARK": ("Surfshark", "vpn"),
+        "MULLVAD": ("Mullvad VPN", "vpn"),
+        "PROTONVPN": ("ProtonVPN", "vpn"),
+        "PROTON": ("Proton", "software"),
+        # ── AI Tools ────────────────────────────────────────────────────
+        "CLAUDE.AI": ("Claude.ai", "ai_tools"),
+        "CLAUDE": ("Claude.ai", "ai_tools"),
+        "ANTHROPIC": ("Claude.ai", "ai_tools"),
+        "CHATGPT": ("ChatGPT Plus", "ai_tools"),
+        "OPENAI": ("ChatGPT Plus", "ai_tools"),
+        "MIDJOURNEY": ("Midjourney", "ai_tools"),
+        "PERPLEXITY": ("Perplexity AI", "ai_tools"),
+        "COPILOT": ("Microsoft Copilot", "ai_tools"),
+        "JASPER": ("Jasper AI", "ai_tools"),
+        "ELEVENLABS": ("ElevenLabs", "ai_tools"),
+        # ── Fitness / Wellness ───────────────────────────────────────────
+        "PLANET FITNESS": ("Planet Fitness", "fitness"),
+        "ANYTIME FITNESS": ("Anytime Fitness", "fitness"),
+        "EQUINOX": ("Equinox", "fitness"),
+        "PELOTON": ("Peloton", "fitness"),
+        "CLASSPASS": ("ClassPass", "fitness"),
+        "LA FITNESS": ("LA Fitness", "fitness"),
+        "24 HOUR FITNESS": ("24 Hour Fitness", "fitness"),
+        "FITNESS FIRST": ("Fitness First", "fitness"),
+        "CRUNCH FITNESS": ("Crunch Fitness", "fitness"),
+        "F45": ("F45 Training", "fitness"),
+        "ORANGE THEORY": ("Orangetheory Fitness", "fitness"),
+        "CROSSFIT": ("CrossFit", "fitness"),
+        "HEADSPACE": ("Headspace", "wellness"),
+        "CALM": ("Calm", "wellness"),
+        "NOOM": ("Noom", "wellness"),
+        "BETTERHELP": ("BetterHelp", "wellness"),
+        "TALKSPACE": ("Talkspace", "wellness"),
+        "APPLE FITNESS": ("Apple Fitness+", "fitness"),
+        # ── Food / Meal Kits ─────────────────────────────────────────────
+        "HELLOFRESH": ("HelloFresh", "food"),
+        "HELLO FRESH": ("HelloFresh", "food"),
+        "BLUE APRON": ("Blue Apron", "food"),
+        "MARLEY SPOON": ("Marley Spoon", "food"),
+        "EVERY PLATE": ("EveryPlate", "food"),
+        "DINNERLY": ("Dinnerly", "food"),
+        "FACTOR": ("Factor Meals", "food"),
+        # ── BNPL ─────────────────────────────────────────────────────────
+        "AFTERPAY": ("Afterpay", "bnpl"),
+        "KLARNA": ("Klarna", "bnpl"),
+        "AFFIRM": ("Affirm", "bnpl"),
+        "LAYBUY": ("Laybuy", "bnpl"),
+        "SPLITIT": ("Splitit", "bnpl"),
+        "ZIP": ("Zip Pay", "bnpl"),
+        "ZIPPAY": ("Zip Pay", "bnpl"),
+        "HUMM": ("Humm", "bnpl"),
+        # ── Utilities / Telecom (AU) ──────────────────────────────────────
+        "TELSTRA": ("Telstra", "telecom"),
+        "OPTUS": ("Optus", "telecom"),
+        "VODAFONE": ("Vodafone", "telecom"),
+        "TPG": ("TPG", "telecom"),
+        "AUSSIE BROADBAND": ("Aussie Broadband", "telecom"),
+        "AGL": ("AGL Energy", "utilities"),
+        "ORIGIN ENERGY": ("Origin Energy", "utilities"),
+        "ENERGY AUSTRALIA": ("EnergyAustralia", "utilities"),
+        # ── Gaming ──────────────────────────────────────────────────────
+        "PLAYSTATION PLUS": ("PlayStation Plus", "gaming"),
+        "PLAYSTATION NOW": ("PlayStation Now", "gaming"),
+        "XBOX GAME PASS": ("Xbox Game Pass", "gaming"),
+        "XBOX GAMEPASS": ("Xbox Game Pass", "gaming"),
+        "NINTENDO": ("Nintendo Switch Online", "gaming"),
+        "STEAM": ("Steam", "gaming"),
+        "EA PLAY": ("EA Play", "gaming"),
+        "UBISOFT": ("Ubisoft+", "gaming"),
+        # ── Creator / Community ──────────────────────────────────────────
+        "PATREON": ("Patreon", "creator"),
+        "ONLYFANS": ("OnlyFans", "creator"),
+        "TWITCH": ("Twitch", "creator"),
+        "SUBSTACK": ("Substack", "newsletter"),
+        "MEDIUM": ("Medium", "newsletter"),
+    }
+
+    # Build the keyword list from the catalog keys for backwards-compat
+    KNOWN_SUBSCRIPTIONS = list(SUBSCRIPTION_CATALOG.keys())
 
     # Sanity cap: subscriptions above this monthly amount are almost certainly
     # not a digital/streaming subscription (catches BNPL totals, groceries, etc.)
@@ -94,13 +252,14 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
     # Recurring payment patterns (may have variable amounts)
     RECURRING_PATTERNS = ["DIRECT DEBIT", "BPAY", "AUTOPAY", "AUTO PAY"]
 
-    def _is_known_sub(merchant_upper: str) -> bool:
-        """Whole-word match against known subscription keywords."""
-        for kw in KNOWN_SUBSCRIPTIONS:
+    def _is_known_sub(merchant_upper: str) -> tuple[bool, str | None, str | None]:
+        """Whole-word match against subscription catalog.
+        Returns (matched, canonical_name, category)."""
+        for kw, (canonical, category) in SUBSCRIPTION_CATALOG.items():
             pattern = r'(?<![A-Z0-9])' + re.escape(kw) + r'(?![A-Z0-9])'
             if re.search(pattern, merchant_upper):
-                return True
-        return False
+                return True, canonical, category
+        return False, None, None
 
     def _is_non_subscription(merchant_upper: str) -> bool:
         """Return True if the merchant is clearly not a subscription service."""
@@ -163,8 +322,12 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
             (avg_amount > 0 and amount_variance / avg_amount <= 0.05)
         )
 
-        # Check for known subscription keywords (whole-word match)
-        known_sub = _is_known_sub(merchant)
+        # Check for known subscription keywords (whole-word match) → returns canonical name
+        known_sub, canonical_name, sub_category = _is_known_sub(merchant)
+
+        # Use the canonical display name when we have a catalog match;
+        # otherwise keep the (already-cleaned) raw merchant string.
+        display_name = canonical_name if canonical_name else merchant.title()
 
         # Check for recurring payment patterns (more lenient - 15% variance allowed)
         is_recurring_pattern = any(kw in merchant for kw in RECURRING_PATTERNS)
@@ -214,13 +377,14 @@ def detect_subscriptions(transactions: list[dict]) -> list[dict]:
             last_date = max(dates).strftime("%Y-%m-%d") if dates else ""
 
             subscriptions.append({
-                "merchant": merchant,
+                "merchant": display_name,
                 "monthly_cost": round(avg_amount, 2),
                 "annual_cost": round(avg_amount * 12, 2),
                 "confidence": confidence,
                 "last_date": last_date,
                 "occurrences": len(txns),
-                "reason": reason
+                "reason": reason,
+                "category": sub_category or "other",
             })
 
     # Sort by monthly cost descending
