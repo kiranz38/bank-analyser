@@ -267,35 +267,34 @@ async def process_single_file(file: UploadFile) -> list[dict]:
                 detail=f"'{file.filename}' is not a valid PDF file."
             )
 
-        # Gate: check the raw text looks like a financial document before running
-        # all 8 parsing strategies (saves time and catches random PDFs early)
-        try:
-            import pdfplumber, io as _io
-            with pdfplumber.open(_io.BytesIO(content)) as _pdf:
-                raw_text = '\n'.join(p.extract_text() or '' for p in _pdf.pages[:5])
-        except Exception:
-            raw_text = ''
+        # Gate: validate it's a financial document (run in executor — pdfplumber is blocking)
+        import asyncio as _asyncio, pdfplumber as _pdfplumber, io as _io
+        loop = _asyncio.get_event_loop()
 
+        def _check_financial():
+            try:
+                with _pdfplumber.open(_io.BytesIO(content)) as _pdf:
+                    return '\n'.join(p.extract_text() or '' for p in _pdf.pages[:5])
+            except Exception:
+                return ''
+
+        raw_text = await loop.run_in_executor(None, _check_financial)
         is_fin, reason = _is_financial_document(raw_text)
         if not is_fin:
             raise HTTPException(status_code=400, detail=reason)
 
-        # Run pdf_to_csv in a daemon thread so a runaway AI fallback cannot block
-        # the request indefinitely. 55s leaves headroom inside the 90s frontend timeout.
-        _pdf_result: list[str] = ['']
-
-        def _do_pdf():
-            _pdf_result[0] = pdf_to_csv(content)
-
-        _pdf_thread = threading.Thread(target=_do_pdf, daemon=True)
-        _pdf_thread.start()
-        _pdf_thread.join(timeout=55)
-        if _pdf_thread.is_alive():
+        # Parse PDF in executor — non-blocking so the event loop stays free.
+        # 55s timeout kills runaway AI extraction inside pdf_to_csv.
+        try:
+            csv_content = await _asyncio.wait_for(
+                loop.run_in_executor(None, pdf_to_csv, content),
+                timeout=55.0
+            )
+        except _asyncio.TimeoutError:
             raise HTTPException(
                 status_code=504,
                 detail=f"PDF analysis timed out for '{file.filename}'. The file may be too large or complex — try exporting as CSV from your bank instead."
             )
-        csv_content = _pdf_result[0]
         if not csv_content:
             raise HTTPException(
                 status_code=400,
@@ -428,20 +427,18 @@ async def analyze(
                         detail="Invalid PDF file. Please upload a valid PDF bank statement."
                     )
 
-                _pdf_result2: list[str] = ['']
-
-                def _do_pdf2():
-                    _pdf_result2[0] = pdf_to_csv(content)
-
-                _t2 = threading.Thread(target=_do_pdf2, daemon=True)
-                _t2.start()
-                _t2.join(timeout=55)
-                if _t2.is_alive():
+                import asyncio as _asyncio2
+                _loop2 = _asyncio2.get_event_loop()
+                try:
+                    csv_content = await _asyncio2.wait_for(
+                        _loop2.run_in_executor(None, pdf_to_csv, content),
+                        timeout=55.0
+                    )
+                except _asyncio2.TimeoutError:
                     raise HTTPException(
                         status_code=504,
                         detail="PDF analysis timed out. Try exporting as CSV from your bank instead."
                     )
-                csv_content = _pdf_result2[0]
                 if not csv_content:
                     raise HTTPException(
                         status_code=400,
