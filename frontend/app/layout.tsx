@@ -105,6 +105,19 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Leaky Wallet',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 }
 
 const softwareAppSchema = {

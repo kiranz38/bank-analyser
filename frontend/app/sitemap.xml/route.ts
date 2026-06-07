@@ -54,6 +54,67 @@ export async function GET() {
     { url: '/recurring-payments', priority: '0.9', changefreq: 'monthly' },
     { url: '/financial-health-check', priority: '0.8', changefreq: 'monthly' },
 
+    // New Australian bank pages
+    { url: '/suncorp-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/macquarie-bank-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/ing-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/bendigo-bank-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+
+    // New US bank pages
+    { url: '/capital-one-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/citibank-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/american-express-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/usaa-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+
+    // New UK bank pages
+    { url: '/lloyds-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/natwest-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/santander-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/halifax-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/nationwide-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+
+    // New Canadian bank pages
+    { url: '/rbc-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/scotiabank-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/bmo-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/cibc-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+
+    // New NZ bank pages
+    { url: '/bnz-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/kiwibank-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+    { url: '/asb-statement-analyzer', priority: '0.7', changefreq: 'monthly' },
+
+    // Subscription & charge topic pages
+    { url: '/subscription-audit', priority: '0.8', changefreq: 'monthly' },
+    { url: '/forgotten-subscriptions', priority: '0.8', changefreq: 'monthly' },
+    { url: '/unknown-bank-charges', priority: '0.8', changefreq: 'monthly' },
+
+    // Budgeting topic pages
+    { url: '/how-to-budget', priority: '0.8', changefreq: 'monthly' },
+    { url: '/50-30-20-rule', priority: '0.8', changefreq: 'monthly' },
+    { url: '/budget-planner', priority: '0.8', changefreq: 'monthly' },
+    { url: '/how-to-save-money', priority: '0.8', changefreq: 'monthly' },
+    { url: '/money-saving-tips', priority: '0.8', changefreq: 'monthly' },
+    { url: '/stop-wasting-money', priority: '0.8', changefreq: 'monthly' },
+    { url: '/why-am-i-always-broke', priority: '0.8', changefreq: 'monthly' },
+    { url: '/student-budget-planner', priority: '0.8', changefreq: 'monthly' },
+    { url: '/household-budget', priority: '0.8', changefreq: 'monthly' },
+    { url: '/weekly-spending-tracker', priority: '0.8', changefreq: 'monthly' },
+    { url: '/zero-based-budgeting', priority: '0.7', changefreq: 'monthly' },
+
+    // AI & tech tool pages
+    { url: '/ai-bank-statement-analyzer', priority: '0.9', changefreq: 'monthly' },
+    { url: '/automatic-expense-categorization', priority: '0.8', changefreq: 'monthly' },
+    { url: '/credit-card-statement-analyzer', priority: '0.8', changefreq: 'monthly' },
+    { url: '/cash-flow-analyzer', priority: '0.8', changefreq: 'monthly' },
+    { url: '/bill-tracker', priority: '0.8', changefreq: 'monthly' },
+    { url: '/spending-insights', priority: '0.8', changefreq: 'monthly' },
+    { url: '/check-my-spending', priority: '0.8', changefreq: 'monthly' },
+
+    // Alternative/competitor pages
+    { url: '/mint-alternative', priority: '0.8', changefreq: 'monthly' },
+    { url: '/ynab-alternative', priority: '0.8', changefreq: 'monthly' },
+
     // Other
     { url: '/banks', priority: '0.6', changefreq: 'monthly' },
     { url: '/privacy', priority: '0.3', changefreq: 'yearly' },
