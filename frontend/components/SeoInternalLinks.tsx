@@ -22,6 +22,17 @@ const LINK_GROUPS: LinkGroup[] = [
     ],
   },
   {
+    heading: 'Finance Trackers',
+    links: [
+      { href: '/personal-finance-tracker', label: 'Personal Finance Tracker' },
+      { href: '/monthly-expense-tracker', label: 'Monthly Expense Tracker' },
+      { href: '/expense-calculator', label: 'Expense Calculator' },
+      { href: '/budget-calculator', label: 'Budget Calculator' },
+      { href: '/money-management', label: 'Money Management' },
+      { href: '/anz-nz-statement-analyzer', label: 'ANZ NZ Analyzer' },
+    ],
+  },
+  {
     heading: 'By Country',
     links: [
       { href: '/bank-statement-analyzer-australia', label: 'Australia' },

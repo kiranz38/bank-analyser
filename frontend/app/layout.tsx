@@ -19,24 +19,47 @@ export const metadata: Metadata = {
   },
   description: 'Free bank statement analyzer. Upload your PDF or CSV to discover hidden subscriptions, unnecessary fees, and spending leaks. Works with ANZ, Westpac, CommBank, NAB, Chase, Barclays and more. Get a personalized savings plan instantly.',
   keywords: [
+    // High-volume intent queries
+    'where did my money go',
+    'where is my money going',
+    'why am I always broke',
+    'how to track spending',
+    'analyze bank statement',
     'bank statement analyzer',
+    // Tool-specific
     'find hidden subscriptions',
+    'cancel unwanted subscriptions',
+    'what subscriptions am I paying for',
     'subscription tracker',
     'spending tracker',
-    'where is my money going',
+    'free expense tracker',
+    'monthly expense tracker',
+    'personal finance tracker',
+    'money management tool',
+    // Features
     'money leak detector',
     'spending analysis',
+    'bank fee checker',
+    'recurring charges finder',
     'free financial analyzer',
+    'AI bank statement reader',
+    // File formats
+    'CSV bank statement analyzer',
+    'PDF bank statement analyzer',
+    // Australian banks
     'ANZ statement analyzer',
     'CommBank statement analyzer',
     'Westpac statement analyzer',
-    'NAB bank statement',
-    'CSV bank statement analyzer',
-    'PDF bank statement analyzer',
-    'subscription finder',
-    'recurring payment tracker',
-    'bank fee checker',
+    'NAB bank statement analyzer',
+    // US banks
+    'Chase bank statement analyzer',
+    'Bank of America statement analyzer',
+    // UK/global
+    'Barclays statement analyzer',
+    'HSBC statement analyzer',
+    // Brand
     'leaky wallet',
+    'whereismymoneygo',
   ],
   metadataBase: new URL('https://whereismymoneygo.com'),
   alternates: {
