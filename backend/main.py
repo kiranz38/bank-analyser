@@ -34,24 +34,15 @@ logger = logging.getLogger(__name__)
 
 
 def _warm_up_models() -> None:
-    """Pre-load heavy ML models only if enough RAM is available."""
+    """Pre-load the column classifier RF model (small, fast)."""
     try:
-        import psutil
-        available_mb = psutil.virtual_memory().available / 1024 / 1024
-        if available_mb < 300:
-            logger.warning(f"Skipping ML model warm-up — only {available_mb:.0f}MB RAM available")
-            return
-    except ImportError:
-        pass  # psutil not available, proceed anyway
-    try:
-        from merchant_normalizer import _get_model
-        _get_model()
-        logger.info("ML model warm-up complete")
+        from column_classifier import _load_rf_model
+        _load_rf_model()
+        logger.info("Column classifier loaded")
     except Exception as e:
-        logger.warning(f"ML model warm-up failed (non-fatal): {e}")
+        logger.warning(f"Column classifier warm-up failed (non-fatal): {e}")
 
 
-# Start model warm-up in background — skipped automatically if RAM is low.
 threading.Thread(target=_warm_up_models, daemon=True).start()
 
 # Security constants

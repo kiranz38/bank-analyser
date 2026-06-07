@@ -8,8 +8,10 @@ slowapi>=0.1.9,<1.0.0
 
 # ML column classifier (Phase 3)
 scikit-learn>=1.4.0          # RandomForest column type classifier
-sentence-transformers>=2.6   # Merchant normalizer (all-MiniLM-L6-v2)
-psutil>=5.9.0                # Memory check before loading ML models
+psutil>=5.9.0                # Memory monitoring
+# sentence-transformers intentionally excluded: pulls in PyTorch (~700MB)
+# which OOMs Render's 512MB free tier. merchant_normalizer.py falls back
+# to alias dictionary + regex cleaning when the library is not installed.
 
 # Multi-AI router providers (install as needed per environment)
 # groq>=0.9.0           — Groq free tier (14,400 req/day, Llama 70B quality)
