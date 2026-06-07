@@ -1050,13 +1050,16 @@ def _extract_westpac_multiline(pdf) -> str:
                     found_non_numeric = True
                     line_desc.insert(0, part)
 
-            # Use amounts from the line that has them (usually the last line)
+            # Use amounts from the line that has them (usually the second/last line)
             if line_amounts and not amounts_found:
                 amounts_found = line_amounts
-                if line_desc:
-                    description_parts = line_desc + description_parts
+                # Discard line_desc: tokens alongside amounts are location noise
+                # (e.g. "San Francisc Usa", "Sydney Aus"), not merchant names.
+                # Only fall back to line_desc when we have no description yet (single-line tx).
+                if not description_parts and line_desc:
+                    description_parts = line_desc
             else:
-                description_parts = parts + description_parts
+                description_parts = description_parts + parts  # append in order; first line first
 
         if not amounts_found:
             continue
@@ -1084,6 +1087,13 @@ def _extract_westpac_multiline(pdf) -> str:
 
         # Clean description
         description = re.sub(r'\s+', ' ', description).strip()
+        # Strip Westpac transaction type prefixes ("Debit Card Purchase", "Eftpos Debit 1234")
+        description = re.sub(
+            r'^(?:Debit Card Purchase|Eftpos Debit\s+\d+|Withdrawal[- ]Osko\s+\S+|Transfer[- ]Out\s+\S+)\s+',
+            '', description, flags=re.IGNORECASE
+        ).strip()
+        # Strip trailing bare country/state tokens left from location lines
+        description = re.sub(r'\s+(?:Aus?|Nz|Usa?)$', '', description, flags=re.IGNORECASE).strip()
         description = description.replace('"', "'")
         if ',' in description:
             description = f'"{description}"'
