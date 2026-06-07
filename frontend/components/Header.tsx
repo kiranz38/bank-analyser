@@ -25,6 +25,7 @@ export default function Header() {
   const [isVisible, setIsVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [avatarError, setAvatarError] = useState(false)
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
@@ -126,8 +127,8 @@ export default function Header() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-1.5 rounded-full pl-1 pr-2 py-1 text-sm font-medium text-foreground hover:bg-accent transition-colors outline-none">
-                    {session.user.image ? (
-                      <img src={session.user.image} alt="" className="h-7 w-7 rounded-full object-cover" />
+                    {session.user.image && !avatarError ? (
+                      <img src={session.user.image} alt="" className="h-7 w-7 rounded-full object-cover" onError={() => setAvatarError(true)} />
                     ) : (
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
                         {userInitials}
@@ -199,8 +200,8 @@ export default function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-1 rounded-full py-1 pl-1 pr-1.5 outline-none hover:bg-accent transition-colors">
-                  {session.user.image ? (
-                    <img src={session.user.image} alt="" className="h-7 w-7 rounded-full object-cover" />
+                  {session.user.image && !avatarError ? (
+                    <img src={session.user.image} alt="" className="h-7 w-7 rounded-full object-cover" onError={() => setAvatarError(true)} />
                   ) : (
                     <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
                       {userInitials}
@@ -257,8 +258,8 @@ export default function Header() {
               <nav className="mt-6 flex flex-col gap-1">
                 {isLoggedIn && (
                   <div className="mb-3 flex items-center gap-3 rounded-lg bg-accent px-3 py-2.5">
-                    {session.user.image ? (
-                      <img src={session.user.image} alt="" className="h-9 w-9 rounded-full object-cover shrink-0" />
+                    {session.user.image && !avatarError ? (
+                      <img src={session.user.image} alt="" className="h-9 w-9 rounded-full object-cover shrink-0" onError={() => setAvatarError(true)} />
                     ) : (
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                         {userInitials}
