@@ -14,7 +14,7 @@ if os.path.exists(_env_path):
                 os.environ.setdefault(_k.strip(), _v.strip())
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -25,7 +25,7 @@ import threading
 
 from parser import parse_csv, merge_transactions
 from pdf_parser import pdf_to_csv
-from analyzer import analyze_transactions
+from analyzer import analyze_transactions, analyze_heuristic_only
 from analytics import record_analysis, get_full_dashboard
 
 # Configure logging - log errors server-side only
@@ -282,7 +282,22 @@ async def process_single_file(file: UploadFile) -> list[dict]:
         if not is_fin:
             raise HTTPException(status_code=400, detail=reason)
 
-        csv_content = pdf_to_csv(content)
+        # Run pdf_to_csv in a daemon thread so a runaway AI fallback cannot block
+        # the request indefinitely. 55s leaves headroom inside the 90s frontend timeout.
+        _pdf_result: list[str] = ['']
+
+        def _do_pdf():
+            _pdf_result[0] = pdf_to_csv(content)
+
+        _pdf_thread = threading.Thread(target=_do_pdf, daemon=True)
+        _pdf_thread.start()
+        _pdf_thread.join(timeout=55)
+        if _pdf_thread.is_alive():
+            raise HTTPException(
+                status_code=504,
+                detail=f"PDF analysis timed out for '{file.filename}'. The file may be too large or complex — try exporting as CSV from your bank instead."
+            )
+        csv_content = _pdf_result[0]
         if not csv_content:
             raise HTTPException(
                 status_code=400,
@@ -415,7 +430,20 @@ async def analyze(
                         detail="Invalid PDF file. Please upload a valid PDF bank statement."
                     )
 
-                csv_content = pdf_to_csv(content)
+                _pdf_result2: list[str] = ['']
+
+                def _do_pdf2():
+                    _pdf_result2[0] = pdf_to_csv(content)
+
+                _t2 = threading.Thread(target=_do_pdf2, daemon=True)
+                _t2.start()
+                _t2.join(timeout=55)
+                if _t2.is_alive():
+                    raise HTTPException(
+                        status_code=504,
+                        detail="PDF analysis timed out. Try exporting as CSV from your bank instead."
+                    )
+                csv_content = _pdf_result2[0]
                 if not csv_content:
                     raise HTTPException(
                         status_code=400,
@@ -500,6 +528,101 @@ async def analyze(
         pass
 
     return results
+
+
+@app.post("/analyze/stream")
+@limiter.limit(RATE_LIMIT)
+async def analyze_stream(
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+    files: Optional[List[UploadFile]] = File(None),
+    text: Optional[str] = Form(None),
+):
+    """Streaming two-phase analysis: basic results fast, AI enhancements after.
+
+    Returns newline-delimited JSON (NDJSON):
+      Line 1: {"status":"basic",  ...heuristic result fields...}
+      Line 2: {"status":"done",   ...merged AI-enhanced fields...}
+      or on error:
+               {"status":"error", "detail":"..."}
+    """
+    import asyncio, json as _json
+
+    # ── Parse uploaded files (same logic as /analyze) ───────────────────────
+    all_transactions: list[dict] = []
+
+    if files and len(files) > 0 and files[0].filename:
+        for f in files[:MAX_FILES]:
+            try:
+                txns = await process_single_file(f)
+                all_transactions.extend(txns)
+            except HTTPException as exc:
+                async def _err_gen(msg: str):
+                    yield _json.dumps({"status": "error", "detail": msg}) + "\n"
+                return StreamingResponse(_err_gen(exc.detail), media_type="application/x-ndjson", status_code=exc.status_code)
+    elif file and file.filename:
+        try:
+            all_transactions = await process_single_file(file)
+        except HTTPException as exc:
+            async def _err_gen2(msg: str):
+                yield _json.dumps({"status": "error", "detail": msg}) + "\n"
+            return StreamingResponse(_err_gen2(exc.detail), media_type="application/x-ndjson", status_code=exc.status_code)
+    elif text:
+        try:
+            all_transactions = parse_csv(text)
+        except Exception as exc:
+            async def _err_gen3(msg: str):
+                yield _json.dumps({"status": "error", "detail": msg}) + "\n"
+            return StreamingResponse(_err_gen3(str(exc)), media_type="application/x-ndjson", status_code=400)
+    else:
+        async def _err_gen4():
+            yield _json.dumps({"status": "error", "detail": "Please provide a CSV or PDF file, or text data"}) + "\n"
+        return StreamingResponse(_err_gen4(), media_type="application/x-ndjson", status_code=400)
+
+    if files and len(files) > 1:
+        all_transactions = merge_transactions(all_transactions)
+
+    try:
+        _validate_transactions(all_transactions, "the uploaded file")
+    except HTTPException as exc:
+        async def _err_gen5(msg: str):
+            yield _json.dumps({"status": "error", "detail": msg}) + "\n"
+        return StreamingResponse(_err_gen5(exc.detail), media_type="application/x-ndjson", status_code=exc.status_code)
+
+    # ── Streaming generator ─────────────────────────────────────────────────
+    async def generate():
+        loop = asyncio.get_event_loop()
+
+        # Phase 1: heuristic analysis (fast, no AI)
+        try:
+            basic_result, categorized_txns = await loop.run_in_executor(
+                None, analyze_heuristic_only, all_transactions
+            )
+            yield _json.dumps({"status": "basic", **basic_result}) + "\n"
+        except Exception as e:
+            logger.error(f"Heuristic analysis error: {e}", exc_info=True)
+            yield _json.dumps({"status": "error", "detail": "Analysis failed. Please try again."}) + "\n"
+            return
+
+        # Phase 2: AI enhancement (slow; timeout after 40s so we always respond)
+        try:
+            from claude_client import get_claude_analysis
+            from analyzer import _merge_results
+
+            ai_future = loop.run_in_executor(
+                None, get_claude_analysis, categorized_txns, basic_result
+            )
+            claude_enhancements = await asyncio.wait_for(ai_future, timeout=40.0)
+            if claude_enhancements:
+                enhanced = _merge_results(dict(basic_result), claude_enhancements)
+                yield _json.dumps({"status": "done", **enhanced}) + "\n"
+            else:
+                yield _json.dumps({"status": "done", **basic_result}) + "\n"
+        except (asyncio.TimeoutError, Exception) as e:
+            logger.warning(f"AI enhancement skipped: {e}")
+            yield _json.dumps({"status": "done", **basic_result}) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
 
 
 @app.post("/analyze/json")

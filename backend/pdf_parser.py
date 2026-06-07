@@ -2,8 +2,15 @@
 
 import io
 import re
+import threading
 from typing import Optional, List, Dict
 import pdfplumber
+
+# Maximum pages to process — real statements are 1-20 pages; huge PDFs are usually not statements
+MAX_PDF_PAGES = 20
+
+# Seconds before abandoning the AI extraction fallback
+AI_EXTRACTION_TIMEOUT = 25
 
 
 # Date patterns for different regions
@@ -61,9 +68,17 @@ def pdf_to_csv(pdf_bytes: bytes) -> str:
 
     Tries regex/table strategies first (fast, free, no quota).
     Falls back to AI extraction only when all structural strategies fail.
+    Caps processing at MAX_PDF_PAGES pages and AI extraction at AI_EXTRACTION_TIMEOUT seconds.
     """
     try:
         with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            total_pages = len(pdf.pages)
+            if total_pages > MAX_PDF_PAGES:
+                print(f"PDF has {total_pages} pages — capping at {MAX_PDF_PAGES}")
+                pages = pdf.pages[:MAX_PDF_PAGES]
+            else:
+                pages = pdf.pages
+
             # Primary: structural + regex strategies (fast, no quota)
             strategies = [
                 _extract_from_tables,
@@ -77,7 +92,7 @@ def pdf_to_csv(pdf_bytes: bytes) -> str:
             ]
 
             raw_text = '\n'.join(
-                page.extract_text() or '' for page in pdf.pages
+                page.extract_text() or '' for page in pages
             )
 
             for strategy in strategies:
@@ -86,8 +101,9 @@ def pdf_to_csv(pdf_bytes: bytes) -> str:
                     return csv_content
 
             # Last resort: AI extraction from raw text (uses quota — only when all else fails)
+            # Runs in a daemon thread with a hard timeout so it can never block indefinitely.
             if raw_text.strip():
-                ai_result = _extract_with_ai(raw_text)
+                ai_result = _extract_with_ai_timeout(raw_text)
                 if ai_result and _has_valid_data(ai_result):
                     return ai_result
 
@@ -95,6 +111,21 @@ def pdf_to_csv(pdf_bytes: bytes) -> str:
     except Exception as e:
         print(f"PDF parsing error: {e}")
         return ''
+
+
+def _extract_with_ai_timeout(raw_text: str) -> str:
+    """Run _extract_with_ai in a daemon thread with AI_EXTRACTION_TIMEOUT cap."""
+    result: list[str] = ['']
+
+    def _run():
+        result[0] = _extract_with_ai(raw_text)
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    t.join(timeout=AI_EXTRACTION_TIMEOUT)
+    if t.is_alive():
+        print(f"AI PDF extraction timed out after {AI_EXTRACTION_TIMEOUT}s")
+    return result[0]
 
 
 def _extract_with_ai(raw_text: str) -> str:

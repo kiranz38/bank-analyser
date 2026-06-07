@@ -194,7 +194,7 @@ class GroqProvider(AIProvider):
     def complete(self, prompt: str, task: str, max_tokens: int = 800) -> Optional[dict]:
         try:
             from groq import Groq
-            client = Groq(api_key=self._api_key)
+            client = Groq(api_key=self._api_key, timeout=20.0)
             response = client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],

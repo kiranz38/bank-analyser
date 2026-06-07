@@ -224,6 +224,68 @@ def _deduplicate_subscriptions(subscriptions: list[dict]) -> list[dict]:
     return sorted(seen.values(), key=lambda s: s.get("monthly_cost", 0), reverse=True)
 
 
+def analyze_heuristic_only(transactions: list[dict]) -> tuple[dict, list[dict]]:
+    """Run only the fast heuristic phase — no AI calls.
+
+    Returns (result_dict, categorized_txns).  The caller can then pass
+    categorized_txns to get_claude_analysis() for the slow AI phase.
+    """
+    if not transactions:
+        return _empty_result(), []
+
+    transactions = _filter_transactions(transactions)
+    if not transactions:
+        return _empty_result(), []
+
+    categorized_txns = categorize_transactions(transactions)
+    try:
+        categorized_txns = normalize_transactions(categorized_txns)
+    except Exception:
+        pass
+
+    category_summary = generate_category_summary(categorized_txns)
+    subscriptions = detect_subscriptions(categorized_txns)
+    subscriptions = _deduplicate_subscriptions(subscriptions)
+    price_changes = detect_price_changes(categorized_txns)
+    duplicate_subscriptions = detect_duplicate_subscriptions(subscriptions)
+    comparison = generate_month_comparison(categorized_txns)
+    heuristic_results = _heuristic_analysis(categorized_txns, subscriptions)
+    alternatives = find_all_alternatives(subscriptions, heuristic_results.get("top_leaks", []))
+
+    result = heuristic_results
+    result["category_summary"] = category_summary
+    result["subscriptions"] = subscriptions
+    result["comparison"] = comparison
+    result["alternatives"] = alternatives
+    result["price_changes"] = price_changes
+    result["duplicate_subscriptions"] = duplicate_subscriptions
+
+    income_txns = [t for t in categorized_txns if t.get("category") == "Income"]
+    estimated_monthly_income: Optional[float] = None
+    if income_txns:
+        _, _, days = detect_date_range(income_txns)
+        months = max(1, days // 30) if days else 1
+        estimated_monthly_income = sum(t["amount"] for t in income_txns) / months
+
+    monthly_leak = result.get("monthly_leak", 0)
+    result["financial_health"] = compute_health_score(monthly_leak, category_summary, estimated_monthly_income)
+    result["goal_projections"] = compute_goal_projections(monthly_leak, category_summary, estimated_monthly_income)
+    result["budget_benchmark"] = build_budget_benchmark(category_summary, estimated_monthly_income)
+
+    insights = compute_all_insights(
+        transactions=categorized_txns,
+        category_summary=category_summary,
+        top_leaks=result.get("top_leaks", []),
+        subscriptions=subscriptions,
+        alternatives=alternatives,
+        estimated_monthly_income=estimated_monthly_income,
+    )
+    result.update(insights)
+    result["share_summary"] = _generate_share_summary(result, subscriptions)
+
+    return result, categorized_txns
+
+
 def analyze_transactions(transactions: list[dict], use_claude: bool = True) -> dict:
     """
     Analyze transactions for spending leaks with categorization.

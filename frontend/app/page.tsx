@@ -252,11 +252,12 @@ export default function HomePage() {
       }
 
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 90000) // 90s timeout
+      // 90s hard abort — only fires if the stream produces no data at all
+      const timeoutId = setTimeout(() => controller.abort(), 90000)
 
       let response: Response
       try {
-        response = await fetch(`${apiUrl}/analyze`, {
+        response = await fetch(`${apiUrl}/analyze/stream`, {
           method: 'POST',
           body: formData,
           signal: controller.signal,
@@ -283,36 +284,77 @@ export default function HomePage() {
         throw new Error(errorMsg)
       }
 
-      const result = await response.json()
+      // Read streaming NDJSON response — each line is a phase result.
+      // Phase "basic": show results immediately (loading gone).
+      // Phase "done":  silently update with AI-enhanced data.
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let firstResult: AnalysisResult | null = null
 
-      trackUploadCompleted({
-        fileCount: Array.isArray(data) ? data.length : 1,
-        totalTransactions: result.category_summary?.reduce(
-          (sum: number, cat: { transaction_count: number }) => sum + cat.transaction_count,
-          0
-        ) || 0
-      })
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
 
-      trackAnalysisGenerated({
-        monthlyLeak: result.monthly_leak,
-        annualSavings: result.annual_savings,
-        subscriptionCount: result.subscriptions?.length || 0
-      })
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() ?? ''  // keep incomplete trailing line
 
-      // Cache result by file hash for instant re-uploads
-      if (Array.isArray(data) && data.length > 0) {
-        hashFiles(data).then(hash => setCachedResult(hash, result))
+          for (const line of lines) {
+            if (!line.trim()) continue
+            let chunk: Record<string, unknown>
+            try {
+              chunk = JSON.parse(line)
+            } catch {
+              continue
+            }
+
+            if (chunk.status === 'error') {
+              throw new Error((chunk.detail as string) || 'Analysis failed')
+            }
+
+            const result = chunk as unknown as AnalysisResult
+
+            if (!firstResult) {
+              // Phase 1 arrived — show the report now (hide progress bar)
+              firstResult = result
+              trackUploadCompleted({
+                fileCount: Array.isArray(data) ? data.length : 1,
+                totalTransactions: (result as AnalysisResult).category_summary?.reduce(
+                  (sum: number, cat: { transaction_count: number }) => sum + cat.transaction_count,
+                  0
+                ) || 0
+              })
+              trackAnalysisGenerated({
+                monthlyLeak: result.monthly_leak as number,
+                annualSavings: result.annual_savings as number,
+                subscriptionCount: (result.subscriptions as unknown[])?.length || 0
+              })
+              setResults(result as unknown as AnalysisResult)
+              setViewState('results')
+              setLoading(false)
+              if (session?.user) saveAnalysisToDb(result as unknown as AnalysisResult)
+            } else if (chunk.status === 'done') {
+              // Phase 2: AI-enhanced — silently update without showing a spinner
+              setResults(result as unknown as AnalysisResult)
+              if (Array.isArray(data) && data.length > 0) {
+                hashFiles(data).then(hash => setCachedResult(hash, result as unknown as AnalysisResult))
+              }
+            }
+          }
+        }
       }
 
-      setResults(result)
-      setViewState('results')
-
-      if (session?.user) {
-        saveAnalysisToDb(result)
+      if (!firstResult) {
+        throw new Error('No results returned. Please try again.')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
+      setLoading(false)
     } finally {
+      // setLoading(false) is called in the streaming path when phase 1 arrives.
+      // Calling it again here is safe (no-op if already false).
       setLoading(false)
     }
   }
