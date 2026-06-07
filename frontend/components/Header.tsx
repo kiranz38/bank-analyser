@@ -161,7 +161,7 @@ export default function Header() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })} className="gap-2 text-destructive focus:text-destructive">
+                  <DropdownMenuItem onClick={() => { sessionStorage.removeItem('leaky_wallet_results'); signOut({ callbackUrl: '/' }) }} className="gap-2 text-destructive focus:text-destructive">
                     <LogOut className="h-4 w-4" />
                     Sign out
                   </DropdownMenuItem>
@@ -231,7 +231,7 @@ export default function Header() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })} className="gap-2 text-destructive focus:text-destructive">
+                <DropdownMenuItem onClick={() => { sessionStorage.removeItem('leaky_wallet_results'); signOut({ callbackUrl: '/' }) }} className="gap-2 text-destructive focus:text-destructive">
                   <LogOut className="h-4 w-4" />
                   Sign out
                 </DropdownMenuItem>
@@ -314,6 +314,7 @@ export default function Header() {
                     </Link>
                     <button
                       onClick={() => {
+                        sessionStorage.removeItem('leaky_wallet_results')
                         signOut({ callbackUrl: '/' })
                         setMobileOpen(false)
                       }}
