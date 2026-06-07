@@ -9,6 +9,7 @@ slowapi>=0.1.9,<1.0.0
 # ML column classifier (Phase 3)
 scikit-learn>=1.4.0          # RandomForest column type classifier
 sentence-transformers>=2.6   # Merchant normalizer (all-MiniLM-L6-v2)
+psutil>=5.9.0                # Memory check before loading ML models
 
 # Multi-AI router providers (install as needed per environment)
 # groq>=0.9.0           — Groq free tier (14,400 req/day, Llama 70B quality)
