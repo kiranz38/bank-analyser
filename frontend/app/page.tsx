@@ -35,6 +35,7 @@ import {
   trackConsentChecked,
   trackProCheckoutCompleted,
 } from '@/lib/analytics'
+import { tiktokViewContent, tiktokPurchase } from '@/lib/tiktok'
 import {
   Search,
   Play,
@@ -113,6 +114,7 @@ export default function HomePage() {
         .then(data => {
           if (data.paid) {
             trackProCheckoutCompleted(data.amount_total ? data.amount_total / 100 : 1.99)
+            tiktokPurchase(sessionId)
             setProSessionId(sessionId)
             if (data.customer_email) {
               setProCustomerEmail(data.customer_email)
@@ -135,6 +137,7 @@ export default function HomePage() {
       if (!isSampleRun) {
         saveToSession(results)
         trackResultsViewed()
+        tiktokViewContent()
         if (results.subscriptions) {
           trackRecurringDetected(results.subscriptions.length)
         }

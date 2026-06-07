@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { AlertCircle, Wallet } from 'lucide-react'
+import { tiktokCompleteRegistration } from '@/lib/tiktok'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -60,6 +61,7 @@ export default function SignupPage() {
       if (result?.error) {
         router.push('/login')
       } else {
+        tiktokCompleteRegistration()
         router.push('/dashboard')
         router.refresh()
       }

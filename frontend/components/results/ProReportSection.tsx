@@ -27,6 +27,7 @@ import {
   trackProBuyClicked,
   trackProPayClicked,
 } from '@/lib/analytics'
+import { tiktokInitiateCheckout, tiktokAddPaymentInfo } from '@/lib/tiktok'
 import type { AnalysisResult } from '@/lib/types'
 
 type ProCardState = 'upsell' | 'checkout' | 'generating' | 'success' | 'error'
@@ -215,6 +216,7 @@ export default function ProReportSection({ results, proPaymentStatus, proSession
     if (!bothLegalChecked) return
     trackProLegalAccepted()
     trackProBuyClicked()
+    tiktokInitiateCheckout()
     setCardState('checkout')
   }
 
@@ -222,6 +224,7 @@ export default function ProReportSection({ results, proPaymentStatus, proSession
     setLoading(true)
     setErrorMsg(null)
     trackProPayClicked()
+    tiktokAddPaymentInfo()
 
     try {
       const legalAcceptedAt = new Date().toISOString()
