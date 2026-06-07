@@ -96,9 +96,12 @@ def pdf_to_csv(pdf_bytes: bytes) -> str:
             )
 
             for strategy in strategies:
-                csv_content = strategy(pdf)
-                if csv_content and _has_valid_data(csv_content):
-                    return csv_content
+                try:
+                    csv_content = strategy(pdf)
+                    if csv_content and _has_valid_data(csv_content):
+                        return csv_content
+                except Exception as strategy_err:
+                    print(f"Strategy {strategy.__name__} failed: {strategy_err}")
 
             # Last resort: AI extraction from raw text (uses quota — only when all else fails)
             # Runs in a daemon thread with a hard timeout so it can never block indefinitely.
@@ -253,7 +256,8 @@ def _extract_from_tables(pdf) -> str:
 
                 # Skip rows that look like summaries (use description cell only to avoid
                 # false positives from date abbreviations like 'May', 'Jun', amounts, etc.)
-                desc_cell = cleaned_row[header_indices.get('description', 1)].lower() if header_indices else ''
+                desc_idx = header_indices.get('description', 1) if header_indices else 1
+                desc_cell = cleaned_row[desc_idx].lower() if header_indices and desc_idx < len(cleaned_row) else ''
                 row_text = ' '.join(cleaned_row).lower()
                 if any(kw in desc_cell for kw in EXCLUDE_KEYWORDS):
                     continue
