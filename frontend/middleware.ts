@@ -17,7 +17,22 @@ const GEO_PATHS = [
 ]
 
 export default auth((req: NextRequest & { auth?: unknown }) => {
-  const { pathname } = req.nextUrl
+  const { pathname, search } = req.nextUrl
+  const isLoggedIn = !!(req.auth as { user?: unknown } | null | undefined)?.user
+
+  // Logged-in users should land on the dashboard, not the marketing/auth pages.
+  // Only the *bare* landing (no query string) is redirected, so the
+  // "New Analysis" flow (/?start=upload) and the Stripe payment return
+  // (/?pro_payment=...&session_id=...) still reach the landing page.
+  if (
+    isLoggedIn &&
+    (pathname === '/login' ||
+      pathname === '/signup' ||
+      (pathname === '/' && search === ''))
+  ) {
+    return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
+  }
+
   const response = NextResponse.next()
 
   // Set country cookie on relevant pages so client components can read it.
